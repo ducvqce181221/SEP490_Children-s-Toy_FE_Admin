@@ -10,7 +10,7 @@ import {
 } from "../../../components/ui/table";
 import AccountToolbar from "./AccountToolbar";
 import AccountFormModal from "./AccountFormModal";
-import Pagination from "../../../components/tables/Pagination";
+import Pagination from "../../../components/common/Pagination";
 import { useAccounts } from "../hooks/useAccounts";
 import { AccountRow } from "./AccountRow";
 

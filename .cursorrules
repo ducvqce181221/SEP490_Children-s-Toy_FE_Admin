@@ -1,0 +1,258 @@
+# SEP490 Children's Toy Admin FE – Cursor Rules
+
+# ============================================================
+# MANDATORY: Read CODING_RULES.md before any code change
+# ============================================================
+
+<rule>
+You MUST read the file `CODING_RULES.md` at the project root before writing
+or modifying any code in this project. It contains 24 sections covering:
+folder structure, naming conventions, component rules, hooks, data fetching,
+axios client, state management, loading/error/empty states, optimistic updates,
+styling, TypeScript, performance, environment variables, build config,
+deployment, git workflow, anti-patterns, code style, security, CI/CD,
+validation, error handling, accessibility, and dependency management.
+
+Do NOT skip this step. The rules are project-specific and override general
+best practices you may know.
+</rule>
+
+# ============================================================
+# Project Stack
+# ============================================================
+
+<rule>
+Stack:
+- Framework: Next.js 16 with App Router
+- UI Library: React 19
+- Language: TypeScript 5 (strict mode ON)
+- Styling: TailwindCSS 4 + tailwind-merge
+- HTTP Client: Axios (via @/configs/axios-client ONLY)
+- Forms: React Hook Form + Zod + @hookform/resolvers
+- Font: Outfit (next/font/google)
+
+Code comments and UI text: Vietnamese
+</rule>
+
+# ============================================================
+# Folder Structure (strict)
+# ============================================================
+
+<rule>
+Always place new code in the correct folder:
+
+src/features/<feature>/
+  components/   → UI components for this feature
+  hooks/        → Custom hooks (useFeature.ts, useFeatureMutations.ts)
+  services/     → API calls (<feature>-api.ts)
+  types/        → TypeScript interfaces + Zod schemas (<feature>.schema.ts)
+
+src/components/ → Shared UI components
+src/hooks/      → Shared custom hooks
+src/configs/    → Configuration files (axios-client.ts)
+src/context/    → React Context (only: theme, sidebar, auth)
+src/types/      → Shared TypeScript types
+
+NEVER import directly between features. Use src/hooks/ or src/components/ for shared logic.
+</rule>
+
+# ============================================================
+# Server vs Client Components
+# ============================================================
+
+<rule>
+Default = Server Component (no directive needed).
+
+Add "use client" ONLY when:
+- Using useState, useEffect, useReducer
+- Handling events (onClick, onChange)
+- Accessing browser APIs (localStorage, window)
+- Using Context
+
+NEVER add "use client" to:
+- app/(admin)/layout.tsx
+- app/layout.tsx
+- Any page.tsx unless truly necessary
+
+Push "use client" as deep (leaf) as possible.
+</rule>
+
+# ============================================================
+# TypeScript
+# ============================================================
+
+<rule>
+- strict: true – NEVER use `any`. Use `unknown` if type is unclear.
+- Infer types from Zod schemas: `export type Foo = z.infer<typeof FooSchema>`
+  Do NOT write duplicate TypeScript interfaces that mirror Zod schemas.
+- All component props must have explicit TypeScript interface.
+- Prefer named exports for feature components; default export only for page.tsx and layout.tsx.
+</rule>
+
+# ============================================================
+# Axios – Strict Rule
+# ============================================================
+
+<rule>
+NEVER import axios directly:
+  ❌ import axios from "axios";
+
+ALWAYS use the shared axios instance:
+  ✅ import axiosClient from "@/configs/axios-client";
+
+All API calls must go through src/features/<feature>/services/<feature>-api.ts
+Never call axiosClient directly from a component or hook.
+</rule>
+
+# ============================================================
+# Custom Hooks
+# ============================================================
+
+<rule>
+Hooks must:
+1. Return an OBJECT (not tuple): return { data, isLoading, error, create }
+2. Include loading + error state
+3. Have cleanup in useEffect that fetches data:
+   useEffect(() => {
+     let cancelled = false;
+     fetch().then(d => { if (!cancelled) setData(d); });
+     return () => { cancelled = true; };
+   }, []);
+
+If hook > 80 lines: split into useFeature (query) + useFeatureMutations (mutation).
+</rule>
+
+# ============================================================
+# useCallback / useMemo / React.memo
+# ============================================================
+
+<rule>
+useCallback: ONLY use when the receiving child component is wrapped in React.memo().
+  Without React.memo() on child, useCallback has NO effect on re-renders.
+
+useMemo: Use for expensive computations, derived data (filter, sort, paginate).
+  Do NOT use for simple value transforms.
+
+React.memo(): Use selectively for components that re-render unnecessarily.
+  Verify with React DevTools Profiler before applying.
+
+These three MUST work together:
+  const MemoChild = React.memo(ChildComponent);
+  const handler = useCallback(() => doSomething(), [dep]);
+  <MemoChild onAction={handler} />
+</rule>
+
+# ============================================================
+# Forms & Validation
+# ============================================================
+
+<rule>
+Every form MUST:
+1. Have a Zod schema in features/<feature>/types/<feature>.schema.ts
+2. Use React Hook Form with zodResolver
+3. Show inline validation errors (in Vietnamese)
+4. Have submit button disabled={isSubmitting} with loading indicator
+5. Map server 400 validation errors to form fields using setError:
+
+   if (status === 400 && response.data?.errors) {
+     Object.entries(response.data.errors).forEach(([field, msgs]) => {
+       setError(field, { type: "server", message: msgs[0] });
+     });
+   }
+</rule>
+
+# ============================================================
+# Loading / Error / Empty States
+# ============================================================
+
+<rule>
+Every component that renders data from an API MUST handle all 4 states:
+1. isLoading → <Skeleton /> or <Spinner />
+2. error → <ErrorState message={error} />
+3. data.length === 0 → <EmptyState />
+4. data → render content
+
+NEVER leave the UI blank during loading or after an error.
+
+Submit buttons must reflect isSubmitting:
+  <button disabled={isSubmitting}>
+    {isSubmitting ? <><Spinner /> Đang lưu...</> : "Lưu"}
+  </button>
+</rule>
+
+# ============================================================
+# Error Handling
+# ============================================================
+
+<rule>
+NEVER leave catch{} empty.
+NEVER use catch only for console.log without user feedback.
+
+Pattern:
+  try {
+    await api.create(data);
+    toast.success("Tạo thành công");
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Có lỗi xảy ra");
+    if (process.env.NODE_ENV === "development") {
+      console.error("[context]", error);
+    }
+  }
+
+HTTP status handling (in axios-client.ts interceptor):
+  401 → xóa token, redirect /login
+  403 → toast "Không có quyền"
+  404 → toast "Không tìm thấy"
+  500 → toast "Lỗi server"
+  network → toast "Mất kết nối"
+</rule>
+
+# ============================================================
+# List Rendering
+# ============================================================
+
+<rule>
+NEVER use key={index} for list items.
+ALWAYS use key={item.id} (unique ID from data).
+
+Reason: index as key causes bugs when list order changes (items lose their state).
+</rule>
+
+# ============================================================
+# Accessibility Baseline
+# ============================================================
+
+<rule>
+Minimum a11y requirements:
+- Icon-only buttons MUST have aria-label: <button aria-label="Xóa tài khoản">
+- Inputs MUST have associated label: <label htmlFor="x"><input id="x" />
+- Modals MUST have role="dialog" aria-modal="true" aria-labelledby
+- Use <button>, not <div> or <span>, for interactive elements
+- disabled button: add aria-disabled={true} alongside disabled
+</rule>
+
+# ============================================================
+# Dependencies
+# ============================================================
+
+<rule>
+Before suggesting or installing ANY new npm package:
+1. Check /docs/dependencies.md – is there already a package for this?
+2. Check bundle size on bundlephobia.com
+3. If adding: update /docs/dependencies.md with package info before merging
+
+NEVER add a package without registering it in /docs/dependencies.md.
+</rule>
+
+# ============================================================
+# Code Quality
+# ============================================================
+
+<rule>
+- No console.log in production code (wrap in NODE_ENV === "development")
+- No hardcoded URLs or API keys (use process.env.NEXT_PUBLIC_API_URL)
+- No component over 150 lines without splitting
+- No nested if/for deeper than 3 levels
+- Commit messages: Conventional Commits (feat:, fix:, refactor:, chore:, docs:)
+- Branch naming: feature/, fix/, chore/, refactor/
+</rule>
