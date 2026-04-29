@@ -2,24 +2,21 @@ import React from "react";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/button/Button";
 import { PlusIcon } from "@/icons/index";
-import { AccountSortBy } from "../types/account";
+import { BrandSortBy } from "../types/brand";
 
-interface AccountToolbarProps {
+interface BrandToolbarProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  sortBy: AccountSortBy;
-  onSortByChange: (value: AccountSortBy) => void;
+  sortBy: BrandSortBy;
+  onSortByChange: (value: BrandSortBy) => void;
   sortDesc: boolean;
   onSortDirectionChange: (value: boolean) => void;
   onAddClick: () => void;
 }
 
-const sortOptions: Array<{ value: AccountSortBy; label: string }> = [
+const sortOptions: Array<{ value: BrandSortBy; label: string }> = [
   { value: "createdat", label: "Created Date" },
-  { value: "accountname", label: "Account Name" },
-  { value: "email", label: "Email" },
-  { value: "rolename", label: "Role" },
-  { value: "isactive", label: "Status" },
+  { value: "brandname", label: "Brand Name" },
 ];
 
 const directionOptions = [
@@ -30,7 +27,7 @@ const directionOptions = [
 const selectClassName =
   "h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800";
 
-const AccountToolbar: React.FC<AccountToolbarProps> = ({
+const BrandToolbar: React.FC<BrandToolbarProps> = ({
   searchTerm,
   onSearchChange,
   sortBy,
@@ -44,31 +41,25 @@ const AccountToolbar: React.FC<AccountToolbarProps> = ({
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Account List
+            Brand List
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage staff accounts with backend-synced data.
+            Manage brand records with backend-synced data.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="primary" startIcon={<PlusIcon />} onClick={onAddClick}>
-            Add Account
+            Add Brand
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-5">
-          <p
-            className="mb-1 block text-sm font-medium text-transparent select-none"
-            aria-hidden="true"
-          >
-            Search
-          </p>
+        <div className="lg:col-span-5 lg:pt-6">
           <SearchInput
             value={searchTerm}
             onChange={onSearchChange}
-            placeholder="Search by name, email, or phone number"
+            placeholder="Search by brand name"
           />
         </div>
 
@@ -76,18 +67,16 @@ const AccountToolbar: React.FC<AccountToolbarProps> = ({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:justify-end">
             <div>
               <label
-                htmlFor="account-sort-field"
+                htmlFor="brand-sort-field"
                 className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Sort by
               </label>
               <select
-                id="account-sort-field"
+                id="brand-sort-field"
                 className={`${selectClassName} w-full sm:w-44`}
                 value={sortBy}
-                onChange={(event) =>
-                  onSortByChange(event.target.value as AccountSortBy)
-                }
+                onChange={(event) => onSortByChange(event.target.value as BrandSortBy)}
               >
                 {sortOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -99,18 +88,16 @@ const AccountToolbar: React.FC<AccountToolbarProps> = ({
 
             <div>
               <label
-                htmlFor="account-sort-direction"
+                htmlFor="brand-sort-direction"
                 className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Direction
               </label>
               <select
-                id="account-sort-direction"
+                id="brand-sort-direction"
                 className={`${selectClassName} w-full sm:w-40`}
                 value={sortDesc ? "desc" : "asc"}
-                onChange={(event) =>
-                  onSortDirectionChange(event.target.value === "desc")
-                }
+                onChange={(event) => onSortDirectionChange(event.target.value === "desc")}
               >
                 {directionOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -126,4 +113,4 @@ const AccountToolbar: React.FC<AccountToolbarProps> = ({
   );
 };
 
-export default AccountToolbar;
+export default BrandToolbar;
