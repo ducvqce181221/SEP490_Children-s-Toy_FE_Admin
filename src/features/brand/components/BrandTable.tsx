@@ -10,13 +10,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useAccountMutations } from "../hooks/useAccountMutations";
-import { useAccounts } from "../hooks/useAccounts";
-import { CreateAccountRequest, CreateAccountResult } from "../types/account";
-import AccountDetailModal from "./AccountDetailModal";
-import AccountFormModal from "./AccountFormModal";
-import { AccountRow } from "./AccountRow";
-import AccountToolbar from "./AccountToolbar";
+import { useBrandMutations } from "../hooks/useBrandMutations";
+import { useBrands } from "../hooks/useBrands";
+import {
+  BrandFormRequest,
+  BrandListItem,
+  BrandMutationResult,
+} from "../types/brand";
+import BrandFormModal from "./BrandFormModal";
+import { BrandRow } from "./BrandRow";
+import BrandToolbar from "./BrandToolbar";
 
 const headerCellClassName =
   "px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400";
@@ -26,9 +29,9 @@ const pageSizeOptions = [5, 10, 20, 50];
 const footerSelectClassName =
   "h-10 rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300";
 
-const AccountTable = () => {
+const BrandTable = () => {
   const {
-    accounts,
+    brands,
     isLoading,
     error,
     searchTerm,
@@ -43,17 +46,14 @@ const AccountTable = () => {
     handleSortDirectionChange,
     handlePageSizeChange,
     setPageNumber,
-    reloadAccounts,
-  } = useAccounts();
+    reloadBrands,
+  } = useBrands();
 
-  const { createAccount, updateAccountStatus, isCreating, updatingAccountId } =
-    useAccountMutations(reloadAccounts);
+  const { createBrand, updateBrand, isCreating, updatingBrandId } =
+    useBrandMutations(reloadBrands);
 
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedDetailAccountId, setSelectedDetailAccountId] = useState<number | null>(
-    null,
-  );
-  const [selectedEditAccountId, setSelectedEditAccountId] = useState<number | null>(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editingBrand, setEditingBrand] = useState<BrandListItem | null>(null);
 
   const pageRangeText = useMemo(() => {
     if (totalCount === 0) {
@@ -63,21 +63,57 @@ const AccountTable = () => {
     const start = (pageNumber - 1) * pageSize + 1;
     const end = Math.min(pageNumber * pageSize, totalCount);
 
-    return `Showing ${start} - ${end} / ${totalCount} accounts`;
+    return `Showing ${start} - ${end} / ${totalCount} brands`;
   }, [pageNumber, pageSize, totalCount]);
 
-  const hasAccounts = accounts.length > 0;
-  const showInitialLoading = isLoading && !hasAccounts;
-  const showRefreshing = isLoading && hasAccounts;
+  const hasBrands = brands.length > 0;
+  const showInitialLoading = isLoading && !hasBrands;
+  const showRefreshing = isLoading && hasBrands;
+  const isEditMode = editingBrand !== null;
+  const isSubmitting = isEditMode
+    ? updatingBrandId === editingBrand?.brandId
+    : isCreating;
 
-  const handleCreateAccount = async (
-    payload: CreateAccountRequest,
-  ): Promise<CreateAccountResult> => {
-    const result = await createAccount(payload);
+  const handleOpenCreateModal = () => {
+    setEditingBrand(null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleOpenEditModal = (brand: BrandListItem) => {
+    setEditingBrand(brand);
+    setIsFormModalOpen(true);
+  };
+
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
+    setEditingBrand(null);
+  };
+
+  const handleSubmitBrand = async (
+    payload: BrandFormRequest,
+    brandId: number | null,
+  ): Promise<BrandMutationResult> => {
+    if (brandId !== null) {
+      const result = await updateBrand(brandId, payload);
+
+      if (result.success) {
+        toast.success(result.message);
+        handleCloseFormModal();
+        return result;
+      }
+
+      if (!result.validationErrors) {
+        toast.error(result.message);
+      }
+
+      return result;
+    }
+
+    const result = await createBrand(payload);
 
     if (result.success) {
       toast.success(result.message);
-      setIsCreateModalOpen(false);
+      handleCloseFormModal();
       return result;
     }
 
@@ -88,35 +124,20 @@ const AccountTable = () => {
     return result;
   };
 
-  const handleUpdateAccountStatus = async (
-    accountId: number,
-    isActive: boolean,
-  ): Promise<boolean> => {
-    const result = await updateAccountStatus(accountId, isActive);
-
-    if (result.success) {
-      toast.success(result.message);
-      return true;
-    }
-
-    toast.error(result.message);
-    return false;
-  };
-
   return (
     <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-      <AccountToolbar
+      <BrandToolbar
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
         sortBy={sortBy}
         onSortByChange={handleSortByChange}
         sortDesc={sortDesc}
         onSortDirectionChange={handleSortDirectionChange}
-        onAddClick={() => setIsCreateModalOpen(true)}
+        onAddClick={handleOpenCreateModal}
       />
 
       <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
-        <div className="min-w-[1200px]">
+        <div className="min-w-[760px]">
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
@@ -124,19 +145,10 @@ const AccountTable = () => {
                   #
                 </TableCell>
                 <TableCell isHeader className={headerCellClassName}>
-                  Account
-                </TableCell>
-                <TableCell isHeader className={headerCellClassName}>
-                  Role
-                </TableCell>
-                <TableCell isHeader className={headerCellClassName}>
-                  Status
+                  Brand Name
                 </TableCell>
                 <TableCell isHeader className={headerCellClassName}>
                   Created At
-                </TableCell>
-                <TableCell isHeader className={headerCellClassName}>
-                  Updated At
                 </TableCell>
                 <TableCell
                   isHeader
@@ -151,10 +163,10 @@ const AccountTable = () => {
               {showInitialLoading && (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={4}
                     className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
-                    Loading account list...
+                    Loading brand list...
                   </TableCell>
                 </TableRow>
               )}
@@ -162,7 +174,7 @@ const AccountTable = () => {
               {!showInitialLoading && error && (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={4}
                     className="px-5 py-10 text-center text-sm text-error-600"
                   >
                     {error}
@@ -170,30 +182,30 @@ const AccountTable = () => {
                 </TableRow>
               )}
 
-              {!showInitialLoading && !error && accounts.length === 0 && (
+              {!showInitialLoading && !error && brands.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={4}
                     className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
-                    No matching accounts found.
+                    No matching brands found.
                   </TableCell>
                 </TableRow>
               )}
 
               {!error &&
-                accounts.length > 0 &&
-                accounts.map((account, index) => (
-                  <AccountRow
-                    key={account.accountId}
-                    account={account}
+                brands.length > 0 &&
+                brands.map((brand, index) => (
+                  <BrandRow
+                    key={brand.brandId}
+                    brand={brand}
                     rowNumber={(pageNumber - 1) * pageSize + index + 1}
-                    onOpenDetail={setSelectedDetailAccountId}
-                    onOpenEdit={setSelectedEditAccountId}
+                    onEdit={handleOpenEditModal}
                   />
                 ))}
             </TableBody>
           </Table>
+
           {showRefreshing && (
             <div className="border-t border-gray-100 px-5 py-2 text-right text-xs text-gray-500 dark:border-white/[0.05] dark:text-gray-400">
               Updating table...
@@ -205,11 +217,11 @@ const AccountTable = () => {
       <div className="flex flex-col items-start justify-between gap-4 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center dark:border-white/[0.05]">
         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
           <span>{pageRangeText}</span>
-          <label htmlFor="account-page-size" className="font-medium">
+          <label htmlFor="brand-page-size" className="font-medium">
             Rows per page
           </label>
           <select
-            id="account-page-size"
+            id="brand-page-size"
             className={footerSelectClassName}
             value={pageSize}
             onChange={(event) => handlePageSizeChange(Number(event.target.value))}
@@ -231,33 +243,16 @@ const AccountTable = () => {
         )}
       </div>
 
-      <AccountFormModal
-        isOpen={isCreateModalOpen}
-        isSubmitting={isCreating}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateAccount}
-      />
-
-      <AccountDetailModal
-        accountId={selectedDetailAccountId}
-        isOpen={selectedDetailAccountId !== null}
-        mode="detail"
-        onClose={() => setSelectedDetailAccountId(null)}
-      />
-
-      <AccountDetailModal
-        accountId={selectedEditAccountId}
-        isOpen={selectedEditAccountId !== null}
-        mode="edit"
-        isSavingStatus={
-          selectedEditAccountId !== null &&
-          updatingAccountId === selectedEditAccountId
-        }
-        onUpdateStatus={handleUpdateAccountStatus}
-        onClose={() => setSelectedEditAccountId(null)}
+      <BrandFormModal
+        isOpen={isFormModalOpen}
+        mode={isEditMode ? "edit" : "create"}
+        brand={editingBrand}
+        isSubmitting={isSubmitting}
+        onClose={handleCloseFormModal}
+        onSubmit={handleSubmitBrand}
       />
     </div>
   );
 };
 
-export default AccountTable;
+export default BrandTable;

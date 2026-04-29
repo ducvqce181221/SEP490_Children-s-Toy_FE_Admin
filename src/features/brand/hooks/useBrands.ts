@@ -1,27 +1,27 @@
 import { AxiosError } from "axios";
 import { useCallback, useEffect, useState } from "react";
-import { accountApi } from "../services/account-api";
+import { brandApi } from "../services/brand-api";
 import {
-  AccountListItem,
-  AccountSortBy,
   ApiErrorResponse,
+  BrandListItem,
+  BrandSortBy,
   PaginatedResponse,
-} from "../types/account";
+} from "../types/brand";
 
 const DEFAULT_PAGE_NUMBER = 1;
 const DEFAULT_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 350;
 
-export const useAccounts = () => {
-  const [accountsResponse, setAccountsResponse] = useState<
-    PaginatedResponse<AccountListItem> | null
+export const useBrands = () => {
+  const [brandsResponse, setBrandsResponse] = useState<
+    PaginatedResponse<BrandListItem> | null
   >(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<AccountSortBy>("createdat");
+  const [sortBy, setSortBy] = useState<BrandSortBy>("createdat");
   const [sortDesc, setSortDesc] = useState(true);
   const [pageNumber, setPageNumber] = useState(DEFAULT_PAGE_NUMBER);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -40,12 +40,12 @@ export const useAccounts = () => {
   useEffect(() => {
     let isCancelled = false;
 
-    const fetchAccounts = async () => {
+    const fetchBrands = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const response = await accountApi.getAccounts({
+        const response = await brandApi.getBrands({
           pageNumber,
           pageSize,
           sortBy,
@@ -55,14 +55,14 @@ export const useAccounts = () => {
         });
 
         if (!isCancelled) {
-          setAccountsResponse(response);
+          setBrandsResponse(response);
         }
       } catch (error) {
         if (!isCancelled) {
           const axiosError = error as AxiosError<ApiErrorResponse>;
           setError(
             axiosError.response?.data?.message ??
-              "Unable to load accounts. Please try again.",
+              "Unable to load brands. Please try again.",
           );
         }
       } finally {
@@ -72,7 +72,7 @@ export const useAccounts = () => {
       }
     };
 
-    fetchAccounts();
+    fetchBrands();
 
     return () => {
       isCancelled = true;
@@ -84,7 +84,7 @@ export const useAccounts = () => {
     setPageNumber(DEFAULT_PAGE_NUMBER);
   }, []);
 
-  const handleSortByChange = useCallback((value: AccountSortBy) => {
+  const handleSortByChange = useCallback((value: BrandSortBy) => {
     setSortBy(value);
     setPageNumber(DEFAULT_PAGE_NUMBER);
   }, []);
@@ -99,12 +99,12 @@ export const useAccounts = () => {
     setPageNumber(DEFAULT_PAGE_NUMBER);
   }, []);
 
-  const reloadAccounts = useCallback(() => {
+  const reloadBrands = useCallback(() => {
     setReloadToken((prev) => prev + 1);
   }, []);
 
   return {
-    accounts: accountsResponse?.items ?? [],
+    brands: brandsResponse?.items ?? [],
     isLoading,
     error,
     searchTerm,
@@ -112,15 +112,15 @@ export const useAccounts = () => {
     sortDesc,
     pageNumber,
     pageSize,
-    totalCount: accountsResponse?.totalCount ?? 0,
-    totalPages: accountsResponse?.totalPages ?? 0,
-    hasNextPage: accountsResponse?.hasNextPage ?? false,
-    hasPreviousPage: accountsResponse?.hasPreviousPage ?? false,
+    totalCount: brandsResponse?.totalCount ?? 0,
+    totalPages: brandsResponse?.totalPages ?? 0,
+    hasNextPage: brandsResponse?.hasNextPage ?? false,
+    hasPreviousPage: brandsResponse?.hasPreviousPage ?? false,
     handleSearchChange,
     handleSortByChange,
     handleSortDirectionChange,
     handlePageSizeChange,
     setPageNumber,
-    reloadAccounts,
+    reloadBrands,
   };
 };
