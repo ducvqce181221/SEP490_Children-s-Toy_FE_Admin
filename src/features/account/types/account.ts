@@ -27,6 +27,7 @@ export interface AccountDetail {
   accountName: string;
   phoneNumber: string | null;
   email: string;
+  imageUrl?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string | null;
