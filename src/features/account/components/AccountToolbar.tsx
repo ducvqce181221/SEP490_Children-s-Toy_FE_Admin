@@ -59,6 +59,12 @@ const AccountToolbar: React.FC<AccountToolbarProps> = ({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-5">
+          <p
+            className="mb-1 block text-sm font-medium text-transparent select-none"
+            aria-hidden="true"
+          >
+            Search
+          </p>
           <SearchInput
             value={searchTerm}
             onChange={onSearchChange}
