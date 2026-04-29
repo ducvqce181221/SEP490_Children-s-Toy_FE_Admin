@@ -46,10 +46,14 @@ const AccountTable = () => {
     reloadAccounts,
   } = useAccounts();
 
-  const { createAccount, isCreating } = useAccountMutations(reloadAccounts);
+  const { createAccount, updateAccountStatus, isCreating, updatingAccountId } =
+    useAccountMutations(reloadAccounts);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
+  const [selectedDetailAccountId, setSelectedDetailAccountId] = useState<number | null>(
+    null,
+  );
+  const [selectedEditAccountId, setSelectedEditAccountId] = useState<number | null>(null);
 
   const pageRangeText = useMemo(() => {
     if (totalCount === 0) {
@@ -82,6 +86,21 @@ const AccountTable = () => {
     }
 
     return result;
+  };
+
+  const handleUpdateAccountStatus = async (
+    accountId: number,
+    isActive: boolean,
+  ): Promise<boolean> => {
+    const result = await updateAccountStatus(accountId, isActive);
+
+    if (result.success) {
+      toast.success(result.message);
+      return true;
+    }
+
+    toast.error(result.message);
+    return false;
   };
 
   return (
@@ -169,7 +188,8 @@ const AccountTable = () => {
                     key={account.accountId}
                     account={account}
                     rowNumber={(pageNumber - 1) * pageSize + index + 1}
-                    onOpenDetail={setSelectedAccountId}
+                    onOpenDetail={setSelectedDetailAccountId}
+                    onOpenEdit={setSelectedEditAccountId}
                   />
                 ))}
             </TableBody>
@@ -219,9 +239,22 @@ const AccountTable = () => {
       />
 
       <AccountDetailModal
-        accountId={selectedAccountId}
-        isOpen={selectedAccountId !== null}
-        onClose={() => setSelectedAccountId(null)}
+        accountId={selectedDetailAccountId}
+        isOpen={selectedDetailAccountId !== null}
+        mode="detail"
+        onClose={() => setSelectedDetailAccountId(null)}
+      />
+
+      <AccountDetailModal
+        accountId={selectedEditAccountId}
+        isOpen={selectedEditAccountId !== null}
+        mode="edit"
+        isSavingStatus={
+          selectedEditAccountId !== null &&
+          updatingAccountId === selectedEditAccountId
+        }
+        onUpdateStatus={handleUpdateAccountStatus}
+        onClose={() => setSelectedEditAccountId(null)}
       />
     </div>
   );

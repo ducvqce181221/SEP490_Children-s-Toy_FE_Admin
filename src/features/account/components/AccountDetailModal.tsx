@@ -1,6 +1,7 @@
 "use client";
 
 import { AxiosError } from "axios";
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
@@ -10,6 +11,9 @@ import { AccountDetail, ApiErrorResponse } from "../types/account";
 interface AccountDetailModalProps {
   accountId: number | null;
   isOpen: boolean;
+  mode: "detail" | "edit";
+  isSavingStatus?: boolean;
+  onUpdateStatus?: (accountId: number, isActive: boolean) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -35,11 +39,15 @@ const formatDateTime = (dateValue: string | null) => {
 const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   accountId,
   isOpen,
+  mode,
+  isSavingStatus = false,
+  onUpdateStatus,
   onClose,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accountDetail, setAccountDetail] = useState<AccountDetail | null>(null);
+  const [statusValue, setStatusValue] = useState<"active" | "inactive">("active");
 
   useEffect(() => {
     if (!isOpen || !accountId) {
@@ -57,6 +65,7 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
 
         if (!isCancelled) {
           setAccountDetail(response);
+          setStatusValue(response.isActive ? "active" : "inactive");
         }
       } catch (error) {
         if (!isCancelled) {
@@ -80,11 +89,33 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
     };
   }, [accountId, isOpen]);
 
+  const avatarText =
+    accountDetail?.accountName && accountDetail.accountName.length > 0
+      ? accountDetail.accountName[0].toUpperCase()
+      : "?";
+
+  const handleSaveStatus = async () => {
+    if (!accountDetail || !onUpdateStatus) {
+      return;
+    }
+
+    const nextIsActive = statusValue === "active";
+    if (nextIsActive === accountDetail.isActive) {
+      return;
+    }
+
+    const isSuccess = await onUpdateStatus(accountDetail.accountId, nextIsActive);
+    if (isSuccess) {
+      setAccountDetail((prev) => (prev ? { ...prev, isActive: nextIsActive } : prev));
+      onClose();
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[760px] p-5 lg:p-8">
       <div className="mb-5">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
-          Account Detail
+          {mode === "edit" ? "Edit Account" : "Account Detail"}
         </h2>
       </div>
 
@@ -102,6 +133,29 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
 
       {!isLoading && !error && accountDetail && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Profile Image
+            </label>
+            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+              <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-base font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                {accountDetail.imageUrl ? (
+                  <Image
+                    src={accountDetail.imageUrl}
+                    alt={accountDetail.accountName}
+                    width={56}
+                    height={56}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  avatarText
+                )}
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {accountDetail.imageUrl ? "User image loaded" : "No image available"}
+              </p>
+            </div>
+          </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Account ID
@@ -170,16 +224,38 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Status
             </label>
-            <input
-              className={inputClassName}
-              value={accountDetail.isActive ? "Active" : "Inactive"}
-              readOnly
-            />
+            {mode === "edit" ? (
+              <select
+                className={inputClassName}
+                value={statusValue}
+                onChange={(event) =>
+                  setStatusValue(event.target.value as "active" | "inactive")
+                }
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            ) : (
+              <input
+                className={inputClassName}
+                value={accountDetail.isActive ? "Active" : "Inactive"}
+                readOnly
+              />
+            )}
           </div>
         </div>
       )}
 
       <div className="mt-6 flex items-center justify-end gap-3">
+        {mode === "edit" && (
+          <Button
+            variant="primary"
+            onClick={handleSaveStatus}
+            disabled={isLoading || !accountDetail || isSavingStatus}
+          >
+            {isSavingStatus ? "Saving..." : "Save"}
+          </Button>
+        )}
         <Button variant="primary" onClick={onClose}>
           Close
         </Button>

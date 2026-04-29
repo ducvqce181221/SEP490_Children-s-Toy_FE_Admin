@@ -11,6 +11,7 @@ interface AccountRowProps {
   account: AccountListItem;
   rowNumber: number;
   onOpenDetail: (accountId: number) => void;
+  onOpenEdit: (accountId: number) => void;
 }
 
 const formatDateTime = (dateValue: string | null) => {
@@ -33,6 +34,7 @@ const AccountRowComponent: React.FC<AccountRowProps> = ({
   account,
   rowNumber,
   onOpenDetail,
+  onOpenEdit,
 }) => {
   const avatarText =
     account.accountName.length > 0 ? account.accountName[0].toUpperCase() : "?";
@@ -102,7 +104,7 @@ const AccountRowComponent: React.FC<AccountRowProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => onOpenDetail(account.accountId)}
+            onClick={() => onOpenEdit(account.accountId)}
             className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
             aria-label={`Edit account ${account.accountName}`}
           >
