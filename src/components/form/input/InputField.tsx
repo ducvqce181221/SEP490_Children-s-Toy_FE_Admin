@@ -4,7 +4,7 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   type?: "text" | "number" | "email" | "password" | "date" | "time" | "datetime-local" | string;
   success?: boolean;
   error?: boolean;
-  hint?: string; // Optional hint text
+  hint?: string;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
