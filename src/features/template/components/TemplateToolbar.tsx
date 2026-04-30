@@ -5,7 +5,8 @@ import SearchInput from "@/components/common/SearchInput";
 import { Dropdown } from "@/components/ui/dropdown/Dropdown";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
-import { VoucherFilters } from "../hooks/useVouchers";
+import Input from "@/components/form/input/InputField";
+import { TemplateFilters } from "../hooks/useTemplates";
 
 const FilterIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -13,15 +14,15 @@ const FilterIcon = () => (
   </svg>
 );
 
-interface VoucherToolbarProps {
+interface TemplateToolbarProps {
   onAddClick: () => void;
   searchQuery: string;
   onSearchChange: (value: string) => void;
-  filters: VoucherFilters;
-  onFilterChange: (filters: VoucherFilters) => void;
+  filters: TemplateFilters;
+  onFilterChange: (filters: TemplateFilters) => void;
 }
 
-export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
+export const TemplateToolbar: React.FC<TemplateToolbarProps> = ({
   onAddClick,
   searchQuery,
   onSearchChange,
@@ -30,9 +31,8 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
 }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [localSearchTerm, setLocalSearchTerm] = useState(searchQuery);
-  const [localFilters, setLocalFilters] = useState<VoucherFilters>(filters);
+  const [localFilters, setLocalFilters] = useState<TemplateFilters>(filters);
 
-  // Sync local state when parent searchQuery changes
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalSearchTerm(searchQuery);
@@ -49,11 +49,22 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setLocalFilters({ ...localFilters, status: e.target.value });
+    let isActive: boolean | undefined = undefined;
+    if (e.target.value === "true") isActive = true;
+    if (e.target.value === "false") isActive = false;
+    setLocalFilters({ ...localFilters, isActive });
+  };
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalFilters({ ...localFilters, startDate: e.target.value || undefined });
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalFilters({ ...localFilters, endDate: e.target.value || undefined });
   };
 
   const clearFilters = () => {
-    const emptyFilters = { status: "" };
+    const emptyFilters = { isActive: undefined, startDate: undefined, endDate: undefined };
     setLocalFilters(emptyFilters);
     onFilterChange(emptyFilters);
     setIsFilterOpen(false);
@@ -64,20 +75,22 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
     setIsFilterOpen(false);
   };
 
+  const hasActiveFilters = filters.isActive !== undefined || filters.startDate || filters.endDate;
+
   return (
     <div className="px-5 py-5 sm:px-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Voucher List
+            Template List
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage your store vouchers, discounts, and promotions here.
+            Manage your message templates.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="primary" startIcon={<PlusIcon />} onClick={onAddClick}>
-            Add Voucher
+            Add Template
           </Button>
         </div>
       </div>
@@ -88,10 +101,10 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
             value={localSearchTerm} 
             onChange={setLocalSearchTerm} 
             onKeyDown={handleKeyDown}
-            placeholder="Search vouchers... (Press Enter)" 
+            placeholder="Search templates... (Press Enter)" 
           />
         </div>
-        
+
         <div className="relative">
           <Button 
             variant="outline" 
@@ -100,7 +113,7 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
             className="dropdown-toggle"
           >
             Filter
-            {filters.status && (
+            {hasActiveFilters && (
               <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-brand-500 rounded-full">
                 !
               </span>
@@ -109,20 +122,36 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
 
           <Dropdown isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} className="w-[300px] p-4 right-0">
             <div className="flex flex-col gap-4">
-              <h4 className="font-semibold text-gray-800 dark:text-white/90">Filter Vouchers</h4>
+              <h4 className="font-semibold text-gray-800 dark:text-white/90">Filter Templates</h4>
               
               <div>
                 <Label>Status</Label>
                 <Select
                   options={[
                     { value: "", label: "All Statuses" },
-                    { value: "Active", label: "Active" },
-                    { value: "Inactive", label: "Inactive" },
-                    { value: "Scheduled", label: "Scheduled" },
-                    { value: "Expired", label: "Expired" },
+                    { value: "true", label: "Active" },
+                    { value: "false", label: "Inactive" },
                   ]}
                   onChange={handleStatusChange}
-                  value={localFilters.status}
+                  value={localFilters.isActive === undefined ? "" : localFilters.isActive.toString()}
+                />
+              </div>
+
+              <div>
+                <Label>Created After</Label>
+                <Input 
+                  type="date"
+                  value={localFilters.startDate || ""}
+                  onChange={handleStartDateChange}
+                />
+              </div>
+
+              <div>
+                <Label>Created Before</Label>
+                <Input 
+                  type="date"
+                  value={localFilters.endDate || ""}
+                  onChange={handleEndDateChange}
                 />
               </div>
 

@@ -36,6 +36,8 @@ axiosClient.interceptors.response.use(
       case 401:
         // Token hết hạn – xóa token và redirect login
         if (typeof window !== "undefined") {
+          localStorage.removeItem("access_token");
+          window.location.href = "/login";
             localStorage.removeItem("access_token");
             localStorage.removeItem("account_info");
             const normalizedPath = window.location.pathname.replace(/\/+$/, "");
