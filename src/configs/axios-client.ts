@@ -37,7 +37,13 @@ axiosClient.interceptors.response.use(
         // Token hết hạn – xóa token và redirect login
         if (typeof window !== "undefined") {
             localStorage.removeItem("access_token");
-            window.location.href = "/login";
+            localStorage.removeItem("account_info");
+            const normalizedPath = window.location.pathname.replace(/\/+$/, "");
+            const requestUrl = error.config?.url ?? "";
+            const isLoginRequest = requestUrl.includes("/auth/login");
+            if (!isLoginRequest && !normalizedPath.startsWith("/admin/login")) {
+              window.location.href = "/admin/login";
+            }
         }
         break;
       case 403:
