@@ -61,7 +61,6 @@ export default function SignInForm() {
     <div className="flex flex-col flex-1 lg:w-1/2 w-full">
       <div className="w-full max-w-md sm:pt-10 mx-auto mb-5">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🧸</span>
           <span className="font-bold text-brand-500 text-lg">ToyStore Admin</span>
         </div>
       </div>

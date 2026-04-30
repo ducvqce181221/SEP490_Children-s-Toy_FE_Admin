@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 import toast from "react-hot-toast";
 
 const axiosClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://localhost:7083", // Default fallback if not in env
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://localhost:7083/api", // Default fallback if not in env
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });
@@ -13,6 +13,11 @@ axiosClient.interceptors.request.use((config) => {
     const token = localStorage.getItem("access_token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (config.data instanceof FormData) {
+    config.headers["Content-Type"] = undefined;
+  }
+
   return config;
 });
 
@@ -36,8 +41,16 @@ axiosClient.interceptors.response.use(
       case 401:
         // Token hết hạn – xóa token và redirect login
         if (typeof window !== "undefined") {
+          localStorage.removeItem("access_token");
+          window.location.href = "/login";
             localStorage.removeItem("access_token");
-            window.location.href = "/login";
+            localStorage.removeItem("account_info");
+            const normalizedPath = window.location.pathname.replace(/\/+$/, "");
+            const requestUrl = error.config?.url ?? "";
+            const isLoginRequest = requestUrl.includes("/auth/login");
+            if (!isLoginRequest && !normalizedPath.startsWith("/admin/login")) {
+              window.location.href = "/admin/login";
+            }
         }
         break;
       case 403:

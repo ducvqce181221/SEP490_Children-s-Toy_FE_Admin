@@ -33,17 +33,6 @@ export default function AuthLayout({
                   Hệ thống quản trị cửa hàng đồ chơi trẻ em.
                   Quản lý sản phẩm, đơn hàng và khách hàng một cách hiệu quả.
                 </p>
-                <div className="flex flex-wrap justify-center gap-3">
-                  {["Quản lý sản phẩm", "Theo dõi đơn hàng", "Phân tích doanh thu"].map((item) => (
-                    <span
-                      key={item}
-                      className="px-3 py-1.5 rounded-full text-white/80 text-xs font-medium"
-                      style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(4px)" }}
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
