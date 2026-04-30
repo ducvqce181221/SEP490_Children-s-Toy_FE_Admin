@@ -1,82 +1,146 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import Pagination from "@/components/common/Pagination";
 import {
   Table,
   TableBody,
   TableCell,
   TableHeader,
   TableRow,
-} from "../../../components/ui/table";
-import AccountToolbar from "./AccountToolbar";
-import AccountFormModal from "./AccountFormModal";
-import Pagination from "../../../components/common/Pagination";
+} from "@/components/ui/table";
+import { useAccountMutations } from "../hooks/useAccountMutations";
 import { useAccounts } from "../hooks/useAccounts";
+import { CreateAccountRequest, CreateAccountResult } from "../types/account";
+import AccountDetailModal from "./AccountDetailModal";
+import AccountFormModal from "./AccountFormModal";
 import { AccountRow } from "./AccountRow";
+import AccountToolbar from "./AccountToolbar";
 
-export default function AccountTable() {
+const headerCellClassName =
+  "px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400";
+
+const pageSizeOptions = [5, 10, 20, 50];
+
+const footerSelectClassName =
+  "h-10 rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300";
+
+const AccountTable = () => {
   const {
-    isModalOpen,
-    setIsModalOpen,
-    searchQuery,
-    filters,
-    handleSearch,      
-    handleFilters,     
-    handleItemsPerPage,
-    currentPage,
-    setCurrentPage,
-    itemsPerPage,
-    editAccount,
-    setEditAccount,
-    deleteAccount,
-    setDeleteAccount,
-    filteredData,
-    paginatedData,
+    accounts,
+    isLoading,
+    error,
+    searchTerm,
+    sortBy,
+    sortDesc,
+    pageNumber,
+    pageSize,
+    totalCount,
     totalPages,
+    handleSearchChange,
+    handleSortByChange,
+    handleSortDirectionChange,
+    handlePageSizeChange,
+    setPageNumber,
+    reloadAccounts,
   } = useAccounts();
+
+  const { createAccount, updateAccountStatus, isCreating, updatingAccountId } =
+    useAccountMutations(reloadAccounts);
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedDetailAccountId, setSelectedDetailAccountId] = useState<number | null>(
+    null,
+  );
+  const [selectedEditAccountId, setSelectedEditAccountId] = useState<number | null>(null);
+
+  const pageRangeText = useMemo(() => {
+    if (totalCount === 0) {
+      return "No data available";
+    }
+
+    const start = (pageNumber - 1) * pageSize + 1;
+    const end = Math.min(pageNumber * pageSize, totalCount);
+
+    return `Showing ${start} - ${end} / ${totalCount} accounts`;
+  }, [pageNumber, pageSize, totalCount]);
+
+  const hasAccounts = accounts.length > 0;
+  const showInitialLoading = isLoading && !hasAccounts;
+  const showRefreshing = isLoading && hasAccounts;
+
+  const handleCreateAccount = async (
+    payload: CreateAccountRequest,
+  ): Promise<CreateAccountResult> => {
+    const result = await createAccount(payload);
+
+    if (result.success) {
+      toast.success(result.message);
+      setIsCreateModalOpen(false);
+      return result;
+    }
+
+    if (!result.validationErrors) {
+      toast.error(result.message);
+    }
+
+    return result;
+  };
+
+  const handleUpdateAccountStatus = async (
+    accountId: number,
+    isActive: boolean,
+  ): Promise<boolean> => {
+    const result = await updateAccountStatus(accountId, isActive);
+
+    if (result.success) {
+      toast.success(result.message);
+      return true;
+    }
+
+    toast.error(result.message);
+    return false;
+  };
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-      <AccountToolbar 
-        onAddClick={() => setIsModalOpen(true)}
-        searchQuery={searchQuery}
-        onSearchChange={handleSearch}
-        filters={filters}
-        onFilterChange={handleFilters}
+      <AccountToolbar
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        sortBy={sortBy}
+        onSortByChange={handleSortByChange}
+        sortDesc={sortDesc}
+        onSortDirectionChange={handleSortDirectionChange}
+        onAddClick={() => setIsCreateModalOpen(true)}
       />
 
       <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
-        <div className="min-w-[1102px]">
+        <div className="min-w-[1200px]">
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
-                  User
+                <TableCell isHeader className={headerCellClassName}>
+                  #
                 </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
+                <TableCell isHeader className={headerCellClassName}>
+                  Account
+                </TableCell>
+                <TableCell isHeader className={headerCellClassName}>
                   Role
                 </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
+                <TableCell isHeader className={headerCellClassName}>
                   Status
                 </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
-                  Join Date
+                <TableCell isHeader className={headerCellClassName}>
+                  Created At
+                </TableCell>
+                <TableCell isHeader className={headerCellClassName}>
+                  Updated At
                 </TableCell>
                 <TableCell
                   isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400"
+                  className="px-5 py-3 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400"
                 >
                   Actions
                 </TableCell>
@@ -84,69 +148,116 @@ export default function AccountTable() {
             </TableHeader>
 
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-              {paginatedData.length > 0 ? (
-                paginatedData.map((account) => (
-                  <AccountRow 
-                    key={account.id}
-                    account={account}
-                    isDeleting={deleteAccount?.id === account.id}
-                    onEdit={() => setEditAccount(account)}
-                    onDeleteClick={() => setDeleteAccount(account)}
-                    onDeleteCancel={() => setDeleteAccount(null)}
-                    onDeleteConfirm={() => {
-                      // Implementation for actual deletion goes here
-                      setDeleteAccount(null);
-                    }}
-                  />
-                ))
-              ) : (
+              {showInitialLoading && (
                 <TableRow>
-                  <TableCell colSpan={5} className="px-5 py-10 text-center text-gray-500">
-                    No accounts found matching your criteria.
+                  <TableCell
+                    colSpan={7}
+                    className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
+                  >
+                    Loading account list...
                   </TableCell>
                 </TableRow>
               )}
+
+              {!showInitialLoading && error && (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="px-5 py-10 text-center text-sm text-error-600"
+                  >
+                    {error}
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {!showInitialLoading && !error && accounts.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
+                  >
+                    No matching accounts found.
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {!error &&
+                accounts.length > 0 &&
+                accounts.map((account, index) => (
+                  <AccountRow
+                    key={account.accountId}
+                    account={account}
+                    rowNumber={(pageNumber - 1) * pageSize + index + 1}
+                    onOpenDetail={setSelectedDetailAccountId}
+                    onOpenEdit={setSelectedEditAccountId}
+                  />
+                ))}
             </TableBody>
           </Table>
+          {showRefreshing && (
+            <div className="border-t border-gray-100 px-5 py-2 text-right text-xs text-gray-500 dark:border-white/[0.05] dark:text-gray-400">
+              Updating table...
+            </div>
+          )}
         </div>
       </div>
-      
-      {totalPages > 0 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center px-5 py-4 border-t border-gray-100 dark:border-white/[0.05] gap-4">
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-            <span>
-              Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredData.length)} to {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} entries
-            </span>
-            <div className="flex items-center gap-2">
-              <span>Rows per page:</span>
-              <select 
-                value={itemsPerPage} 
-                onChange={(e) => handleItemsPerPage(Number(e.target.value))}
-                className="py-1 px-2 border border-gray-300 rounded-md dark:border-gray-700 dark:bg-gray-800 focus:outline-hidden focus:ring-2 focus:ring-brand-500/20"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-              </select>
-            </div>
-          </div>
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-        </div>
-      )}
 
-      <AccountFormModal 
-        key={editAccount?.id || "create"}
-        isOpen={isModalOpen || !!editAccount} 
-        initialData={editAccount}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditAccount(null);
-        }} 
+      <div className="flex flex-col items-start justify-between gap-4 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center dark:border-white/[0.05]">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+          <span>{pageRangeText}</span>
+          <label htmlFor="account-page-size" className="font-medium">
+            Rows per page
+          </label>
+          <select
+            id="account-page-size"
+            className={footerSelectClassName}
+            value={pageSize}
+            onChange={(event) => handlePageSizeChange(Number(event.target.value))}
+          >
+            {pageSizeOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {totalPages > 0 && (
+          <Pagination
+            currentPage={pageNumber}
+            totalPages={totalPages}
+            onPageChange={setPageNumber}
+          />
+        )}
+      </div>
+
+      <AccountFormModal
+        isOpen={isCreateModalOpen}
+        isSubmitting={isCreating}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateAccount}
+      />
+
+      <AccountDetailModal
+        accountId={selectedDetailAccountId}
+        isOpen={selectedDetailAccountId !== null}
+        mode="detail"
+        onClose={() => setSelectedDetailAccountId(null)}
+      />
+
+      <AccountDetailModal
+        accountId={selectedEditAccountId}
+        isOpen={selectedEditAccountId !== null}
+        mode="edit"
+        isSavingStatus={
+          selectedEditAccountId !== null &&
+          updatingAccountId === selectedEditAccountId
+        }
+        onUpdateStatus={handleUpdateAccountStatus}
+        onClose={() => setSelectedEditAccountId(null)}
       />
     </div>
   );
-}
+};
+
+export default AccountTable;

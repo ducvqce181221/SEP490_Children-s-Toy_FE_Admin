@@ -30,7 +30,7 @@ const Pagination: React.FC<PaginationProps> = ({
         Previous
       </button>
       <div className="flex items-center gap-2">
-        {currentPage > 3 && <span className="px-2">...</span>}
+        {currentPage > 3 && <span key="ellipsis-start" className="px-2">...</span>}
         {pagesAroundCurrent.map((page) => (
           <button
             key={page}
@@ -44,7 +44,7 @@ const Pagination: React.FC<PaginationProps> = ({
             {page}
           </button>
         ))}
-        {currentPage < totalPages - 2 && <span className="px-2">...</span>}
+        {currentPage < totalPages - 2 && <span key="ellipsis-end" className="px-2">...</span>}
       </div>
       <button
         onClick={() => onPageChange(currentPage + 1)}
