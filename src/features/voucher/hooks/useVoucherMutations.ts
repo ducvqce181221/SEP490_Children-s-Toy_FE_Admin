@@ -45,7 +45,7 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
   const deleteVoucher = async (id: number) => {
     setIsSubmitting(true);
     try {
-      await voucherApi.deleteVoucher(id);
+      await voucherApi.updateVoucher(id, { isDeleted: true });
       toast.success("Xoá voucher thành công");
       onSuccess?.();
       return true;
