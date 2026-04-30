@@ -1,0 +1,106 @@
+---
+description: MANDATORY rules for SEP490 Children's Toy Admin FE project
+globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+alwaysApply: true
+---
+
+# 📋 Project Rules – SEP490 Children's Toy Admin FE
+
+**STOP. Read `CODING_RULES.md` at the project root before proceeding.**
+
+The file `CODING_RULES.md` (24 sections, ~1300 lines) contains the complete
+and authoritative coding standards for this project. This MDC file is a
+**summary only** — the full rules are in `CODING_RULES.md`.
+
+---
+
+## Stack
+
+Next.js 16 · React 19 · TypeScript 5 (strict) · TailwindCSS 4 · Axios · App Router
+
+---
+
+## Top 10 Rules (Non-Negotiable)
+
+1. **Folder**: New feature → `src/features/<feature>/{components,hooks,services,types}/`
+2. **Axios**: Always `import axiosClient from "@/configs/axios-client"` — NEVER raw `axios`
+3. **TypeScript**: No `any`. Use `z.infer<typeof Schema>` instead of duplicate interfaces
+4. **Components**: Default Server Component; `"use client"` only when truly needed
+5. **Hooks**: Return object `{}` not tuple; include `isLoading` + `error` + cleanup in `useEffect`
+6. **UI States**: Always handle loading → error → empty → data (4 states, no exceptions)
+7. **Forms**: Zod schema + React Hook Form + `zodResolver`; `disabled={isSubmitting}` on submit
+8. **Errors**: No empty `catch {}`; toast user-visible errors in Vietnamese
+9. **Lists**: `key={item.id}` always; NEVER `key={index}`
+10. **Dependencies**: Check `/docs/dependencies.md` before adding any package
+
+---
+
+## File Templates
+
+### New Feature Hook
+```ts
+// src/features/<feature>/hooks/use<Feature>.ts
+"use client"; // only if used in client component
+import { useState, useEffect } from "react";
+import { featureApi } from "../services/<feature>-api";
+import type { Feature } from "../types/<feature>.schema";
+import toast from "react-hot-toast";
+
+export const use<Feature> = () => {
+  const [data, setData] = useState<Feature[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await featureApi.getAll();
+        if (!cancelled) setData(result);
+      } catch (err) {
+        if (!cancelled) {
+          const msg = err instanceof Error ? err.message : "Tải dữ liệu thất bại";
+          setError(msg);
+          toast.error(msg);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  return { data, isLoading, error };
+};
+```
+
+### New Zod Schema
+```ts
+// src/features/<feature>/types/<feature>.schema.ts
+import { z } from "zod";
+
+export const <Feature>FormSchema = z.object({
+  name: z.string().min(2, "Tên phải có ít nhất 2 ký tự"),
+  // ... other fields
+});
+
+export type <Feature>FormData = z.infer<typeof <Feature>FormSchema>;
+```
+
+### New API Service
+```ts
+// src/features/<feature>/services/<feature>-api.ts
+import axiosClient from "@/configs/axios-client";
+import type { <Feature>FormData } from "../types/<feature>.schema";
+
+export const <feature>Api = {
+  getAll: () => axiosClient.get("/<feature>s"),
+  getById: (id: number) => axiosClient.get(`/<feature>s/${id}`),
+  create: (data: <Feature>FormData) => axiosClient.post("/<feature>s", data),
+  update: (id: number, data: <Feature>FormData) => axiosClient.put(`/<feature>s/${id}`, data),
+  delete: (id: number) => axiosClient.delete(`/<feature>s/${id}`),
+};
+```
