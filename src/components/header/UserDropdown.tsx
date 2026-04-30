@@ -28,6 +28,7 @@ export default function UserDropdown() {
     } catch {
       // Always clear local state even if API fails
     }
+    sessionStorage.setItem("admin_logout", "1");
     clearAuth();
     closeDropdown();
     toast.success("Đã đăng xuất.");

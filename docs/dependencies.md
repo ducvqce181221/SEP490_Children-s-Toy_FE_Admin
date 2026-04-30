@@ -61,3 +61,5 @@
 | Package | Ly do xoa | Thay the bang | Ngay xoa |
 |---------|-----------|---------------|----------|
 | _(chua co)_ | | | |
+
+- `react-hot-toast`: Notifications/Toasts (Added via AI)
