@@ -1,9 +1,13 @@
-export type BrandSortBy = "brandname" | "createdat";
+export type BrandSortBy = "brandname" | "createdat" | "updatedat" | "status";
+
+export type BrandStatus = "Active" | "Inactive";
 
 export interface BrandListItem {
   brandId: number;
   brandName: string;
+  status: BrandStatus;
   createdAt: string;
+  updatedAt: string | null;
 }
 
 export interface PaginatedResponse<T> {
@@ -26,6 +30,7 @@ export interface BrandQueryParams {
 
 export interface BrandFormRequest {
   brandName: string;
+  status?: BrandStatus;
 }
 
 export interface ApiErrorResponse {

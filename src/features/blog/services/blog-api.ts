@@ -1,0 +1,93 @@
+import axios from "axios";
+import axiosClient from "@/configs/axios-client";
+import {
+  ApproveBlogRequest,
+  BlogDetail,
+  BlogListItem,
+  BlogQueryParams,
+  CreateBlogRequest,
+  PaginatedResponse,
+  SubmitBlogRequest,
+  UpdateBlogRequest,
+} from "../types/blog";
+
+export const blogApi = {
+  getBlogsForAdmin: async (
+    params: BlogQueryParams,
+  ): Promise<PaginatedResponse<BlogListItem>> => {
+    return axiosClient.get<PaginatedResponse<BlogListItem>>("/blogs/admin", {
+      params,
+    });
+  },
+
+  getBlogsForStaff: async (
+    params: BlogQueryParams,
+  ): Promise<PaginatedResponse<BlogListItem>> => {
+    return axiosClient.get<PaginatedResponse<BlogListItem>>("/blogs/staff", {
+      params,
+    });
+  },
+
+  getBlogById: async (blogPostId: number): Promise<BlogDetail> => {
+    return axiosClient.get<BlogDetail>(`/blogs/${blogPostId}`);
+  },
+
+  createBlog: async (payload: CreateBlogRequest): Promise<BlogDetail> => {
+    return axiosClient.post<BlogDetail, CreateBlogRequest>("/blogs", payload);
+  },
+
+  updateBlog: async (
+    blogPostId: number,
+    payload: UpdateBlogRequest,
+  ): Promise<BlogDetail> => {
+    return axiosClient.put<BlogDetail, UpdateBlogRequest>(
+      `/blogs/${blogPostId}`,
+      payload,
+    );
+  },
+
+  submitBlog: async (
+    blogPostId: number,
+    payload: SubmitBlogRequest,
+  ): Promise<BlogDetail> => {
+    return axiosClient.patch<BlogDetail, SubmitBlogRequest>(
+      `/blogs/${blogPostId}/submit`,
+      payload,
+    );
+  },
+
+  approveBlog: async (
+    blogPostId: number,
+    payload: ApproveBlogRequest,
+  ): Promise<BlogDetail> => {
+    return axiosClient.patch<BlogDetail, ApproveBlogRequest>(
+      `/blogs/${blogPostId}/approval`,
+      payload,
+    );
+  },
+
+  uploadThumbnail: async (file: File): Promise<{ url: string }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("access_token")
+        : null;
+    const rawBaseURL = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7083";
+    const normalizedBaseURL = rawBaseURL.replace(/\/+$/, "");
+    const apiBaseURL = normalizedBaseURL.endsWith("/api")
+      ? normalizedBaseURL
+      : `${normalizedBaseURL}/api`;
+
+    const response = await axios.post<{ url: string }>(
+      `${apiBaseURL}/blogs/thumbnail/upload`,
+      formData,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      },
+    );
+
+    return response.data;
+  },
+};

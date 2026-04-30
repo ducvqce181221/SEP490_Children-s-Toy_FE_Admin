@@ -22,6 +22,7 @@ interface BrandFormModalProps {
 
 const defaultValues: BrandFormValues = {
   brandName: "",
+  status: "Active",
 };
 
 const inputClassName =
@@ -36,6 +37,10 @@ const getFieldNameFromServer = (
     return "brandName";
   }
 
+  if (normalized === "status") {
+    return "status";
+  }
+
   return null;
 };
 
@@ -47,6 +52,8 @@ const BrandFormModal: React.FC<BrandFormModalProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const isEditMode = mode === "edit";
+
   const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
@@ -63,6 +70,7 @@ const BrandFormModal: React.FC<BrandFormModalProps> = ({
     if (isOpen) {
       reset({
         brandName: brand?.brandName ?? "",
+        status: brand?.status ?? "Active",
       });
     }
   }, [brand, isOpen, reset]);
@@ -77,6 +85,7 @@ const BrandFormModal: React.FC<BrandFormModalProps> = ({
 
     const payload: BrandFormRequest = {
       brandName: values.brandName.trim(),
+      ...(isEditMode ? { status: values.status } : {}),
     };
 
     const result = await onSubmit(payload, brand?.brandId ?? null);
@@ -103,8 +112,6 @@ const BrandFormModal: React.FC<BrandFormModalProps> = ({
     handleClose();
   };
 
-  const isEditMode = mode === "edit";
-
   return (
     <Modal isOpen={isOpen} onClose={handleClose} className="max-w-[640px] p-5 lg:p-8">
       <div className="mb-6 flex flex-col gap-2">
@@ -112,7 +119,9 @@ const BrandFormModal: React.FC<BrandFormModalProps> = ({
           {isEditMode ? "Edit Brand" : "Add New Brand"}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Provide brand name information to save changes.
+          {isEditMode
+            ? "Update brand name and status."
+            : "Provide brand name information to create a new brand."}
         </p>
       </div>
 
@@ -135,6 +144,24 @@ const BrandFormModal: React.FC<BrandFormModalProps> = ({
             <p className="mt-1 text-sm text-error-600">{errors.brandName.message}</p>
           )}
         </div>
+
+        {isEditMode && (
+          <div>
+            <label
+              htmlFor="brand-status"
+              className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Status
+            </label>
+            <select id="brand-status" className={inputClassName} {...register("status")}>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+            {errors.status?.message && (
+              <p className="mt-1 text-sm text-error-600">{errors.status.message}</p>
+            )}
+          </div>
+        )}
 
         {formError && (
           <p className="rounded-lg border border-error-200 bg-error-50 px-4 py-2 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-300">
