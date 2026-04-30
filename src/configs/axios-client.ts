@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 import toast from "react-hot-toast";
 
 const axiosClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://localhost:7083", // Default fallback if not in env
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://localhost:7083/api", // Default fallback if not in env
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });
