@@ -29,9 +29,22 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
   onFilterChange,
 }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchQuery);
 
-  const handleStatusChange = (value: string) => {
-    onFilterChange({ ...filters, status: value });
+  // Sync local state when parent searchQuery changes
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLocalSearchTerm(searchQuery);
+  }, [searchQuery]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      onSearchChange(localSearchTerm);
+    }
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFilterChange({ ...filters, status: e.target.value });
   };
 
   const clearFilters = () => {
@@ -59,7 +72,12 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
-          <SearchInput value={searchQuery} onChange={onSearchChange} placeholder="Search vouchers..." />
+          <SearchInput 
+            value={localSearchTerm} 
+            onChange={setLocalSearchTerm} 
+            onKeyDown={handleKeyDown}
+            placeholder="Search vouchers... (Press Enter)" 
+          />
         </div>
         
         <div className="relative">

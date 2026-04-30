@@ -30,6 +30,8 @@ export const VoucherTable = () => {
     itemsPerPage,
     editVoucher,
     setEditVoucher,
+    viewVoucher,
+    setViewVoucher,
     deleteVoucher,
     setDeleteVoucher,
     data,
@@ -43,6 +45,7 @@ export const VoucherTable = () => {
     refetch();
     setIsModalOpen(false);
     setEditVoucher(null);
+    setViewVoucher(null);
     setDeleteVoucher(null);
   });
 
@@ -64,6 +67,10 @@ export const VoucherTable = () => {
   const totalPages = data?.totalPages || 0;
   const totalItems = data?.totalCount || 0;
 
+  const currentModalMode = viewVoucher ? "detail" : editVoucher ? "edit" : "create";
+  const currentVoucherId = viewVoucher?.voucherId || editVoucher?.voucherId || null;
+  const isFormModalOpen = isModalOpen || !!editVoucher || !!viewVoucher;
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <VoucherToolbar 
@@ -79,6 +86,12 @@ export const VoucherTable = () => {
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                >
+                  #
+                </TableCell>
                 <TableCell
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
@@ -121,22 +134,24 @@ export const VoucherTable = () => {
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-5 py-10 text-center text-gray-500">
+                  <TableCell colSpan={7} className="px-5 py-10 text-center text-gray-500">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-5 py-10 text-center text-error-500">
+                  <TableCell colSpan={7} className="px-5 py-10 text-center text-error-500">
                     {error}
                   </TableCell>
                 </TableRow>
               ) : paginatedData.length > 0 ? (
-                paginatedData.map((voucher) => (
+                paginatedData.map((voucher, index) => (
                   <VoucherRow 
                     key={voucher.voucherId}
+                    rowNumber={(currentPage - 1) * itemsPerPage + index + 1}
                     voucher={voucher}
                     isDeleting={deleteVoucher?.voucherId === voucher.voucherId}
+                    onView={() => setViewVoucher(voucher)}
                     onEdit={() => setEditVoucher(voucher)}
                     onDeleteClick={() => setDeleteVoucher(voucher)}
                     onDeleteCancel={() => setDeleteVoucher(null)}
@@ -145,7 +160,7 @@ export const VoucherTable = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-5 py-10 text-center text-gray-500">
+                  <TableCell colSpan={7} className="px-5 py-10 text-center text-gray-500">
                     No vouchers found matching your criteria.
                   </TableCell>
                 </TableRow>
@@ -159,7 +174,7 @@ export const VoucherTable = () => {
         <div className="flex flex-col sm:flex-row justify-between items-center px-5 py-4 border-t border-gray-100 dark:border-white/[0.05] gap-4">
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
             <span>
-              Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
+              Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} - {Math.min(currentPage * itemsPerPage, totalItems)} / {totalItems} vouchers
             </span>
             <div className="flex items-center gap-2">
               <span>Rows per page:</span>
@@ -171,6 +186,7 @@ export const VoucherTable = () => {
                 <option value={5}>5</option>
                 <option value={10}>10</option>
                 <option value={20}>20</option>
+                <option value={50}>50</option>
               </select>
             </div>
           </div>
@@ -183,14 +199,16 @@ export const VoucherTable = () => {
       )}
 
       <VoucherFormModal 
-        key={editVoucher?.voucherId || "create"}
-        isOpen={isModalOpen || !!editVoucher} 
-        initialData={editVoucher}
+        key={currentVoucherId || "create"}
+        isOpen={isFormModalOpen} 
+        mode={currentModalMode}
+        voucherId={currentVoucherId}
         isSubmitting={isSubmitting}
         onSave={handleSave}
         onClose={() => {
           setIsModalOpen(false);
           setEditVoucher(null);
+          setViewVoucher(null);
         }} 
       />
     </div>

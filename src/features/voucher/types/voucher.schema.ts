@@ -1,30 +1,116 @@
 import { z } from "zod";
 
 export const VoucherFormSchema = z.object({
-  voucherCode: z.string().min(1, "Voucher Code is required").max(50, "Max 50 characters").regex(/^[A-Z0-9\-]+$/, "Code must contain only uppercase letters, numbers, and hyphens"),
-  voucherName: z.string().min(1, "Voucher Name is required").max(100, "Max 100 characters"),
-  voucherDescription: z.string().max(500, "Max 500 characters").optional().default(""),
-  discountType: z.string().min(1, "Discount Type is required"),
-  discountValue: z.number().min(0, "Discount value must be at least 0"),
-  maxDiscountCap: z.number().nullable().optional(),
-  discountTarget: z.string().min(1, "Discount Target is required"),
-  minOrderAmount: z.number().nullable().optional(),
-  totalQuantity: z.number().nullable().optional(),
-  maxUsagePerUser: z.number().nullable().optional(),
-  startDate: z.string().min(1, "Start Date is required"),
-  endDate: z.string().min(1, "End Date is required"),
-  status: z.string().min(1, "Status is required"),
-}).refine(data => {
+  voucherCode: z
+    .string()
+    .min(3, "Voucher code must be at least 3 characters.")
+    .max(30, "Voucher code must not exceed 30 characters.")
+    .regex(/^[A-Za-z0-9_-]+$/, "Voucher code must contain only letters, numbers, underscores, or hyphens."),
+  
+  voucherName: z
+    .string()
+    .min(3, "Voucher name must be at least 3 characters.")
+    .max(255, "Voucher name must not exceed 255 characters."),
+  
+  voucherDescription: z
+    .string()
+    .min(3, "Voucher description must be at least 3 characters.")
+    .max(255, "Voucher description must not exceed 255 characters."),
+  
+  // SỬA LỖI 1: Đổi 'errorMap' thành 'message'
+  discountType: z
+    .enum(["FIXED", "PERCENTAGE"], { 
+      message: "Discount type must be either FIXED or PERCENTAGE." 
+    }),
+  
+  // SỬA LỖI 2: Đổi 'invalid_type_error' thành 'message'
+  discountValue: z
+    .number({ message: "Discount value is required." })
+    .gt(0, "Discount value must be greater than 0.")
+    .lte(1_000_000_000, "Discount value must not exceed 1,000,000,000."),
+  
+  maxDiscountCap: z
+    .number()
+    .gt(0, "Max discount cap must be greater than 0 when provided.")
+    .nullable()
+    .optional(),
+  
+  // SỬA LỖI 3: Đổi 'errorMap' thành 'message'
+  discountTarget: z
+    .enum(["ORDER_TOTAL", "SHIPPING_FEE"], { 
+      message: "Discount target must be either ORDER_TOTAL or SHIPPING_FEE." 
+    }),
+  
+  minOrderAmount: z
+    .number()
+    .gte(0, "Minimum order amount must be greater than or equal to 0 when provided.")
+    .nullable()
+    .optional(),
+  
+  totalQuantity: z
+    .number()
+    .gt(0, "Total quantity must be greater than 0 when provided.")
+    .nullable()
+    .optional(),
+  
+  maxUsagePerUser: z
+    .number()
+    .gte(1, "Max usage per user must be greater than or equal to 1 when provided.")
+    .nullable()
+    .optional(),
+  
+  startDate: z
+    .string()
+    .min(1, "Start date is required."),
+  
+  endDate: z
+    .string()
+    .min(1, "End date is required."),
+  
+  // SỬA LỖI 4: Đổi 'errorMap' thành 'message'
+  status: z
+    .enum(["Scheduled", "Active", "Inactive", "Expired"], { 
+      message: "Status must be one of Scheduled, Active, Inactive, or Expired." 
+    }),
+})
+.refine(data => {
   if (data.discountType === "PERCENTAGE" && data.discountValue > 100) {
     return false;
   }
   return true;
 }, {
-  message: "Percentage discount cannot exceed 100%",
+  message: "Discount value must be less than or equal to 100 for percentage vouchers.",
   path: ["discountValue"]
-}).refine(data => {
-  return new Date(data.startDate) < new Date(data.endDate);
+})
+.refine(data => {
+  if (data.discountType === "FIXED" && data.maxDiscountCap !== null && data.maxDiscountCap !== undefined) {
+    return false;
+  }
+  return true;
 }, {
-  message: "End Date must be after Start Date",
+  message: "Max discount cap is only allowed for percentage vouchers.",
+  path: ["maxDiscountCap"]
+})
+.refine(data => {
+  const start = new Date(data.startDate);
+  const end = new Date(data.endDate);
+  // Ensure valid dates before comparison
+  if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+    return start < end;
+  }
+  return true; // Let the min(1) rule handle empty strings
+}, {
+  message: "Start date must be earlier than end date.",
   path: ["endDate"]
+})
+.refine(data => {
+  if (data.totalQuantity !== null && data.totalQuantity !== undefined && data.maxUsagePerUser !== null && data.maxUsagePerUser !== undefined) {
+    return data.maxUsagePerUser <= data.totalQuantity;
+  }
+  return true;
+}, {
+  message: "Max usage per user must be less than or equal to total quantity.",
+  path: ["maxUsagePerUser"]
 });
+
+export type VoucherFormDataSchema = z.infer<typeof VoucherFormSchema>;

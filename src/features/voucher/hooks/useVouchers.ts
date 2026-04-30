@@ -16,6 +16,7 @@ export const useVouchers = () => {
   const [sortDesc] = useState(false);
 
   const [editVoucher, setEditVoucher] = useState<Voucher | null>(null);
+  const [viewVoucher, setViewVoucher] = useState<Voucher | null>(null);
   const [deleteVoucher, setDeleteVoucher] = useState<Voucher | null>(null);
 
   const [data, setData] = useState<PaginatedVouchers | null>(null);
@@ -76,6 +77,8 @@ export const useVouchers = () => {
     itemsPerPage,
     editVoucher,
     setEditVoucher,
+    viewVoucher,
+    setViewVoucher,
     deleteVoucher,
     setDeleteVoucher,
     data,

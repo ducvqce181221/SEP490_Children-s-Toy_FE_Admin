@@ -1,287 +1,337 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import toast from "react-hot-toast";
 import { Modal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
 import TextArea from "@/components/form/input/TextArea";
 import Button from "@/components/ui/button/Button";
-import { Voucher, VoucherFormData } from "../types/voucher";
+import { VoucherFormData } from "../types/voucher";
 import { VoucherFormSchema } from "../types/voucher.schema";
+import { voucherApi } from "../services/voucher-api";
+
+export type VoucherModalMode = "create" | "edit" | "detail";
 
 interface VoucherFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave?: (data: VoucherFormData) => void;
-  initialData?: Voucher | null;
+  voucherId?: number | null;
+  mode?: VoucherModalMode;
   isSubmitting?: boolean;
 }
 
-const getInitialFormData = (initialData?: Voucher | null): VoucherFormData => {
-  if (initialData) {
-    return {
-      voucherCode: initialData.voucherCode,
-      voucherName: initialData.voucherName,
-      voucherDescription: initialData.voucherDescription,
-      discountType: initialData.discountType,
-      discountValue: initialData.discountValue,
-      maxDiscountCap: initialData.maxDiscountCap,
-      discountTarget: initialData.discountTarget,
-      minOrderAmount: initialData.minOrderAmount,
-      totalQuantity: initialData.totalQuantity,
-      maxUsagePerUser: initialData.maxUsagePerUser,
-      startDate: initialData.startDate ? new Date(initialData.startDate).toISOString().slice(0, 16) : "",
-      endDate: initialData.endDate ? new Date(initialData.endDate).toISOString().slice(0, 16) : "",
-      status: initialData.status,
-    };
-  }
-
-  return {
-    voucherCode: "",
-    voucherName: "",
-    voucherDescription: "",
-    discountType: "PERCENTAGE",
-    discountValue: 0,
-    maxDiscountCap: null,
-    discountTarget: "ORDER",
-    minOrderAmount: null,
-    totalQuantity: null,
-    maxUsagePerUser: null,
-    startDate: "",
-    endDate: "",
-    status: "Active",
-  };
+const defaultValues: VoucherFormData = {
+  voucherCode: "",
+  voucherName: "",
+  voucherDescription: "",
+  discountType: "PERCENTAGE",
+  discountValue: 0,
+  maxDiscountCap: null,
+  discountTarget: "ORDER_TOTAL",
+  minOrderAmount: null,
+  totalQuantity: null,
+  maxUsagePerUser: null,
+  startDate: "",
+  endDate: "",
+  status: "Active",
 };
 
 export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({ 
   isOpen, 
   onClose, 
   onSave, 
-  initialData,
+  voucherId,
+  mode = "create",
   isSubmitting = false
 }) => {
-  const isEditMode = !!initialData;
-  const [formData, setFormData] = useState<VoucherFormData>(() => getInitialFormData(initialData));
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const isEditMode = mode === "edit";
+  const isDetailMode = mode === "detail";
+  const isReadOnly = isDetailMode;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Convert string empty values back to null for numbers before validating
-    const cleanedData = {
-      ...formData,
-      discountValue: Number(formData.discountValue),
-      maxDiscountCap: formData.maxDiscountCap ? Number(formData.maxDiscountCap) : null,
-      minOrderAmount: formData.minOrderAmount ? Number(formData.minOrderAmount) : null,
-      totalQuantity: formData.totalQuantity ? Number(formData.totalQuantity) : null,
-      maxUsagePerUser: formData.maxUsagePerUser ? Number(formData.maxUsagePerUser) : null,
-    };
+  const [isLoading, setIsLoading] = useState(false);
 
-    const result = VoucherFormSchema.safeParse(cleanedData);
-    
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.issues.forEach(issue => {
-        if (issue.path[0]) {
-          fieldErrors[issue.path[0].toString()] = issue.message;
-        }
-      });
-      setErrors(fieldErrors);
-      return;
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<VoucherFormData>({
+    resolver: zodResolver(VoucherFormSchema),
+    defaultValues,
+    mode: "onTouched",
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      if ((isEditMode || isDetailMode) && voucherId) {
+        // Fetch specific voucher data
+        const fetchVoucher = async () => {
+          setIsLoading(true);
+          try {
+            const data = await voucherApi.getVoucherById(voucherId);
+            reset({
+              voucherCode: data.voucherCode,
+              voucherName: data.voucherName,
+              voucherDescription: data.voucherDescription || "",
+              discountType: data.discountType as "FIXED" | "PERCENTAGE",
+              discountValue: data.discountValue,
+              maxDiscountCap: data.maxDiscountCap,
+              discountTarget: data.discountTarget as "ORDER_TOTAL" | "SHIPPING_FEE",
+              minOrderAmount: data.minOrderAmount,
+              totalQuantity: data.totalQuantity,
+              maxUsagePerUser: data.maxUsagePerUser,
+              startDate: data.startDate ? new Date(data.startDate).toISOString().slice(0, 16) : "",
+              endDate: data.endDate ? new Date(data.endDate).toISOString().slice(0, 16) : "",
+              status: data.status as "Active" | "Inactive" | "Scheduled" | "Expired",
+            });
+          } catch {
+            toast.error("Gặp lỗi khi tải thông tin voucher");
+            onClose();
+          } finally {
+            setIsLoading(false);
+          }
+        };
+        fetchVoucher();
+      } else {
+        reset(defaultValues);
+      }
     }
+  }, [isOpen, voucherId, isEditMode, isDetailMode, reset, onClose]);
 
-    setErrors({});
-    onSave?.(cleanedData as VoucherFormData);
+  const onFormSubmit = (data: VoucherFormData) => {
+    if (isReadOnly) return;
+    onSave?.(data);
   };
+
+  const title = isDetailMode ? "Voucher Details" : isEditMode ? "Edit Voucher" : "Add New Voucher";
+  const description = isDetailMode 
+    ? "Viewing voucher detailed information." 
+    : isEditMode 
+    ? "Update the voucher information." 
+    : "Fill in the details to create a new voucher.";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[800px] p-5 lg:p-10">
       <div className="flex flex-col gap-2 mb-6">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
-          {isEditMode ? "Edit Voucher" : "Add New Voucher"}
+          {title}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {isEditMode ? "Update the voucher information." : "Fill in the details to create a new voucher."}
+          {description}
         </p>
       </div>
 
-      <form className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto pr-2" onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      {isLoading ? (
+        <div className="py-10 text-center text-gray-500">Loading voucher details...</div>
+      ) : (
+        <form className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto pr-2" onSubmit={handleSubmit(onFormSubmit)}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <Label>
+                Voucher Code <span className="text-error-500">*</span>
+              </Label>
+              <Input 
+                type="text" 
+                placeholder="e.g. SUMMER2026" 
+                error={!!errors.voucherCode}
+                hint={errors.voucherCode?.message}
+                disabled={isReadOnly}
+                {...register("voucherCode", {
+                  onChange: (e) => {
+                    e.target.value = e.target.value.toUpperCase();
+                  }
+                })}
+              />
+            </div>
+            <div>
+              <Label>
+                Voucher Name <span className="text-error-500">*</span>
+              </Label>
+              <Input 
+                type="text" 
+                placeholder="e.g. Summer Sale Discount" 
+                error={!!errors.voucherName}
+                hint={errors.voucherName?.message}
+                disabled={isReadOnly}
+                {...register("voucherName")}
+              />
+            </div>
+          </div>
+
           <div>
-            <Label>Voucher Code <span className="text-error-500">*</span></Label>
-            <Input 
-              type="text" 
-              placeholder="e.g. SUMMER2026" 
-              defaultValue={formData.voucherCode}
-              onChange={(e) => setFormData({...formData, voucherCode: e.target.value.toUpperCase()})}
-              error={!!errors.voucherCode}
-              hint={errors.voucherCode}
+            <Label>
+              Description <span className="text-error-500">*</span>
+            </Label>
+            <TextArea 
+              placeholder="Enter description here..." 
+              rows={2}
+              error={!!errors.voucherDescription}
+              hint={errors.voucherDescription?.message}
+              readOnly={isReadOnly}
+              {...register("voucherDescription")}
             />
           </div>
-          <div>
-            <Label>Voucher Name <span className="text-error-500">*</span></Label>
-            <Input 
-              type="text" 
-              placeholder="e.g. Summer Sale Discount" 
-              defaultValue={formData.voucherName}
-              onChange={(e) => setFormData({...formData, voucherName: e.target.value})}
-              error={!!errors.voucherName}
-              hint={errors.voucherName}
-            />
-          </div>
-        </div>
 
-        <div>
-          <Label>Description</Label>
-          <TextArea 
-            placeholder="Enter description here..." 
-            value={formData.voucherDescription}
-            onChange={(val) => setFormData({...formData, voucherDescription: val})}
-            error={!!errors.voucherDescription}
-            hint={errors.voucherDescription}
-            rows={2}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <Label>Discount Type</Label>
-            {isOpen && (
-              <Select
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <Label>Discount Type</Label>
+              <Select 
                 options={[
                   { value: "PERCENTAGE", label: "Percentage (%)" },
-                  { value: "FIXED_AMOUNT", label: "Fixed Amount (VND)" },
+                  { value: "FIXED", label: "Fixed Amount (VND)" },
                 ]}
-                onChange={(v) => setFormData({...formData, discountType: v})}
-                defaultValue={formData.discountType}
+                error={!!errors.discountType}
+                hint={errors.discountType?.message}
+                disabled={isReadOnly}
+                {...register("discountType")}
               />
-            )}
+            </div>
+            <div>
+              <Label>
+                Discount Value <span className="text-error-500">*</span>
+              </Label>
+              <Input 
+                type="number" 
+                placeholder="Value" 
+                error={!!errors.discountValue}
+                hint={errors.discountValue?.message}
+                disabled={isReadOnly}
+                {...register("discountValue", { valueAsNumber: true })}
+              />
+            </div>
           </div>
-          <div>
-            <Label>Discount Value <span className="text-error-500">*</span></Label>
-            <Input 
-              type="number" 
-              placeholder="Value" 
-              defaultValue={formData.discountValue}
-              onChange={(e) => setFormData({...formData, discountValue: Number(e.target.value)})}
-              error={!!errors.discountValue}
-              hint={errors.discountValue}
-            />
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <Label>Max Discount Cap (VND)</Label>
-            <Input 
-              type="number" 
-              placeholder="Limit discount up to..." 
-              defaultValue={formData.maxDiscountCap ?? ""}
-              onChange={(e) => setFormData({...formData, maxDiscountCap: e.target.value ? Number(e.target.value) : null})}
-              error={!!errors.maxDiscountCap}
-              hint={errors.maxDiscountCap}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <Label>Max Discount Cap (VND)</Label>
+              <Input 
+                type="number" 
+                placeholder="Limit discount up to..." 
+                error={!!errors.maxDiscountCap}
+                hint={errors.maxDiscountCap?.message}
+                disabled={isReadOnly}
+                {...register("maxDiscountCap", { 
+                  setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v) 
+                })}
+              />
+            </div>
+            <div>
+              <Label>Min Order Amount (VND)</Label>
+              <Input 
+                type="number" 
+                placeholder="Minimum cart value" 
+                error={!!errors.minOrderAmount}
+                hint={errors.minOrderAmount?.message}
+                disabled={isReadOnly}
+                {...register("minOrderAmount", { 
+                  setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v) 
+                })}
+              />
+            </div>
           </div>
-          <div>
-            <Label>Min Order Amount (VND)</Label>
-            <Input 
-              type="number" 
-              placeholder="Minimum cart value" 
-              defaultValue={formData.minOrderAmount ?? ""}
-              onChange={(e) => setFormData({...formData, minOrderAmount: e.target.value ? Number(e.target.value) : null})}
-              error={!!errors.minOrderAmount}
-              hint={errors.minOrderAmount}
-            />
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <Label>Discount Target</Label>
-            {isOpen && (
-              <Select
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <Label>Discount Target</Label>
+              <Select 
                 options={[
-                  { value: "ORDER", label: "Entire Order" },
-                  { value: "SHIPPING", label: "Shipping Fee" },
-                  { value: "PRODUCT", label: "Specific Products" },
+                  { value: "ORDER_TOTAL", label: "Entire Order" },
+                  { value: "SHIPPING_FEE", label: "Shipping Fee" },
                 ]}
-                onChange={(v) => setFormData({...formData, discountTarget: v})}
-                defaultValue={formData.discountTarget}
+                error={!!errors.discountTarget}
+                hint={errors.discountTarget?.message}
+                disabled={isReadOnly}
+                {...register("discountTarget")}
               />
-            )}
-          </div>
-          <div>
-            <Label>Status</Label>
-            {isOpen && (
-              <Select
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select 
                 options={[
                   { value: "Active", label: "Active" },
                   { value: "Inactive", label: "Inactive" },
                   { value: "Scheduled", label: "Scheduled" },
+                  { value: "Expired", label: "Expired" },
                 ]}
-                onChange={(v) => setFormData({...formData, status: v})}
-                defaultValue={formData.status}
+                error={!!errors.status}
+                hint={errors.status?.message}
+                disabled={isReadOnly}
+                {...register("status")}
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <Label>Total Quantity limit</Label>
+              <Input 
+                type="number" 
+                placeholder="Leave blank for unlimited" 
+                error={!!errors.totalQuantity}
+                hint={errors.totalQuantity?.message}
+                disabled={isReadOnly}
+                {...register("totalQuantity", { 
+                  setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v) 
+                })}
+              />
+            </div>
+            <div>
+              <Label>Max Usage Per User</Label>
+              <Input 
+                type="number" 
+                placeholder="e.g. 1" 
+                error={!!errors.maxUsagePerUser}
+                hint={errors.maxUsagePerUser?.message}
+                disabled={isReadOnly}
+                {...register("maxUsagePerUser", { 
+                  setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v) 
+                })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <Label>
+                Start Date <span className="text-error-500">*</span>
+              </Label>
+              <Input 
+                type="datetime-local" 
+                error={!!errors.startDate}
+                hint={errors.startDate?.message}
+                disabled={isReadOnly}
+                {...register("startDate")}
+              />
+            </div>
+            <div>
+              <Label>
+                End Date <span className="text-error-500">*</span>
+              </Label>
+              <Input 
+                type="datetime-local" 
+                error={!!errors.endDate}
+                hint={errors.endDate?.message}
+                disabled={isReadOnly}
+                {...register("endDate")}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 justify-end mt-4 pt-4 border-t border-gray-100 dark:border-white/[0.05]">
+            <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+              {isReadOnly ? "Close" : "Cancel"}
+            </Button>
+            {!isReadOnly && (
+              <Button variant="primary" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : (isEditMode ? "Save Changes" : "Save Voucher")}
+              </Button>
             )}
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <Label>Total Quantity limit</Label>
-            <Input 
-              type="number" 
-              placeholder="Leave blank for unlimited" 
-              defaultValue={formData.totalQuantity ?? ""}
-              onChange={(e) => setFormData({...formData, totalQuantity: e.target.value ? Number(e.target.value) : null})}
-              error={!!errors.totalQuantity}
-              hint={errors.totalQuantity}
-            />
-          </div>
-          <div>
-            <Label>Max Usage Per User</Label>
-            <Input 
-              type="number" 
-              placeholder="e.g. 1" 
-              defaultValue={formData.maxUsagePerUser ?? ""}
-              onChange={(e) => setFormData({...formData, maxUsagePerUser: e.target.value ? Number(e.target.value) : null})}
-              error={!!errors.maxUsagePerUser}
-              hint={errors.maxUsagePerUser}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <Label>Start Date <span className="text-error-500">*</span></Label>
-            <Input 
-              type="datetime-local" 
-              defaultValue={formData.startDate}
-              onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-              error={!!errors.startDate}
-              hint={errors.startDate}
-            />
-          </div>
-          <div>
-            <Label>End Date <span className="text-error-500">*</span></Label>
-            <Input 
-              type="datetime-local" 
-              defaultValue={formData.endDate}
-              onChange={(e) => setFormData({...formData, endDate: e.target.value})}
-              error={!!errors.endDate}
-              hint={errors.endDate}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 justify-end mt-4 pt-4 border-t border-gray-100 dark:border-white/[0.05]">
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : (isEditMode ? "Save Changes" : "Save Voucher")}
-          </Button>
-        </div>
-      </form>
+        </form>
+      )}
     </Modal>
   );
 };
