@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 import toast from "react-hot-toast";
 
 const axiosClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://localhost:7083", // Default fallback if not in env
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://localhost:7083/api", // Default fallback if not in env
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });
@@ -38,6 +38,14 @@ axiosClient.interceptors.response.use(
         if (typeof window !== "undefined") {
           localStorage.removeItem("access_token");
           window.location.href = "/login";
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("account_info");
+            const normalizedPath = window.location.pathname.replace(/\/+$/, "");
+            const requestUrl = error.config?.url ?? "";
+            const isLoginRequest = requestUrl.includes("/auth/login");
+            if (!isLoginRequest && !normalizedPath.startsWith("/admin/login")) {
+              window.location.href = "/admin/login";
+            }
         }
         break;
       case 403:
