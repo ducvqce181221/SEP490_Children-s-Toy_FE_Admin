@@ -1,24 +1,20 @@
-# Dependency Registry
+# 📦 Dependency Registry
 
-> Cap nhat file nay truoc khi merge PR neu them hoac xoa package.
+> **Quy tắc bắt buộc**: Cập nhật file này **trước khi** merge PR khi thêm hoặc xóa bất kỳ package nào.
+> Xem chi tiết quy trình tại **CODING_RULES.md Section 24**.
 
 ---
 
 ## Runtime Dependencies
 
-| Package | Version | Muc dich | Dung o dau | Nguoi them | Ngay them |
+| Package | Version | Mục đích | Dùng ở đâu | Người thêm | Ngày thêm |
 |---------|---------|----------|------------|------------|-----------|
-| next | ^16.1.6 | Next.js framework (App Router) | Toan bo project | - | - |
-| react | ^19.2.0 | UI library | Toan bo project | - | - |
-| react-dom | ^19.2.0 | React DOM renderer | Toan bo project | - | - |
-| axios | ^1.13.2 | HTTP client cho API, auth token, timeout | `src/configs/axios-client.ts` | codex | 2026-04-29 |
-| zod | ^4.1.12 | Schema validation cho form Account | `src/features/account/types/account.schema.ts` | codex | 2026-04-29 |
-| react-hook-form | ^7.66.0 | Quan ly state form Account | `src/features/account/components/AccountFormModal.tsx` | codex | 2026-04-29 |
-| @hookform/resolvers | ^5.2.2 | Ket noi Zod voi React Hook Form | `src/features/account/components/AccountFormModal.tsx` | codex | 2026-04-29 |
-| react-hot-toast | ^2.6.0 | Toast thong bao thao tac Account | `src/features/account/components/AccountTable.tsx` | codex | 2026-04-29 |
-| tailwind-merge | ^2.6.0 | Merge Tailwind classes tranh conflict | Tat ca components | - | - |
+| next | ^16.1.6 | Next.js framework (App Router) | Toàn bộ project | - | - |
+| react | ^19.2.0 | UI library | Toàn bộ project | - | - |
+| react-dom | ^19.2.0 | React DOM renderer | Toàn bộ project | - | - |
+| tailwind-merge | ^2.6.0 | Merge Tailwind classes tránh conflict | Tất cả components | - | - |
 | flatpickr | ^4.6.13 | Date/time picker | Calendar, form date inputs | - | - |
-| swiper | ^11.2.10 | Carousel/slider component | Trang can slider | - | - |
+| swiper | ^11.2.10 | Carousel/slider component | Trang cần slider | - | - |
 | apexcharts | ^4.7.0 | Chart library | Dashboard charts | - | - |
 | react-apexcharts | ^1.8.0 | React wrapper cho ApexCharts | Dashboard charts | - | - |
 | @fullcalendar/react | ^6.1.19 | Full-featured calendar component | Calendar page | - | - |
@@ -38,7 +34,7 @@
 
 ## Dev Dependencies
 
-| Package | Version | Muc dich | Nguoi them | Ngay them |
+| Package | Version | Mục đích | Người thêm | Ngày thêm |
 |---------|---------|----------|------------|-----------|
 | typescript | ^5.9.3 | TypeScript compiler | - | - |
 | eslint | ^9.39.1 | Linting | - | - |
@@ -56,10 +52,32 @@
 
 ---
 
-## Deprecated / Da xoa
+## ⏳ Planned / Cần thêm
 
-| Package | Ly do xoa | Thay the bang | Ngay xoa |
-|---------|-----------|---------------|----------|
-| _(chua co)_ | | | |
+| Package | Mục đích | Ưu tiên | Note |
+|---------|---------|---------|------|
+| axios | HTTP client với interceptor auth | 🔴 High | Cần thiết cho API calls có auth |
+| zod | Schema validation | 🔴 High | Cần cho form validation |
+| react-hook-form | Form state management | 🔴 High | Kết hợp với Zod |
+| @hookform/resolvers | Bridge react-hook-form ↔ Zod | 🔴 High | Đi kèm với react-hook-form |
+| react-hot-toast | Toast notification | 🟡 Medium | Nhẹ, không cần setup phức tạp |
 
-- `react-hot-toast`: Notifications/Toasts (Added via AI)
+---
+
+## 🗑️ Deprecated / Đã xóa
+
+| Package | Lý do xóa | Thay thế bằng | Ngày xóa |
+|---------|-----------|--------------|----------|
+| _(chưa có)_ | | | |
+
+---
+
+## Quy tắc khi thêm dependency mới
+
+1. **Kiểm tra** bảng "Runtime Dependencies" và "Planned" – có package đó rồi không?
+2. **So sánh** bundle size trên [bundlephobia.com](https://bundlephobia.com)
+3. **Kiểm tra** last publish date và weekly downloads (package phải được maintain tích cực)
+4. **Thêm** vào bảng đúng (`dependencies` vs `devDependencies`) **trước khi** tạo PR
+5. Nếu **thay thế** package cũ → ghi vào mục "Deprecated"
+
+> ⚠️ PR sẽ bị reject nếu thêm package mà không cập nhật file này.

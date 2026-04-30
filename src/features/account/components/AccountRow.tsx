@@ -1,115 +1,128 @@
 "use client";
-
-import React, { memo } from "react";
+import React, { memo, useRef } from "react";
 import Image from "next/image";
-import { EyeIcon, PencilIcon } from "@/icons/index";
-import Badge from "@/components/ui/badge/Badge";
-import { TableCell, TableRow } from "@/components/ui/table";
-import { AccountListItem } from "../types/account";
+import { TableCell, TableRow } from "../../../components/ui/table";
+import Badge from "../../../components/ui/badge/Badge";
+import { PencilIcon, TrashBinIcon } from "@/icons/index";
+import { Popover } from "../../../components/ui/popover/Popover";
+import Button from "../../../components/ui/button/Button";
+import { Account } from "../types/account";
 
 interface AccountRowProps {
-  account: AccountListItem;
-  rowNumber: number;
-  onOpenDetail: (accountId: number) => void;
-  onOpenEdit: (accountId: number) => void;
+  account: Account;
+  isDeleting: boolean;
+  onEdit: () => void;
+  onDeleteClick: () => void;
+  onDeleteCancel: () => void;
+  onDeleteConfirm: () => void;
 }
-
-const formatDateTime = (dateValue: string | null) => {
-  if (!dateValue) {
-    return "--";
-  }
-
-  const parsedDate = new Date(dateValue);
-  if (Number.isNaN(parsedDate.getTime())) {
-    return "--";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(parsedDate);
-};
 
 const AccountRowComponent: React.FC<AccountRowProps> = ({
   account,
-  rowNumber,
-  onOpenDetail,
-  onOpenEdit,
+  isDeleting,
+  onEdit,
+  onDeleteClick,
+  onDeleteCancel,
+  onDeleteConfirm,
 }) => {
-  const avatarText =
-    account.accountName.length > 0 ? account.accountName[0].toUpperCase() : "?";
+  // Ref trỏ đến delete button — Popover dùng để tính vị trí
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
 
   return (
     <TableRow>
-      <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-300">
-        {rowNumber}
-      </TableCell>
-
-      <TableCell className="px-5 py-4 text-start sm:px-6">
+      <TableCell className="px-5 py-3 sm:px-6 text-start">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-100 text-sm font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-            {account.imageUrl ? (
-              <Image
-                src={account.imageUrl}
-                alt={account.accountName}
-                width={40}
-                height={40}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              avatarText
-            )}
+          <div className="w-10 h-10 overflow-hidden rounded-full bg-gray-100">
+            <Image
+              width={40}
+              height={40}
+              src={account.user.image}
+              alt={account.user.name}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
-            <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
-              {account.accountName}
-            </p>
-            <p className="text-theme-xs text-gray-500 dark:text-gray-400">
-              {account.email}
-            </p>
-            <p className="text-theme-xs text-gray-500 dark:text-gray-400">
-              {account.phoneNumber ?? "No phone number"}
-            </p>
+            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+              {account.user.name}
+            </span>
+            <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
+              {account.user.email}
+            </span>
           </div>
         </div>
       </TableCell>
 
-      <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-300">
-        {account.roleName}
+      <TableCell className="px-5 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+        {account.role}
       </TableCell>
 
-      <TableCell className="px-5 py-4 text-start">
-        <Badge size="sm" color={account.isActive ? "success" : "warning"}>
-          {account.isActive ? "Active" : "Inactive"}
+      <TableCell className="px-5 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+        <Badge
+          size="sm"
+          color={
+            account.status === "Active"
+              ? "success"
+              : account.status === "Pending"
+                ? "warning"
+                : "error"
+          }
+        >
+          {account.status}
         </Badge>
       </TableCell>
 
-      <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-300">
-        {formatDateTime(account.createdAt)}
+      <TableCell className="px-5 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+        {account.joinDate}
       </TableCell>
 
-      <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-300">
-        {formatDateTime(account.updatedAt)}
-      </TableCell>
-
-      <TableCell className="px-5 py-4 text-center">
+      <TableCell className="px-5 py-3 text-gray-500 text-center text-theme-sm dark:text-gray-400">
         <div className="flex items-center justify-center gap-2">
+          {/* Edit button */}
           <button
-            type="button"
-            onClick={() => onOpenDetail(account.accountId)}
-            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
-            aria-label={`View account details for ${account.accountName}`}
+            onClick={onEdit}
+            className="text-gray-500 p-2 rounded-lg border border-gray-300 hover:border-brand-400 hover:text-brand-500 transition-colors"
           >
-            <EyeIcon />
+            <PencilIcon className="w-5 h-5" />
           </button>
+
+          {/* Delete button + Popover */}
           <button
-            type="button"
-            onClick={() => onOpenEdit(account.accountId)}
-            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
-            aria-label={`Edit account ${account.accountName}`}
+            ref={deleteButtonRef}
+            onClick={onDeleteClick}
+            className="text-gray-500 p-2 rounded-lg border border-gray-300 hover:border-error-400 hover:text-error-500 transition-colors"
           >
-            <PencilIcon />
+            <TrashBinIcon className="w-5 h-5" />
           </button>
+
+          <Popover
+            isOpen={isDeleting}
+            onClose={onDeleteCancel}
+            triggerRef={deleteButtonRef}
+            position="left"
+            className="p-4 w-[280px]"
+          >
+            <div className="text-left">
+              <h4 className="font-semibold text-gray-800 dark:text-white/90 mb-1">
+                Delete Account
+              </h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 whitespace-normal">
+                Are you sure you want to delete <b>{account.user.name}</b>?
+              </p>
+              <div className="flex items-center justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={onDeleteCancel}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="bg-error-500 hover:bg-error-600 border-error-500"
+                  onClick={onDeleteConfirm}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </Popover>
         </div>
       </TableCell>
     </TableRow>
