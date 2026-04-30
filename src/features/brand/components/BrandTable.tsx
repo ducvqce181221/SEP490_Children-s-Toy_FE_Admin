@@ -137,7 +137,7 @@ const BrandTable = () => {
       />
 
       <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
-        <div className="min-w-[760px]">
+        <div className="min-w-[1100px]">
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
@@ -148,7 +148,13 @@ const BrandTable = () => {
                   Brand Name
                 </TableCell>
                 <TableCell isHeader className={headerCellClassName}>
+                  Status
+                </TableCell>
+                <TableCell isHeader className={headerCellClassName}>
                   Created At
+                </TableCell>
+                <TableCell isHeader className={headerCellClassName}>
+                  Updated At
                 </TableCell>
                 <TableCell
                   isHeader
@@ -163,7 +169,7 @@ const BrandTable = () => {
               {showInitialLoading && (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={6}
                     className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
                     Loading brand list...
@@ -174,7 +180,7 @@ const BrandTable = () => {
               {!showInitialLoading && error && (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={6}
                     className="px-5 py-10 text-center text-sm text-error-600"
                   >
                     {error}
@@ -185,7 +191,7 @@ const BrandTable = () => {
               {!showInitialLoading && !error && brands.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={6}
                     className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
                     No matching brands found.
