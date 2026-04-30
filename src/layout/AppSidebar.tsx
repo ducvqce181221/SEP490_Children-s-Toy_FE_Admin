@@ -28,56 +28,56 @@ const navItems: NavItem[] = [
   {
     icon: <UserCircleIcon />,
     name: "Account Management",
-    path: "/accounts",
+    path: "/admin/accounts",
   },
     {
     icon: <CalenderIcon />,
     name: "Order Management",
-    path: "/orders", 
+    path: "/admin/orders", 
   },
   {
     icon: <GridIcon />,
     name: "Refund Management",
-    path: "/refund",
+    path: "/admin/refund",
   },
   {
     name: "Blog Management",
     icon: <PageIcon />,
-    path: "/blogs",
+    path: "/admin/blogs",
   },
   {
     name: "Product Management",
     icon: <BoxCubeIcon />,
     subItems: [
-      { name: "Super Categories", path: "/super-categories" },
-      { name: "Categories", path: "/categories" },
-      { name: "Brands", path: "/brands" },
-      { name: "Products", path: "/products" },
+      { name: "Super Categories", path: "/admin/super-categories" },
+      { name: "Categories", path: "/admin/categories" },
+      { name: "Brands", path: "/admin/brands" },
+      { name: "Products", path: "/admin/products" },
     ],
   },
   {
     name: "Sale Management",
     icon: <BoxCubeIcon />,
     subItems: [
-      { name: "Promotions", path: "/promotions" },
-      { name: "Vouchers", path: "/vouchers" },
+      { name: "Promotions", path: "/admin/promotions" },
+      { name: "Vouchers", path: "/admin/vouchers" },
     ],
   },
   {
     name: "Campaign Management",
     icon: <PageIcon />,
     subItems: [
-      { name: "Campaigns", path: "/campaigns" },
-      { name: "Templates", path: "/campaigns/templates" },
-      { name: "Notifications", path: "/campaigns/notifications" },
+      { name: "Campaigns", path: "/admin/campaigns" },
+      { name: "Templates", path: "/admin/campaigns/templates" },
+      { name: "Notifications", path: "/admin/campaigns/notifications" },
     ],
   },
   {
     name: "Review Management",
     icon: <ListIcon />,
     subItems: [
-      { name: "Product Reviews", path: "/product-reviews" },
-      { name: "Blog Reviews", path: "/blog-reviews" },
+      { name: "Product Reviews", path: "/admin/product-reviews" },
+      { name: "Blog Reviews", path: "/admin/blog-reviews" },
     ],
   },
 ];
@@ -86,12 +86,12 @@ const othersItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    subItems: [{ name: "Ecommerce", path: "/admin", pro: false }],
   },
   {
     icon: <UserCircleIcon />,
     name: "User Profile",
-    path: "/profile",
+    path: "/admin/profile",
   },
   {
     icon: <PlugInIcon />,
