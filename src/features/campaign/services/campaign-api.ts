@@ -128,8 +128,13 @@ export const referenceSearchApi = {
 
   searchBlogPosts: (searchTerm?: string): Promise<BlogPostSearchItem[]> =>
     axiosClient
-      .get<unknown, { items: BlogPostSearchItem[] }>("/blog-posts", {
-        params: { pageNumber: 1, pageSize: 20, ...(searchTerm && { searchTerm }) },
+      .get<unknown, { items: BlogPostSearchItem[] }>("/blogs/search", {
+        params: {
+          pageNumber: 1,
+          pageSize: 20,
+          status: "Published",
+          ...(searchTerm && { searchTerm }),
+        },
       })
       .then((res) => res.items || []),
 

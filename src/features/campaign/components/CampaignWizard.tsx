@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
+import FileInput from "@/components/form/input/FileInput";
 import { campaignApi, templateApi, referenceSearchApi, audienceApi } from "../services/campaign-api";
 import {
   WizardState,
@@ -20,22 +21,36 @@ import {
   Campaign,
 } from "../types/campaign";
 import { useAuthContext } from "@/context/AuthContext";
+import { useCampaignImageUpload } from "../hooks/useCampaignImageUpload";
+import {
+  DocsIcon,
+  BoxCubeIcon,
+  PageIcon,
+  BoltIcon,
+  BellIcon,
+  GroupIcon,
+  GridIcon,
+  UserIcon,
+  PieChartIcon,
+  PaperPlaneIcon,
+  TimeIcon,
+} from "@/icons";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const REFERENCE_TYPE_CARDS = [
-  { id: "VOUCHER", label: "Voucher / Mã giảm giá", icon: "🎫", desc: "Thông báo về voucher mới cho khách hàng" },
-  { id: "PRODUCT", label: "Sản phẩm mới", icon: "📦", desc: "Giới thiệu sản phẩm mới vừa ra mắt" },
-  { id: "BLOG", label: "Bài viết / Blog", icon: "📝", desc: "Chia sẻ bài viết hữu ích đến khách hàng" },
-  { id: "SALE", label: "Chương trình sale", icon: "🏷️", desc: "Thông báo chương trình khuyến mãi" },
-  { id: "", label: "Thông báo chung", icon: "🔔", desc: "Không gắn với sản phẩm/chương trình cụ thể" },
+  { id: "VOUCHER", label: "Voucher / Mã giảm giá", icon: <DocsIcon className="w-8 h-8" />, desc: "Thông báo về voucher mới cho khách hàng" },
+  { id: "PRODUCT", label: "Sản phẩm mới", icon: <BoxCubeIcon className="w-8 h-8" />, desc: "Giới thiệu sản phẩm mới vừa ra mắt" },
+  { id: "BLOG", label: "Bài viết / Blog", icon: <PageIcon className="w-8 h-8" />, desc: "Chia sẻ bài viết hữu ích đến khách hàng" },
+  { id: "SALE", label: "Chương trình sale", icon: <BoltIcon className="w-8 h-8" />, desc: "Thông báo chương trình khuyến mãi" },
+  { id: "GENERAL", label: "Thông báo chung", icon: <BellIcon className="w-8 h-8" />, desc: "Không gắn với sản phẩm/chương trình cụ thể" },
 ];
 
 const TARGET_MODE_CARDS = [
-  { id: "ALL", label: "Tất cả khách hàng", icon: "👥", desc: "Gửi đến toàn bộ khách hàng trong hệ thống" },
-  { id: "ROLE", label: "Theo nhóm", icon: "🏷️", desc: "Chọn nhóm người dùng cụ thể (VD: VIP, thường)" },
-  { id: "INDIVIDUAL", label: "Khách hàng cụ thể", icon: "🎯", desc: "Tìm và chọn từng khách hàng" },
-  { id: "SEGMENT", label: "Theo phân khúc", icon: "📊", desc: "Nhập tên nhóm phân khúc khách hàng" },
+  { id: "ALL", label: "Tất cả khách hàng", icon: <GroupIcon className="w-8 h-8" />, desc: "Gửi đến toàn bộ khách hàng trong hệ thống" },
+  { id: "ROLE", label: "Theo nhóm", icon: <GridIcon className="w-8 h-8" />, desc: "Chọn nhóm người dùng cụ thể (VD: VIP, thường)" },
+  { id: "INDIVIDUAL", label: "Khách hàng cụ thể", icon: <UserIcon className="w-8 h-8" />, desc: "Tìm và chọn từng khách hàng" },
+  { id: "SEGMENT", label: "Theo phân khúc", icon: <PieChartIcon className="w-8 h-8" />, desc: "Nhập tên nhóm phân khúc khách hàng" },
 ];
 
 const EMPTY_WIZARD: WizardState = {
@@ -92,53 +107,34 @@ function getPreviewMessage(state: WizardState): string {
 }
 
 // ─── Phone Notification Mockup ────────────────────────────────────────────────
-
-const PhonePreview: React.FC<{ title: string; message: string; imageUrl?: string }> = ({
-  title,
-  message,
-  imageUrl,
+const DesktopPreview: React.FC<{ title: string; message: string; imageUrl?: string }> = ({
+  title, message, imageUrl,
 }) => (
-  <div className="relative mx-auto w-[220px]">
-    <div className="bg-gray-900 rounded-[32px] p-2.5 shadow-2xl">
-      {/* Notch */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-gray-900 rounded-b-lg z-10" />
-      {/* Screen */}
-      <div className="bg-gradient-to-b from-gray-100 to-gray-200 rounded-[26px] overflow-hidden pt-6 pb-3 px-2 min-h-[180px]">
-        {/* Status bar */}
-        <div className="flex justify-between text-[9px] text-gray-500 px-2 mb-3">
-          <span className="font-semibold">9:41</span>
-          <span>●●● WiFi 🔋</span>
-        </div>
-        {/* Notification card */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-xl p-2.5 mx-0.5 shadow-sm">
-          <div className="flex items-start gap-2">
-            <div className="w-8 h-8 bg-brand-500 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-[10px]">
-              TS
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-baseline justify-between gap-1">
-                <span className="text-[10px] font-bold text-gray-800">Toy Store</span>
-                <span className="text-[8px] text-gray-400 flex-shrink-0">bây giờ</span>
-              </div>
-              <p className="text-[11px] font-semibold text-gray-900 mt-0.5 leading-tight line-clamp-1">
-                {title || "Tiêu đề thông báo"}
-              </p>
-              <p className="text-[10px] text-gray-500 mt-0.5 leading-tight line-clamp-2">
-                {message || "Nội dung thông báo sẽ hiển thị ở đây..."}
-              </p>
-            </div>
-          </div>
-          {imageUrl && (
-            <img
-              src={imageUrl}
-              alt=""
-              className="w-full h-16 object-cover rounded-lg mt-2"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
-            />
-          )}
-        </div>
+  <div className="mx-auto w-full max-w-[350px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden shadow-md">
+    <div className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 flex items-center gap-1.5 border-b border-zinc-200 dark:border-zinc-700">
+      <div className="w-3.5 h-3.5 rounded-[3px] bg-brand-500 flex items-center justify-center flex-shrink-0">
+        <span className="text-white text-[8px] font-medium">T</span>
+      </div>
+      <span className="text-[11px] text-zinc-500 flex-1 truncate">Toy Store</span>
+      <span className="text-[10px] text-zinc-400 flex-shrink-0">bây giờ</span>
+      <span className="text-[11px] text-zinc-400 ml-1 cursor-pointer flex-shrink-0">✕</span>
+    </div>
+    <div className="p-3 flex gap-2.5 items-start">
+      <img
+        src={imageUrl || "/images/logo/logo-icon.svg"}
+        alt=""
+        className="w-9 h-9 rounded-lg object-cover flex-shrink-0 bg-white"
+        onError={(e) => {
+          (e.currentTarget as HTMLImageElement).src = "/images/logo/logo-icon.svg";
+        }}
+      />
+      <div className="flex-1 min-w-0">
+        <p className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100 break-words">
+          {title || "Tiêu đề thông báo"}
+        </p>
+        <p className="text-[11px] text-zinc-500 mt-1 leading-snug whitespace-pre-wrap break-words">
+          {message || "Nội dung thông báo sẽ hiển thị ở đây..."}
+        </p>
       </div>
     </div>
   </div>
@@ -158,13 +154,12 @@ const WizardProgress: React.FC<{ currentStep: number }> = ({ currentStep }) => (
         <React.Fragment key={i}>
           <div className="flex flex-col items-center">
             <div
-              className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all ${
-                done
-                  ? "bg-brand-500 border-brand-500 text-white"
-                  : active
+              className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all ${done
+                ? "bg-brand-500 border-brand-500 text-white"
+                : active
                   ? "bg-white border-brand-500 text-brand-500 shadow-md"
                   : "bg-white border-gray-300 text-gray-400"
-              }`}
+                }`}
             >
               {done ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -175,18 +170,16 @@ const WizardProgress: React.FC<{ currentStep: number }> = ({ currentStep }) => (
               )}
             </div>
             <span
-              className={`text-xs mt-1.5 font-medium ${
-                active ? "text-brand-600" : done ? "text-brand-500" : "text-gray-400"
-              }`}
+              className={`text-xs mt-1.5 font-medium ${active ? "text-brand-600" : done ? "text-brand-500" : "text-gray-400"
+                }`}
             >
               {label}
             </span>
           </div>
           {i < STEP_LABELS.length - 1 && (
             <div
-              className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-all ${
-                done ? "bg-brand-500" : "bg-gray-200"
-              }`}
+              className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-all ${done ? "bg-brand-500" : "bg-gray-200"
+                }`}
             />
           )}
         </React.Fragment>
@@ -194,6 +187,7 @@ const WizardProgress: React.FC<{ currentStep: number }> = ({ currentStep }) => (
     })}
   </div>
 );
+
 
 // ─── Search Dropdown ──────────────────────────────────────────────────────────
 
@@ -379,17 +373,15 @@ const Step1: React.FC<{
                     resolvedObject: null,
                   })
                 }
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 text-center transition-all ${
-                  selected
-                    ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10"
-                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-900/50"
-                }`}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 text-center transition-all ${selected
+                  ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10"
+                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-900/50"
+                  }`}
               >
                 <span className="text-2xl">{card.icon}</span>
                 <span
-                  className={`text-xs font-semibold leading-tight ${
-                    selected ? "text-brand-600 dark:text-brand-400" : "text-gray-700 dark:text-gray-300"
-                  }`}
+                  className={`text-xs font-semibold leading-tight ${selected ? "text-brand-600 dark:text-brand-400" : "text-gray-700 dark:text-gray-300"
+                    }`}
                 >
                   {card.label}
                 </span>
@@ -413,10 +405,10 @@ const Step1: React.FC<{
               state.referenceType === "VOUCHER"
                 ? "Tìm theo tên hoặc mã voucher..."
                 : state.referenceType === "PRODUCT"
-                ? "Tìm theo tên sản phẩm..."
-                : state.referenceType === "BLOG"
-                ? "Tìm theo tiêu đề bài viết..."
-                : "Tìm theo tên chương trình..."
+                  ? "Tìm theo tên sản phẩm..."
+                  : state.referenceType === "BLOG"
+                    ? "Tìm theo tiêu đề bài viết..."
+                    : "Tìm theo tên chương trình..."
             }
             items={searchResults}
             loading={searching}
@@ -469,6 +461,16 @@ const Step2: React.FC<{
 }> = ({ state, update, errors, templates }) => {
   const previewTitle = getPreviewTitle(state);
   const previewMessage = getPreviewMessage(state);
+  const { uploadImage, isUploading } = useCampaignImageUpload();
+
+  const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const url = await uploadImage(file);
+    if (url) update({ imageUrl: url });
+    event.target.value = "";
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -511,16 +513,14 @@ const Step2: React.FC<{
           <button
             type="button"
             onClick={() => update({ useCustomContent: !state.useCustomContent })}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              state.useCustomContent
-                ? "bg-brand-500"
-                : "bg-gray-300 dark:bg-gray-600"
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${state.useCustomContent
+              ? "bg-brand-500"
+              : "bg-gray-300 dark:bg-gray-600"
+              }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                state.useCustomContent ? "translate-x-6" : "translate-x-1"
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${state.useCustomContent ? "translate-x-6" : "translate-x-1"
+                }`}
             />
           </button>
         </div>
@@ -561,9 +561,18 @@ const Step2: React.FC<{
           </div>
         )}
 
-        {/* Image URL */}
-        <div>
+        {/* Image */}
+        <div className="space-y-2">
           <Label>Ảnh kèm theo (không bắt buộc)</Label>
+          <FileInput
+            accept="image/*"
+            disabled={isUploading}
+            onChange={handleImageFileChange}
+          />
+          <div className="flex items-center justify-between text-xs text-gray-400">
+            <span>Chon anh tu may (toi da 5MB, jpg/png/webp/gif)</span>
+            {isUploading && <span>Dang tai anh...</span>}
+          </div>
           <Input
             type="text"
             placeholder="https://example.com/banner.jpg"
@@ -571,21 +580,32 @@ const Step2: React.FC<{
             value={state.imageUrl}
             onChange={(e) => update({ imageUrl: e.target.value })}
             error={!!errors.imageUrl}
-            hint={errors.imageUrl || "Ảnh minh họa cho thông báo"}
+            hint={errors.imageUrl || "Hoac dan URL anh neu khong upload"}
           />
+          {state.imageUrl && (
+            <button
+              type="button"
+              onClick={() => update({ imageUrl: "" })}
+              className="text-xs text-brand-600 hover:text-brand-700"
+            >
+              Xoa anh
+            </button>
+          )}
         </div>
       </div>
 
       {/* Right: Preview */}
-      <div className="space-y-4">
+      <div className="space-y-4 lg:sticky lg:top-6">
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">
           Xem trước thông báo
         </p>
-        <PhonePreview
-          title={previewTitle}
-          message={previewMessage}
-          imageUrl={state.imageUrl || undefined}
-        />
+        <div className="max-h-[70vh] overflow-y-auto custom-scrollbar pr-1">
+          <DesktopPreview
+            title={previewTitle}
+            message={previewMessage}
+            imageUrl={state.imageUrl || undefined}
+          />
+        </div>
         {state.templateCode && (
           <p className="text-xs text-center text-gray-400">
             Đang dùng mẫu:{" "}
@@ -677,11 +697,10 @@ const Step3: React.FC<{
                       segmentName: "",
                     })
                   }
-                  className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-                    selected
-                      ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10"
-                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-900/50"
-                  }`}
+                  className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${selected
+                    ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10"
+                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-900/50"
+                    }`}
                 >
                   <span className="text-2xl flex-shrink-0">{card.icon}</span>
                   <div>
@@ -794,16 +813,15 @@ const Step3: React.FC<{
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { id: "immediate", label: "Gửi ngay sau khi tạo", icon: "⚡", desc: "Thông báo sẽ được gửi đi ngay lập tức" },
-              { id: "scheduled", label: "Đặt lịch gửi", icon: "📅", desc: "Chọn ngày giờ gửi cụ thể" },
+              { id: "immediate", label: "Gửi ngay sau khi tạo", icon: <PaperPlaneIcon className="w-8 h-8" />, desc: "Thông báo sẽ được gửi đi ngay lập tức" },
+              { id: "scheduled", label: "Đặt lịch gửi", icon: <TimeIcon className="w-8 h-8" />, desc: "Chọn ngày giờ gửi cụ thể" },
             ].map((card) => {
               const selected = state.scheduleType === card.id;
               return (
                 <button key={card.id} type="button"
                   onClick={() => update({ scheduleType: card.id as WizardState["scheduleType"], scheduledAt: "" })}
-                  className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-                    selected ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-900/50"
-                  }`}
+                  className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${selected ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-900/50"
+                    }`}
                 >
                   <span className="text-2xl flex-shrink-0">{card.icon}</span>
                   <div>
@@ -853,8 +871,8 @@ const Step3: React.FC<{
                 state.selectedTemplate
                   ? `Mẫu: ${state.selectedTemplate.titleTemplate}`
                   : state.useCustomContent && state.titleOverride
-                  ? state.titleOverride
-                  : "Chưa chọn mẫu"
+                    ? state.titleOverride
+                    : "Chưa chọn mẫu"
               }
               empty={!state.selectedTemplate && !(state.useCustomContent && state.titleOverride)}
             />
@@ -865,8 +883,8 @@ const Step3: React.FC<{
                 state.scheduleType === "immediate"
                   ? "Gửi ngay sau khi tạo"
                   : state.scheduledAt
-                  ? new Date(state.scheduledAt).toLocaleString("vi-VN")
-                  : "Chưa đặt lịch"
+                    ? new Date(state.scheduledAt).toLocaleString("vi-VN")
+                    : "Chưa đặt lịch"
               }
               empty={state.scheduleType === "scheduled" && !state.scheduledAt}
             />
@@ -916,9 +934,9 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
 
   // Load templates, roles, reference types on mount
   useEffect(() => {
-    templateApi.getActiveTemplates().then(setTemplates).catch(() => {});
-    audienceApi.getRoles().then(setRoles).catch(() => {});
-    campaignApi.getReferenceTypes().then(setReferenceTypes).catch(() => {});
+    templateApi.getActiveTemplates().then(setTemplates).catch(() => { });
+    audienceApi.getRoles().then(setRoles).catch(() => { });
+    campaignApi.getReferenceTypes().then(setReferenceTypes).catch(() => { });
   }, []);
 
   // Load existing campaign for edit mode
