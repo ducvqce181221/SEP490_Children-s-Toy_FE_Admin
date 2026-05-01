@@ -3,7 +3,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { PromotionListDto } from "../types/promotion";
-import { TrashBinIcon, PencilIcon } from "@/icons/index";
+import { TrashBinIcon, PencilIcon, EyeIcon } from "@/icons/index";
 import { format } from "date-fns";
 import { Popover } from "@/components/ui/popover/Popover";
 import Link from "next/link";
@@ -73,6 +73,14 @@ export const PromotionRow = React.memo(function PromotionRow({
       <TableCell className="px-4 py-3 text-center">
         <div className="flex items-center justify-center gap-2">
           <Link href={`/admin/promotions/${promotion.promotionId}`}>
+            <button 
+              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
+              title="Xem chi tiết khuyến mãi"
+            >
+              <EyeIcon className="w-5 h-5" />
+            </button>
+          </Link>
+          <Link href={`/admin/promotions/${promotion.promotionId}/edit`}>
             <button 
               className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
               title="Chỉnh sửa khuyến mãi"

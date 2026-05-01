@@ -8,7 +8,6 @@ import { promotionFormSchema, type PromotionFormData } from "../types/promotion.
 import type { Promotion } from "../types/promotion";
 import type { ProductListItem } from "@/features/product/types/product";
 import { usePromotionMutations } from "../hooks/usePromotionMutations";
-import { ProductPickerModal } from "./ProductPickerModal";
 import { ProductPromotionTable } from "./ProductPromotionTable";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
@@ -19,6 +18,7 @@ import { twMerge } from "tailwind-merge";
 
 interface PromotionFormProps {
   initialData?: Promotion | null;
+  readonly?: boolean;
 }
 
 const PROMOTION_TYPE_OPTIONS = [
@@ -33,9 +33,8 @@ const PROMOTION_STATUS_OPTIONS = [
   { value: "Expired", label: "Đã kết thúc (Expired)" },
 ];
 
-export function PromotionForm({ initialData }: PromotionFormProps) {
+export function PromotionForm({ initialData, readonly = false }: PromotionFormProps) {
   const router = useRouter();
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const { createPromotion, updatePromotion, isSubmitting } = usePromotionMutations(() => {
     router.push("/admin/promotions");
@@ -95,17 +94,7 @@ export function PromotionForm({ initialData }: PromotionFormProps) {
     }
   }, [initialData, reset]);
 
-  const handleAddProducts = (products: ProductListItem[]) => {
-    const newItems = products.map((p) => ({
-      productId: p.productId,
-      productName: p.productName,
-      salePrice: p.price,
-      discountPercent: null as number | null,
-      saleQuantity: null as number | null,
-      isActive: true,
-    }));
-    append(newItems);
-  };
+  // Removed handleAddProducts since this form is now only used for View Details
 
   const onSubmit = async (data: PromotionFormData) => {
     const formattedData = {
@@ -126,26 +115,27 @@ export function PromotionForm({ initialData }: PromotionFormProps) {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* General Info Section */}
         <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
-          <h3 className="text-base font-semibold text-gray-800 dark:text-white/90 mb-5">
-            Thông tin chung
+          <h3 className="text-base font-semibold text-orange-500 dark:text-orange-400 mb-5">
+            General Information
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Promotion Name */}
             <div>
-              <Label htmlFor="promotionName">Tên chương trình *</Label>
+              <Label htmlFor="promotionName">Promotion Name <span className="text-error-500">*</span></Label>
               <Input
                 id="promotionName"
                 type="text"
                 error={!!errors.promotionName}
                 hint={errors.promotionName?.message}
+                disabled={readonly}
                 {...register("promotionName")}
               />
             </div>
 
             {/* Promotion Type */}
             <div>
-              <Label htmlFor="promotionType">Loại hình khuyến mãi *</Label>
+              <Label htmlFor="promotionType">Promotion Type <span className="text-error-500">*</span></Label>
               <Select
                 id="promotionType"
                 options={PROMOTION_TYPE_OPTIONS}
@@ -153,36 +143,39 @@ export function PromotionForm({ initialData }: PromotionFormProps) {
                 onChange={(e) => setValue("promotionType", e.target.value)}
                 error={!!errors.promotionType}
                 hint={errors.promotionType?.message}
+                disabled={readonly}
               />
             </div>
 
             {/* Start Date */}
             <div>
-              <Label htmlFor="startDate">Ngày bắt đầu *</Label>
+              <Label htmlFor="startDate">Start Date <span className="text-error-500">*</span></Label>
               <Input
                 id="startDate"
                 type="datetime-local"
                 error={!!errors.startDate}
                 hint={errors.startDate?.message}
+                disabled={readonly}
                 {...register("startDate")}
               />
             </div>
 
             {/* End Date */}
             <div>
-              <Label htmlFor="endDate">Ngày kết thúc *</Label>
+              <Label htmlFor="endDate">End Date <span className="text-error-500">*</span></Label>
               <Input
                 id="endDate"
                 type="datetime-local"
                 error={!!errors.endDate}
                 hint={errors.endDate?.message}
+                disabled={readonly}
                 {...register("endDate")}
               />
             </div>
 
             {/* Status */}
             <div>
-              <Label htmlFor="status">Trạng thái *</Label>
+              <Label htmlFor="status">Status <span className="text-error-500">*</span></Label>
               <Select
                 id="status"
                 options={PROMOTION_STATUS_OPTIONS}
@@ -190,27 +183,30 @@ export function PromotionForm({ initialData }: PromotionFormProps) {
                 onChange={(e) => setValue("status", e.target.value)}
                 error={!!errors.status}
                 hint={errors.status?.message}
+                disabled={readonly}
               />
             </div>
 
             {/* Priority */}
             <div>
-              <Label htmlFor="priority">Mức ưu tiên</Label>
+              <Label htmlFor="priority">Priority</Label>
               <Input
                 id="priority"
                 type="number"
                 error={!!errors.priority}
                 hint={errors.priority?.message}
+                disabled={readonly}
                 {...register("priority")}
               />
             </div>
 
             {/* Description */}
             <div className="md:col-span-2">
-              <Label htmlFor="description">Mô tả</Label>
+              <Label htmlFor="description">Description</Label>
               <TextArea
                 id="description"
                 rows={3}
+                disabled={readonly}
                 {...register("description")}
               />
             </div>
@@ -222,36 +218,31 @@ export function PromotionForm({ initialData }: PromotionFormProps) {
           <ProductPromotionTable
             form={form}
             fieldArray={fieldArray}
-            onOpenPicker={() => setIsPickerOpen(true)}
+            readonly={readonly}
           />
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push("/admin/promotions")}
-          >
-            Hủy
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={isSubmitting}
-            className={twMerge(isSubmitting && "opacity-50 cursor-not-allowed")}
-          >
-            {isSubmitting ? "Đang lưu..." : "Lưu"}
-          </Button>
-        </div>
+        {!readonly && (
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push("/admin/promotions")}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isSubmitting}
+              className={twMerge(isSubmitting && "opacity-50 cursor-not-allowed")}
+            >
+              {isSubmitting ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        )}
       </form>
-
-      <ProductPickerModal
-        isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
-        onAddProducts={handleAddProducts}
-        selectedProductIds={fields.map((f) => f.productId)}
-      />
     </>
   );
 }
