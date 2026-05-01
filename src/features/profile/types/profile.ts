@@ -15,9 +15,12 @@ export interface Profile {
 export interface UpdateProfileRequest {
   imageUrl?: string | null;
   phoneNumber?: string | null;
-  currentPassword?: string;
-  newPassword?: string;
-  confirmNewPassword?: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
 }
 
 export interface ProfileFormValues {
