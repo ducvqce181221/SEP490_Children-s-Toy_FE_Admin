@@ -30,12 +30,17 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
 }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [localSearchTerm, setLocalSearchTerm] = useState(searchQuery);
+  const [localFilters, setLocalFilters] = useState<VoucherFilters>(filters);
 
   // Sync local state when parent searchQuery changes
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalSearchTerm(searchQuery);
   }, [searchQuery]);
+
+  React.useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -44,11 +49,18 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onFilterChange({ ...filters, status: e.target.value });
+    setLocalFilters({ ...localFilters, status: e.target.value });
   };
 
   const clearFilters = () => {
-    onFilterChange({ status: "" });
+    const emptyFilters = { status: "" };
+    setLocalFilters(emptyFilters);
+    onFilterChange(emptyFilters);
+    setIsFilterOpen(false);
+  };
+
+  const applyFilters = () => {
+    onFilterChange(localFilters);
     setIsFilterOpen(false);
   };
 
@@ -110,7 +122,7 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
                     { value: "Expired", label: "Expired" },
                   ]}
                   onChange={handleStatusChange}
-                  value={filters.status}
+                  value={localFilters.status}
                 />
               </div>
 
@@ -118,7 +130,7 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
                 <Button variant="outline" size="sm" onClick={clearFilters}>
                   Clear
                 </Button>
-                <Button variant="primary" size="sm" onClick={() => setIsFilterOpen(false)}>
+                <Button variant="primary" size="sm" onClick={applyFilters}>
                   Apply
                 </Button>
               </div>

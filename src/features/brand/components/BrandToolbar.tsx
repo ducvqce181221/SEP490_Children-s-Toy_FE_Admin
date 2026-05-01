@@ -16,6 +16,8 @@ interface BrandToolbarProps {
 
 const sortOptions: Array<{ value: BrandSortBy; label: string }> = [
   { value: "createdat", label: "Created Date" },
+  { value: "updatedat", label: "Updated Date" },
+  { value: "status", label: "Status" },
   { value: "brandname", label: "Brand Name" },
 ];
 

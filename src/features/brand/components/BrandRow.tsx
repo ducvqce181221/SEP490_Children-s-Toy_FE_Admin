@@ -11,7 +11,11 @@ interface BrandRowProps {
   onEdit: (brand: BrandListItem) => void;
 }
 
-const formatDateTime = (dateValue: string) => {
+const formatDateTime = (dateValue: string | null) => {
+  if (!dateValue) {
+    return "--";
+  }
+
   const parsedDate = new Date(dateValue);
   if (Number.isNaN(parsedDate.getTime())) {
     return "--";
@@ -21,6 +25,13 @@ const formatDateTime = (dateValue: string) => {
     dateStyle: "short",
     timeStyle: "short",
   }).format(parsedDate);
+};
+
+const statusClassNameByValue: Record<BrandListItem["status"], string> = {
+  Active:
+    "border border-success-200 bg-success-50 text-success-700 dark:border-success-500/30 dark:bg-success-500/10 dark:text-success-300",
+  Inactive:
+    "border border-error-200 bg-error-50 text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-300",
 };
 
 const BrandRowComponent: React.FC<BrandRowProps> = ({ brand, rowNumber, onEdit }) => {
@@ -34,8 +45,20 @@ const BrandRowComponent: React.FC<BrandRowProps> = ({ brand, rowNumber, onEdit }
         {brand.brandName}
       </TableCell>
 
+      <TableCell className="px-5 py-4 text-start text-theme-sm">
+        <span
+          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusClassNameByValue[brand.status]}`}
+        >
+          {brand.status}
+        </span>
+      </TableCell>
+
       <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-300">
         {formatDateTime(brand.createdAt)}
+      </TableCell>
+
+      <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-300">
+        {formatDateTime(brand.updatedAt)}
       </TableCell>
 
       <TableCell className="px-5 py-4 text-center">
