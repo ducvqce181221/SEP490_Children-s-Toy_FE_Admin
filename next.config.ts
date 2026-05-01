@@ -20,14 +20,15 @@ const nextConfig: NextConfig = {
     });
     return config;
   },
+    
   turbopack: {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
       },
     },
-  },
 };
 
 export default nextConfig;
