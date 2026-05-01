@@ -9,56 +9,46 @@
 
 ```
 src/
-├── app/                        # Next.js App Router
-│   ├── (admin)/                # Route group – layout admin
-│   │   ├── accounts/           # Trang quản lý tài khoản
-│   │   ├── (others-pages)/     # Các trang phụ khác
-│   │   ├── (ui-elements)/      # UI demo pages
-│   │   ├── layout.tsx          # Admin layout (sidebar, header)
-│   │   └── page.tsx            # Dashboard
-│   ├── (full-width-pages)/     # Route group – trang full-width (login...)
+├── app/                        # Next.js App Router (Routing & Layout)
+│   ├── (admin)/                # Nhóm route có sidebar/header
+│   │   ├── admin/              # Prefix /admin/...
+│   │   │   ├── <module>/       # Từng module chức năng (accounts, brands, vouchers...)
+│   │   │   └── page.tsx        # Dashboard (@/admin)
+│   │   └── layout.tsx          # Admin layout (Sidebar, Header)
+│   ├── (auth)/                 # Nhóm route authentication
+│   ├── (error-pages)/          # Các trang lỗi (404, 500...)
 │   ├── globals.css
-│   ├── layout.tsx              # Root layout (font, providers)
-│   └── not-found.tsx
+│   ├── layout.tsx              # Root layout (Font, Providers)
+│   └── page.tsx                # Root redirect
 │
-├── features/                   # Feature-based modules (ưu tiên dùng)
-│   └── <feature>/
-│       ├── components/         # UI components của feature
-│       ├── hooks/              # Custom hooks (useFeature.ts)
-│       ├── services/           # API calls (feature-api.ts)
-│       └── types/              # TypeScript interfaces + Zod schemas
+├── features/                   # 🚀 MODULE CHỨC NĂNG (TRỌNG TÂM)
+│   └── <feature>/              # Ví dụ: brand, category, voucher, promotion...
+│       ├── components/         # UI components RIÊNG của feature này
+│       ├── hooks/              # Logic & State quản lý riêng (useVoucher.ts)
+│       ├── services/           # Định nghĩa API calls (voucher-api.ts)
+│       └── types/              # TS Types & Zod Schemas của module
 │
 ├── components/                 # Shared/reusable UI components
-│   ├── ui/                     # Primitives (Button, Modal, Popover…)
-│   ├── common/                 # Layout chung (Breadcrumb, PageTitle, ErrorBoundary…)
-│   ├── header/
-│   ├── form/
+│   ├── ui/                     # 🎨 TailAdmin Primitives (Button, Modal, Table...)
+│   ├── common/                 # Components dùng chung (Breadcrumb, Pagination...)
+│   ├── form/                   # Shared form elements (InputGroup, Select...)
 │   └── ...
 │
-├── configs/
-│   └── axios-client.ts         # Axios instance + interceptors
-│
-├── context/
-│   ├── SidebarContext.tsx
-│   └── ThemeContext.tsx
-│
-├── hooks/                      # Global shared hooks
-│   ├── useModal.ts
-│   └── useGoBack.ts
-│
-├── icons/                      # SVG icon components
-├── layout/                     # Layout components (Sidebar, Header…)
-└── types/                      # Shared TypeScript types (dùng chung nhiều features)
+├── configs/                    # Axios client, App constants
+├── context/                    # Global Context (Theme, Sidebar)
+├── hooks/                      # Global Hooks (useModal, useGoBack)
+├── layout/                     # Shell components (Sidebar, AppHeader)
+└── types/                      # Shared Types dùng toàn dự án
 
 docs/
-└── dependencies.md             # Dependency registry (bắt buộc cập nhật khi thêm package)
+└── dependencies.md             # Registry các package đã cài
 ```
 
-### Quy tắc
-- **Feature-first**: Mọi tính năng mới tạo folder trong `src/features/<feature>/`
-- **Không import chéo giữa features**: feature A không được import thẳng từ feature B
-- Shared logic → `src/hooks/`, shared UI → `src/components/`
-- Path alias `@/` trỏ tới `src/` (đã cấu hình trong `tsconfig.json`)
+### Quy tắc đồng bộ hóa Module
+- **Feature-First**: Tuyệt đối không viết logic nghiệp vụ (fetch data, submit form) trong `src/app/`. Mọi logic phải nằm trong `src/features/`.
+- **Isolation**: Mỗi feature phải hoạt động độc lập. Feature A không được import trực tiếp từ `features/B/components`. Nếu cần dùng chung, hãy đưa lên `src/components/common/`.
+- **Structure Integrity**: Giữ nguyên cấu trúc folder trong `src/components/ui/` theo TailAdmin để dễ dàng cập nhật hoặc thay thế template sau này.
+- **Path Alias**: Luôn sử dụng `@/` để import (ví dụ: `@/features/brand/services/brand-api`).
 
 ---
 
@@ -236,118 +226,95 @@ export default async function AccountsPage() {
 }
 ```
 
-### Client-side (dùng khi cần interactivity)
-- Gọi API qua **axios** (đã có `src/configs/axios-client.ts`)
-- **Không import `axios` trực tiếp** – luôn dùng `axiosClient`
-- Đặt logic gọi API trong `features/<feature>/services/feature-api.ts`
+### Pattern gọi API (Service)
+Mọi module phải định nghĩa service trong `features/<feature>/services/<feature>-api.ts`.
 
 ```ts
-// ✅ src/features/account/services/account-api.ts
+// ✅ src/features/brand/services/brand-api.ts
 import axiosClient from "@/configs/axios-client";
-import { Account, AccountFormData } from "../types/account";
+import { Brand, BrandFormData } from "../types/brand";
 
-export const accountApi = {
-  getAll: () => axiosClient.get<Account[]>("/accounts"),
-  create: (data: AccountFormData) => axiosClient.post("/accounts", data),
-  update: (id: number, data: AccountFormData) =>
-    axiosClient.put(`/accounts/${id}`, data),
-  delete: (id: number) => axiosClient.delete(`/accounts/${id}`),
+export const brandApi = {
+  // Trả về Promise từ axiosClient (đã có interceptor xử lý .data)
+  getAll: () => axiosClient.get<Brand[]>("/brands"),
+  getById: (id: number) => axiosClient.get<Brand>(`/brands/${id}`),
+  create: (data: BrandFormData) => axiosClient.post("/brands", data),
+  update: (id: number, data: BrandFormData) => axiosClient.put(`/brands/${id}`, data),
+  delete: (id: number) => axiosClient.delete(`/brands/${id}`),
 };
 ```
 
-### Pattern fetch initial data trong hook
-
-Khi cần fetch data phía client (không dùng Server Component), dùng pattern sau nhất quán:
+### Pattern Custom Hook cho Feature
+Để đồng bộ giữa các module, chia hook thành 2 loại: **Query** (lấy dữ liệu) và **Mutation** (thay đổi dữ liệu).
 
 ```ts
-// ✅ features/account/hooks/useAccounts.ts
-export const useAccounts = () => {
-  const [accounts, setAccounts] = useState<Account[]>([]);
+// ✅ features/brand/hooks/useBrands.ts (Query Hook)
+export const useBrands = () => {
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await accountApi.getAll();
-        if (!cancelled) setAccounts(data);
-      } catch (err) {
-        if (!cancelled) {
-          const message = err instanceof Error ? err.message : "Tải dữ liệu thất bại";
-          setError(message);
-          toast.error(message);
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
-
-    fetchData();
-    return () => { cancelled = true; }; // cleanup tránh setState sau unmount
+  const fetchBrands = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await brandApi.getAll();
+      setBrands(data);
+    } catch (err) {
+      setError("Không thể tải danh sách thương hiệu");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  return { accounts, isLoading, error };
+  useEffect(() => { fetchBrands(); }, [fetchBrands]);
+
+  return { brands, isLoading, error, refetch: fetchBrands };
 };
 ```
 
-### Pattern mutation trong hook (create / update / delete)
-
+### Pattern Mutation Hook
 ```ts
-// ✅ features/account/hooks/useAccountMutations.ts
-export const useAccountMutations = (
-  onSuccess?: () => void // callback reload data sau mutation
-) => {
+// ✅ features/brand/hooks/useBrandMutations.ts (Mutation Hook)
+export const useBrandMutations = (onSuccess?: () => void) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createAccount = async (data: AccountFormData) => {
+  const createBrand = async (data: BrandFormData) => {
     setIsSubmitting(true);
     try {
-      await accountApi.create(data);
-      toast.success("Tạo tài khoản thành công");
+      await brandApi.create(data);
+      toast.success("Thêm mới thành công");
       onSuccess?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Tạo tài khoản thất bại");
-      if (process.env.NODE_ENV === "development") {
-        console.error("[useAccountMutations.createAccount]", error);
-      }
+    } catch (err) {
+      toast.error("Thêm mới thất bại");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const updateAccount = async (id: number, data: AccountFormData) => {
-    setIsSubmitting(true);
+  const deleteBrand = async (id: number) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa?")) return;
     try {
-      await accountApi.update(id, data);
-      toast.success("Cập nhật tài khoản thành công");
+      await brandApi.delete(id);
+      toast.success("Xóa thành công");
       onSuccess?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Cập nhật thất bại");
-    } finally {
-      setIsSubmitting(false);
+    } catch (err) {
+      toast.error("Xóa thất bại");
     }
   };
 
-  return { createAccount, updateAccount, isSubmitting };
+  return { createBrand, deleteBrand, isSubmitting };
 };
 ```
 
-> **Tách fetch và mutation**: Nếu hook quá dài (>80 dòng), tách thành `useAccounts` (query) và `useAccountMutations` (mutation) — mỗi hook một trách nhiệm.
+> **Lưu ý**: Tách biệt Query và Mutation giúp các hook đồng bộ, dễ quản lý và tránh re-render không cần thiết.
 
-> **Lưu ý**: Nếu dự án mở rộng và cần caching/revalidation phức tạp, cân nhắc tích hợp **SWR** hoặc **React Query** — ghi vào `/docs/dependencies.md` trước khi thêm.
-
-### Quy tắc
-
-| | Server Component | Client Component |
-|---|---|---|
-| Fetch tool | `fetch()` native | `axiosClient` |
-| Caching | `next: { revalidate }` | State trong hook |
-| Auth header | Server-side cookie | Interceptor axios |
-| Dùng khi | Data ban đầu, SEO | Mutation, real-time, interactive |
+### Quy tắc Data Fetching
+| Loại | Công cụ | Caching | Dùng khi |
+|---|---|---|---|
+| **Server Component** | `fetch()` native | Next.js Cache | Render ban đầu, SEO |
+| **Client Hook (Query)** | `axiosClient` | Local State | List, Search, Filter |
+| **Client Hook (Mutation)** | `axiosClient` | N/A | Create, Update, Delete |
 
 ---
 
@@ -586,23 +553,34 @@ const deleteAccount = async (id: number) => {
 
 ---
 
-## 10. 🎨 Styling (TailwindCSS 4)
+## 10. 🎨 Styling (TailwindCSS 4 & TailAdmin)
 
-- Dự án dùng **TailwindCSS 4** (import qua `postcss.config.js`)
-- Sử dụng `tailwind-merge` để merge class có điều kiện
-- **Không viết inline style** trừ trường hợp dynamic value không có Tailwind class
+- Dự án sử dụng **TailwindCSS 4** với cấu hình tập trung trong `src/app/globals.css` (thay vì `tailwind.config.js`).
+- **Hệ màu chuẩn (Theme Colors)**: Ưu tiên sử dụng các biến màu đã định nghĩa trong `@theme`:
+    - `brand`: `--color-brand-500` (#ff6a00) - Màu chủ đạo.
+    - `gray`: Hệ màu xám từ `50` đến `950`.
+    - `success`, `error`, `warning`: Dùng cho thông báo và trạng thái.
+- **Utility chuẩn của Template**: Sử dụng các utility class có sẵn trong `globals.css` cho menu và layout:
+    - `menu-item`, `menu-item-active`, `menu-item-inactive`.
+    - `custom-scrollbar`, `no-scrollbar`.
+- **Merge Class**: Luôn sử dụng `twMerge` (từ `tailwind-merge`) khi nối class có điều kiện để tránh xung đột.
+- **Dark mode**: Sử dụng prefix `dark:` (ThemeContext sẽ tự động toggle class `.dark` trên thẻ `<html>`).
+- **Typography**: Sử dụng font **Outfit** (đã cấu hình mặc định).
 
 ```tsx
-// ✅
+// ✅ Cách dùng twMerge chuẩn
 import { twMerge } from "tailwind-merge";
-const className = twMerge("px-4 py-2", isActive && "bg-blue-500");
 
-// ❌
-<div style={{ paddingLeft: "16px" }}>
+const Button = ({ className, isActive }) => (
+  <button className={twMerge(
+    "px-4 py-2 rounded-lg transition-all",
+    isActive ? "bg-brand-500 text-white" : "bg-gray-100 text-gray-700",
+    className
+  )}>
+    Click me
+  </button>
+);
 ```
-
-- Dark mode: dùng class `dark:` (ThemeContext toggle class trên `<html>`)
-- Font: **Outfit** (đã cấu hình trong root layout)
 
 ---
 
