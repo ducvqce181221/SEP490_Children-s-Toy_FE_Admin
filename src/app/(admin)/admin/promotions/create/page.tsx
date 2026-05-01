@@ -1,7 +1,7 @@
 import React from "react";
 import { Metadata } from "next";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
-import { PromotionForm } from "@/features/promotion/components/PromotionForm";
+import { PromotionWizard } from "@/features/promotion/components/PromotionWizard";
 
 export const metadata: Metadata = {
   title: "Create Promotion",
@@ -12,7 +12,7 @@ export default function CreatePromotionPage() {
     <div>
       <PageBreadcrumb pageTitle="Create Promotion" />
       <div className="space-y-6">
-        <PromotionForm />
+        <PromotionWizard />
       </div>
     </div>
   );
