@@ -6,6 +6,7 @@ export interface ProductListItem {
   price: number;
   quantity: number;
   productStatus: string;
+  status: "Active" | "Inactive";
   categoryId: number;
   categoryName: string;
   brandId: number | null;
@@ -41,6 +42,7 @@ export interface ProductDetail {
   originId: number | null;
   originName: string | null;
   mainImageUrl: string | null;
+  additionalImageUrls: string[];
   createdAt: string;
   updatedAt: string | null;
 }
@@ -77,4 +79,17 @@ export interface ProductMutationResult {
   message: string;
   validationErrors?: Record<string, string[]>;
   data?: ProductDetail;
+}
+
+export interface ProductLookupOption {
+  id: number;
+  label: string;
+}
+
+export interface ProductLookupsResponse {
+  priceRanges: ProductLookupOption[];
+  materials: ProductLookupOption[];
+  ages: ProductLookupOption[];
+  sexes: ProductLookupOption[];
+  origins: ProductLookupOption[];
 }
