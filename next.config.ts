@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
     return config;
   },
     
-    turbopack: {
+  turbopack: {
       rules: {
         '*.svg': {
           loaders: ['@svgr/webpack'],
@@ -30,14 +30,6 @@ const nextConfig: NextConfig = {
         },
       },
     },
-   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "picsum.photos",
-      },
-    ],
-  },
 };
 
 export default nextConfig;
