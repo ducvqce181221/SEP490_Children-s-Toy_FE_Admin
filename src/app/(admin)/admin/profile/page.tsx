@@ -8,7 +8,7 @@ import { profileApi } from "@/features/profile/services/profile-api";
 import toast from "react-hot-toast";
 
 export default function ProfilePage() {
-  const { profile, isLoading, isSaving, error, updateProfile } = useProfile();
+  const { profile, isLoading, isSaving, error, updateProfile, changePassword } = useProfile();
   const { account, setAuth } = useAuthContext();
 
   const syncAuth = (updated: {
@@ -73,10 +73,10 @@ export default function ProfilePage() {
     newPassword: string;
     confirmNewPassword: string;
   }) => {
-    const result = await updateProfile({
-      currentPassword: payload.currentPassword.trim() || undefined,
-      newPassword: payload.newPassword.trim() || undefined,
-      confirmNewPassword: payload.confirmNewPassword.trim() || undefined,
+    const result = await changePassword({
+      currentPassword: payload.currentPassword.trim(),
+      newPassword: payload.newPassword.trim(),
+      confirmNewPassword: payload.confirmNewPassword.trim(),
     });
 
     if (result.success) {
