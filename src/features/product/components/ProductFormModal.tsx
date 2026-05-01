@@ -13,6 +13,7 @@ import {
 import {
   ProductListItem,
   ProductMutationResult,
+  ProductLookupOption,
 } from "../types/product";
 import { categoryApi } from "@/features/category/services/category-api";
 import { brandApi } from "@/features/brand/services/brand-api";
@@ -46,7 +47,22 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [brands, setBrands] = useState<BrandListItem[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [priceRanges, setPriceRanges] = useState<ProductLookupOption[]>([]);
+  const [materials, setMaterials] = useState<ProductLookupOption[]>([]);
+  const [ages, setAges] = useState<ProductLookupOption[]>([]);
+  const [sexes, setSexes] = useState<ProductLookupOption[]>([]);
+  const [origins, setOrigins] = useState<ProductLookupOption[]>([]);
   const { uploadImage, isUploading } = useCloudinaryUpload();
+
+  const normalizeProductStatus = (status: string | null | undefined): string => {
+    if (!status) return "Active";
+    const normalized = status.replace(/\s+/g, "").toLowerCase();
+    if (normalized === "outofstock") return "OutOfStock";
+    if (normalized === "comingsoon") return "ComingSoon";
+    if (normalized === "discontinued") return "Discontinued";
+    if (normalized === "inactive") return "Inactive";
+    return "Active";
+  };
 
   const {
     register,
@@ -56,34 +72,51 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     watch,
     setError,
     formState: { errors },
-  } = useForm<ProductFormData>({
+  } = useForm({
     resolver: zodResolver(ProductFormSchema),
     defaultValues: {
       productName: "",
       categoryId: 0,
       brandId: null,
+      priceRangeId: null,
       price: 0,
       quantity: 0,
       productStatus: "Active",
+      launchDate: null,
       stockThreshold: 10,
       lowStockNotificationEnabled: true,
+      description: null,
+      materialId: null,
+      ageId: null,
+      sexId: null,
+      originId: null,
       mainImageUrl: "",
+      additionalImageUrls: [],
     },
   });
 
   const mainImageUrl = watch("mainImageUrl");
+  const additionalImageUrls = watch("additionalImageUrls") ?? [];
+  const selectedCategoryId = watch("categoryId");
+  const selectedBrandId = watch("brandId");
 
   useEffect(() => {
     if (isOpen) {
       const fetchOptions = async () => {
         setIsLoadingOptions(true);
         try {
-          const [catRes, brandRes] = await Promise.all([
+          const [catRes, brandRes, lookupRes] = await Promise.all([
             categoryApi.getCategories({ pageNumber: 1, pageSize: 100 }),
             brandApi.getBrands({ pageNumber: 1, pageSize: 100 }),
+            productApi.getProductLookups(),
           ]);
           setCategories(catRes.items);
           setBrands(brandRes.items);
+          setPriceRanges(lookupRes.priceRanges);
+          setMaterials(lookupRes.materials);
+          setAges(lookupRes.ages);
+          setSexes(lookupRes.sexes);
+          setOrigins(lookupRes.origins);
         } catch (error) {
           console.error("Failed to load options", error);
         } finally {
@@ -104,13 +137,20 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               productName: detail.productName,
               categoryId: detail.categoryId,
               brandId: detail.brandId,
+              priceRangeId: detail.priceRangeId,
               price: detail.price,
               quantity: detail.quantity,
-              productStatus: detail.productStatus,
+              productStatus: normalizeProductStatus(detail.productStatus),
+              launchDate: detail.launchDate,
               stockThreshold: detail.stockThreshold,
               lowStockNotificationEnabled: detail.lowStockNotificationEnabled,
               mainImageUrl: detail.mainImageUrl || "",
-              description: detail.description || "",
+              additionalImageUrls: detail.additionalImageUrls ?? [],
+              description: detail.description,
+              materialId: detail.materialId,
+              ageId: detail.ageId,
+              sexId: detail.sexId,
+              originId: detail.originId,
             });
           })
           .catch((err) => console.error("Failed to load product details", err))
@@ -120,20 +160,49 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
           productName: "",
           categoryId: 0,
           brandId: null,
+          priceRangeId: null,
           price: 0,
           quantity: 0,
           productStatus: "Active",
+          launchDate: null,
           stockThreshold: 10,
           lowStockNotificationEnabled: true,
+          description: null,
+          materialId: null,
+          ageId: null,
+          sexId: null,
+          originId: null,
           mainImageUrl: "",
+          additionalImageUrls: [],
         });
       }
     }
   }, [isOpen, mode, product, reset]);
 
-  const handleFormSubmit = async (data: ProductFormData) => {
+  const handleFormSubmit = async (data: Record<string, unknown>) => {
+    const formData = data as ProductFormData;
+    formData.productStatus = normalizeProductStatus(formData.productStatus);
+    if (mode === "create") {
+      if (!formData.mainImageUrl) {
+        setError("mainImageUrl", {
+          type: "manual",
+          message: "Main image is required",
+        });
+        return;
+      }
+
+      const additionalCount = formData.additionalImageUrls?.length ?? 0;
+      if (additionalCount < 4 || additionalCount > 6) {
+        setError("additionalImageUrls", {
+          type: "manual",
+          message: "Additional images must be between 4 and 6",
+        });
+        return;
+      }
+    }
+
     const id = mode === "edit" ? product?.productId ?? null : null;
-    const result = await onSubmit(data, id);
+    const result = await onSubmit(formData, id);
 
     if (!result.success && result.validationErrors) {
       Object.entries(result.validationErrors).forEach(([field, messages]) => {
@@ -156,10 +225,48 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     }
   };
 
+  const handleAdditionalImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+
+    const currentImages = watch("additionalImageUrls") ?? [];
+    const remainingSlots = 6 - currentImages.length;
+    if (remainingSlots <= 0) {
+      setError("additionalImageUrls", {
+        type: "manual",
+        message: "Maximum 6 additional images",
+      });
+      return;
+    }
+
+    const filesToUpload = files.slice(0, remainingSlots);
+    const uploadedUrls: string[] = [];
+    for (const file of filesToUpload) {
+      const url = await uploadImage(file);
+      if (url) {
+        uploadedUrls.push(url);
+      }
+    }
+
+    if (uploadedUrls.length > 0) {
+      setValue("additionalImageUrls", [...currentImages, ...uploadedUrls], {
+        shouldValidate: true,
+      });
+    }
+  };
+
+  const handleRemoveAdditionalImage = (index: number) => {
+    const currentImages = watch("additionalImageUrls") ?? [];
+    const nextImages = currentImages.filter((_, currentIndex) => currentIndex !== index);
+    setValue("additionalImageUrls", nextImages, { shouldValidate: true });
+  };
+
   const categoryOptions = [
-    { value: 0, label: "Select Category..." },
+    { value: "0", label: "Select Category..." },
     ...categories.map((c) => ({
-      value: c.categoryId,
+      value: String(c.categoryId),
       label: c.categoryName,
     })),
   ];
@@ -167,8 +274,48 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const brandOptions = [
     { value: "", label: "None" },
     ...brands.map((b) => ({
-      value: b.brandId,
+      value: String(b.brandId),
       label: b.brandName,
+    })),
+  ];
+
+  const priceRangeOptions = [
+    { value: "", label: "None" },
+    ...priceRanges.map((item) => ({
+      value: String(item.id),
+      label: item.label,
+    })),
+  ];
+
+  const materialOptions = [
+    { value: "", label: "None" },
+    ...materials.map((item) => ({
+      value: String(item.id),
+      label: item.label,
+    })),
+  ];
+
+  const ageOptions = [
+    { value: "", label: "None" },
+    ...ages.map((item) => ({
+      value: String(item.id),
+      label: item.label,
+    })),
+  ];
+
+  const sexOptions = [
+    { value: "", label: "None" },
+    ...sexes.map((item) => ({
+      value: String(item.id),
+      label: item.label,
+    })),
+  ];
+
+  const originOptions = [
+    { value: "", label: "None" },
+    ...origins.map((item) => ({
+      value: String(item.id),
+      label: item.label,
     })),
   ];
 
@@ -178,7 +325,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      className="max-w-[700px] p-6 sm:p-10"
+      className="max-h-[90vh] max-w-[1150px] overflow-y-auto p-6 sm:p-8"
     >
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
@@ -195,7 +342,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         <div className="py-10 text-center text-gray-500">Loading product details...</div>
       ) : (
         <form onSubmit={handleSubmit(handleFormSubmit)}>
-          <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-3">
             <div className="sm:col-span-2">
               <Label>
                 Product Name <span className="text-error-500">*</span>
@@ -215,7 +362,12 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 Category <span className="text-error-500">*</span>
               </Label>
               <Select
-                {...register("categoryId", { valueAsNumber: true })}
+                value={String(selectedCategoryId ?? 0)}
+                onChange={(e) =>
+                  setValue("categoryId", Number(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
                 options={categoryOptions}
                 disabled={isFormDisabled}
               />
@@ -229,12 +381,34 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             <div>
               <Label>Brand</Label>
               <Select
-                {...register("brandId", { 
-                  setValueAs: (v) => v === "" ? null : Number(v) 
-                })}
+                value={selectedBrandId === null || selectedBrandId === undefined ? "" : String(selectedBrandId)}
+                onChange={(e) =>
+                  setValue("brandId", e.target.value === "" ? null : Number(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
                 options={brandOptions}
                 disabled={isFormDisabled}
               />
+            </div>
+
+            <div>
+              <Label>Price Range</Label>
+              <Select
+                value={watch("priceRangeId") === null || watch("priceRangeId") === undefined ? "" : String(watch("priceRangeId"))}
+                onChange={(e) =>
+                  setValue(
+                    "priceRangeId",
+                    e.target.value === "" ? null : Number(e.target.value),
+                    { shouldValidate: true },
+                  )
+                }
+                options={priceRangeOptions}
+                disabled={isFormDisabled}
+              />
+              {errors.priceRangeId && (
+                <p className="mt-1.5 text-sm text-error-500">{errors.priceRangeId.message}</p>
+              )}
             </div>
 
             <div>
@@ -273,7 +447,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 options={[
                   { value: "Active", label: "Active" },
                   { value: "Inactive", label: "Inactive" },
-                  { value: "Out of Stock", label: "Out of Stock" },
+                  { value: "OutOfStock", label: "Out of Stock" },
+                  { value: "Discontinued", label: "Discontinued" },
+                  { value: "ComingSoon", label: "Coming Soon" },
                 ]}
                 disabled={isFormDisabled}
               />
@@ -289,8 +465,128 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               />
             </div>
 
+            <div>
+              <Label>Launch Date</Label>
+              <Input
+                type="date"
+                value={watch("launchDate") ? watch("launchDate")!.slice(0, 10) : ""}
+                onChange={(e) =>
+                  setValue("launchDate", e.target.value === "" ? null : e.target.value, {
+                    shouldValidate: true,
+                  })
+                }
+                onKeyDown={(e) => {
+                  e.preventDefault();
+                }}
+                onFocus={(e) => {
+                  const input = e.currentTarget as HTMLInputElement & {
+                    showPicker?: () => void;
+                  };
+                  input.showPicker?.();
+                }}
+                disabled={isFormDisabled}
+                error={!!errors.launchDate}
+                hint={errors.launchDate?.message}
+              />
+            </div>
+
+            <div>
+              <Label>Material</Label>
+              <Select
+                value={watch("materialId") === null || watch("materialId") === undefined ? "" : String(watch("materialId"))}
+                onChange={(e) =>
+                  setValue(
+                    "materialId",
+                    e.target.value === "" ? null : Number(e.target.value),
+                    { shouldValidate: true },
+                  )
+                }
+                options={materialOptions}
+                disabled={isFormDisabled}
+              />
+              {errors.materialId && (
+                <p className="mt-1.5 text-sm text-error-500">{errors.materialId.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label>Age Range</Label>
+              <Select
+                value={watch("ageId") === null || watch("ageId") === undefined ? "" : String(watch("ageId"))}
+                onChange={(e) =>
+                  setValue("ageId", e.target.value === "" ? null : Number(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
+                options={ageOptions}
+                disabled={isFormDisabled}
+              />
+              {errors.ageId && (
+                <p className="mt-1.5 text-sm text-error-500">{errors.ageId.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label>Sex</Label>
+              <Select
+                value={watch("sexId") === null || watch("sexId") === undefined ? "" : String(watch("sexId"))}
+                onChange={(e) =>
+                  setValue("sexId", e.target.value === "" ? null : Number(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
+                options={sexOptions}
+                disabled={isFormDisabled}
+              />
+              {errors.sexId && (
+                <p className="mt-1.5 text-sm text-error-500">{errors.sexId.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label>Origin</Label>
+              <Select
+                value={watch("originId") === null || watch("originId") === undefined ? "" : String(watch("originId"))}
+                onChange={(e) =>
+                  setValue(
+                    "originId",
+                    e.target.value === "" ? null : Number(e.target.value),
+                    { shouldValidate: true },
+                  )
+                }
+                options={originOptions}
+                disabled={isFormDisabled}
+              />
+              {errors.originId && (
+                <p className="mt-1.5 text-sm text-error-500">{errors.originId.message}</p>
+              )}
+            </div>
+
             <div className="sm:col-span-2">
-              <Label>Product Image</Label>
+              <Label>Description</Label>
+              <textarea
+                value={watch("description") ?? ""}
+                onChange={(e) =>
+                  setValue("description", e.target.value === "" ? null : e.target.value, {
+                    shouldValidate: true,
+                  })
+                }
+                placeholder="Enter product description"
+                disabled={isFormDisabled}
+                rows={4}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              />
+              {errors.description && (
+                <p className="mt-1.5 text-sm text-error-500">
+                  {errors.description.message}
+                </p>
+              )}
+            </div>
+
+            <div className="sm:col-span-2">
+              <Label>
+                Main Image {mode === "create" && <span className="text-error-500">*</span>}
+              </Label>
               <div className="mt-2 flex items-center gap-4">
                 {mainImageUrl ? (
                   <div className="relative h-24 w-24 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
@@ -317,8 +613,56 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   {isUploading && (
                     <p className="mt-2 text-xs text-brand-500">Uploading image...</p>
                   )}
+                  {errors.mainImageUrl && (
+                    <p className="mt-2 text-sm text-error-500">{errors.mainImageUrl.message}</p>
+                  )}
                 </div>
               </div>
+            </div>
+
+            <div className="sm:col-span-2">
+              <Label>
+                Additional Images {mode === "create" && <span className="text-error-500">*</span>}
+              </Label>
+              <p className="mt-1 text-xs text-gray-500">
+                Upload 4-6 additional images (total with main image: 5-7).
+              </p>
+              <div className="mt-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleAdditionalImageUpload}
+                  disabled={isFormDisabled || additionalImageUrls.length >= 6}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-full file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-gray-800 dark:file:text-gray-300"
+                />
+              </div>
+
+              {additionalImageUrls.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {additionalImageUrls.map((url, index) => (
+                    <div
+                      key={`${url}-${index}`}
+                      className="relative h-24 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+                    >
+                      <Image src={url} alt={`Additional ${index + 1}`} fill className="object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAdditionalImage(index)}
+                        className="absolute right-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-xs text-white"
+                      >
+                        X
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {errors.additionalImageUrls && (
+                <p className="mt-2 text-sm text-error-500">
+                  {errors.additionalImageUrls.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -335,7 +679,6 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               type="submit"
               variant="primary"
               disabled={isFormDisabled}
-              isLoading={isSubmitting}
             >
               {mode === "create" ? "Add Product" : "Update"}
             </Button>

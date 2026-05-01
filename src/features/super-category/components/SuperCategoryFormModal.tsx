@@ -46,6 +46,7 @@ const SuperCategoryFormModal: React.FC<SuperCategoryFormModalProps> = ({
     resolver: zodResolver(SuperCategoryFormSchema),
     defaultValues: {
       superCategoryName: "",
+      status: "Active",
     },
   });
 
@@ -54,10 +55,12 @@ const SuperCategoryFormModal: React.FC<SuperCategoryFormModalProps> = ({
       if (mode === "edit" && superCategory) {
         reset({
           superCategoryName: superCategory.superCategoryName,
+          status: superCategory.status,
         });
       } else {
         reset({
           superCategoryName: "",
+          status: "Active",
         });
       }
     }
@@ -72,6 +75,8 @@ const SuperCategoryFormModal: React.FC<SuperCategoryFormModalProps> = ({
         const fieldName =
           field.toLowerCase() === "supercategoryname"
             ? "superCategoryName"
+            : field.toLowerCase() === "status"
+            ? "status"
             : field;
         setError(fieldName as keyof SuperCategoryFormData, {
           type: "server",
@@ -81,6 +86,8 @@ const SuperCategoryFormModal: React.FC<SuperCategoryFormModalProps> = ({
     }
   };
 
+  const isEditMode = mode === "edit";
+
   return (
     <Modal
       isOpen={isOpen}
@@ -89,12 +96,12 @@ const SuperCategoryFormModal: React.FC<SuperCategoryFormModalProps> = ({
     >
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
-          {mode === "create" ? "Thêm danh mục lớn" : "Cập nhật danh mục lớn"}
+          {mode === "create" ? "Add Super Category" : "Update Super Category"}
         </h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {mode === "create"
-            ? "Nhập thông tin cho danh mục lớn mới."
-            : "Chỉnh sửa thông tin danh mục lớn."}
+            ? "Enter information for the new super category."
+            : "Edit super category information."}
         </p>
       </div>
 
@@ -102,17 +109,38 @@ const SuperCategoryFormModal: React.FC<SuperCategoryFormModalProps> = ({
         <div className="mb-6 space-y-4">
           <div>
             <Label>
-              Tên danh mục lớn <span className="text-error-500">*</span>
+              Super Category Name <span className="text-error-500">*</span>
             </Label>
             <Input
               type="text"
               {...register("superCategoryName")}
-              placeholder="Nhập tên danh mục lớn"
+              placeholder="Enter super category name"
               disabled={isSubmitting}
               error={!!errors.superCategoryName}
               hint={errors.superCategoryName?.message}
             />
           </div>
+
+          {isEditMode && (
+            <div>
+              <Label>
+                Status <span className="text-error-500">*</span>
+              </Label>
+              <select
+                {...register("status")}
+                disabled={isSubmitting}
+                className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+              {errors.status && (
+                <p className="mt-1.5 text-sm text-error-500">
+                  {errors.status.message}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-3">
@@ -121,7 +149,7 @@ const SuperCategoryFormModal: React.FC<SuperCategoryFormModalProps> = ({
             onClick={onClose}
             disabled={isSubmitting}
           >
-            Hủy
+            Cancel
           </Button>
           <Button
             type="submit"
@@ -129,7 +157,7 @@ const SuperCategoryFormModal: React.FC<SuperCategoryFormModalProps> = ({
             disabled={isSubmitting}
             isLoading={isSubmitting}
           >
-            {mode === "create" ? "Thêm mới" : "Cập nhật"}
+            {mode === "create" ? "Add" : "Update"}
           </Button>
         </div>
       </form>

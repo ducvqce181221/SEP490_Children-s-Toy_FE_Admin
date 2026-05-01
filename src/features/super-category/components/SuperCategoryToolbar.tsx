@@ -57,15 +57,15 @@ const SuperCategoryToolbar: React.FC<SuperCategoryToolbarProps> = ({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Danh mục lớn
+            Super Categories
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Quản lý các danh mục lớn của hệ thống tại đây.
+            Manage super categories in the system.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="primary" startIcon={<PlusIcon />} onClick={onAddClick}>
-            Thêm danh mục lớn
+            Add Super Category
           </Button>
         </div>
       </div>
@@ -73,7 +73,7 @@ const SuperCategoryToolbar: React.FC<SuperCategoryToolbarProps> = ({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
           <SearchInput
-            placeholder="Tìm kiếm danh mục lớn... (Nhấn Enter)"
+            placeholder="Search super categories... (Press Enter)"
             value={localSearchTerm}
             onChange={setLocalSearchTerm}
             onKeyDown={handleKeyDown}
@@ -87,7 +87,7 @@ const SuperCategoryToolbar: React.FC<SuperCategoryToolbarProps> = ({
             onClick={() => setIsFilterOpen(!isFilterOpen)}
             className="dropdown-toggle"
           >
-            Lọc
+            Filter
             {(sortBy !== "createdat" || !sortDesc) && (
               <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-brand-500 rounded-full">
                 !
@@ -97,14 +97,15 @@ const SuperCategoryToolbar: React.FC<SuperCategoryToolbarProps> = ({
 
           <Dropdown isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} className="w-[300px] p-4 right-0">
             <div className="flex flex-col gap-4">
-              <h4 className="font-semibold text-gray-800 dark:text-white/90">Lọc danh mục lớn</h4>
+              <h4 className="font-semibold text-gray-800 dark:text-white/90">Filter Super Categories</h4>
               
               <div>
-                <Label>Sắp xếp theo</Label>
+                <Label>Sort By</Label>
                 <Select
                   options={[
-                    { value: "createdat", label: "Ngày tạo" },
-                    { value: "supercategoryname", label: "Tên danh mục" },
+                    { value: "createdat", label: "Created At" },
+                    { value: "supercategoryname", label: "Category Name" },
+                    { value: "status", label: "Status" },
                   ]}
                   onChange={(e) => onSortByChange(e.target.value as SuperCategorySortBy)}
                   value={sortBy}
@@ -112,11 +113,11 @@ const SuperCategoryToolbar: React.FC<SuperCategoryToolbarProps> = ({
               </div>
 
               <div>
-                <Label>Thứ tự</Label>
+                <Label>Order</Label>
                 <Select
                   options={[
-                    { value: "desc", label: "Giảm dần" },
-                    { value: "asc", label: "Tăng dần" },
+                    { value: "desc", label: "Descending" },
+                    { value: "asc", label: "Ascending" },
                   ]}
                   onChange={(e) => onSortDirectionChange(e.target.value === "desc")}
                   value={sortDesc ? "desc" : "asc"}
@@ -125,10 +126,10 @@ const SuperCategoryToolbar: React.FC<SuperCategoryToolbarProps> = ({
 
               <div className="flex justify-end gap-2 mt-2">
                 <Button variant="outline" size="sm" onClick={clearFilters}>
-                  Xóa lọc
+                  Clear Filters
                 </Button>
                 <Button variant="primary" size="sm" onClick={() => setIsFilterOpen(false)}>
-                  Áp dụng
+                  Apply
                 </Button>
               </div>
             </div>

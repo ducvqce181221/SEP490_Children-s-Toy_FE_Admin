@@ -1,9 +1,13 @@
-export type SuperCategorySortBy = "supercategoryname" | "createdat";
+export type SuperCategorySortBy = "supercategoryname" | "createdat" | "status";
+
+export type SuperCategoryStatus = "Active" | "Inactive";
 
 export interface SuperCategoryListItem {
   superCategoryId: number;
   superCategoryName: string;
+  status: SuperCategoryStatus;
   createdAt: string;
+  updatedAt: string | null;
 }
 
 export interface PaginatedResponse<T> {
