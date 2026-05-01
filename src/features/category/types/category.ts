@@ -1,11 +1,15 @@
-export type CategorySortBy = "categoryname" | "createdat" | "supercategoryname";
+export type CategorySortBy = "categoryname" | "createdat" | "supercategoryname" | "status";
+
+export type CategoryStatus = "Active" | "Inactive";
 
 export interface CategoryListItem {
   categoryId: number;
   categoryName: string;
   superCategoryId: number;
   superCategoryName: string;
+  status: CategoryStatus;
   createdAt: string;
+  updatedAt: string | null;
 }
 
 export interface PaginatedResponse<T> {

@@ -4,6 +4,7 @@ import {
   PaginatedResponse,
   ProductListItem,
   ProductDetail,
+  ProductLookupsResponse,
   ProductQueryParams,
 } from "../types/product";
 
@@ -18,6 +19,10 @@ export const productApi = {
 
   getProductById: async (productId: number): Promise<ProductDetail> => {
     return axiosClient.get<ProductDetail>(`/products/${productId}`);
+  },
+
+  getProductLookups: async (): Promise<ProductLookupsResponse> => {
+    return axiosClient.get<ProductLookupsResponse>("/products/lookups");
   },
 
   createProduct: async (

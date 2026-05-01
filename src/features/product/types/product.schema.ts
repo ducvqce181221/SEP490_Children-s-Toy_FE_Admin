@@ -35,6 +35,11 @@ export const ProductFormSchema = z.object({
   sexId: z.number().nullable().optional(),
   originId: z.number().nullable().optional(),
   mainImageUrl: z.string().nullable().optional(),
+  additionalImageUrls: z
+    .array(z.string().url())
+    .min(4, "At least 4 additional images are required")
+    .max(6, "Maximum 6 additional images")
+    .default([]),
 });
 
 export type ProductFormData = z.infer<typeof ProductFormSchema>;
