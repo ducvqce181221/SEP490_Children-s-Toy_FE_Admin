@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { profileApi } from "../services/profile-api";
 import {
   ApiErrorResponse,
+  ChangePasswordRequest,
   Profile,
   UpdateProfileRequest,
   ValidationErrorResponse,
@@ -77,6 +78,40 @@ export const useProfile = () => {
     }
   }, []);
 
+  const changePassword = useCallback(async (payload: ChangePasswordRequest) => {
+    setIsSaving(true);
+
+    try {
+      await profileApi.changeMyPassword(payload);
+      return { success: true as const };
+    } catch (error) {
+      const axiosError = error as AxiosError<
+        ValidationErrorResponse | ApiErrorResponse
+      >;
+
+      if (
+        axiosError.response?.status === 400 &&
+        axiosError.response.data &&
+        "errors" in axiosError.response.data
+      ) {
+        return {
+          success: false as const,
+          message: axiosError.response.data.message,
+          validationErrors: axiosError.response.data.errors,
+        };
+      }
+
+      return {
+        success: false as const,
+        message:
+          axiosError.response?.data?.message ??
+          "Unable to change password. Please try again.",
+      };
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
+
   return {
     profile,
     isLoading,
@@ -84,5 +119,6 @@ export const useProfile = () => {
     error,
     loadProfile,
     updateProfile,
+    changePassword,
   };
 };
