@@ -3,7 +3,6 @@
 import React from "react";
 import type { UseFieldArrayReturn, UseFormReturn } from "react-hook-form";
 import type { PromotionFormData } from "../types/promotion";
-import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import {
   Table,
@@ -41,9 +40,21 @@ export function ProductPromotionTable({
             <TableRow>
               <TableCell
                 isHeader
+                className="px-4 py-3 w-12 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
+              >
+                #
+              </TableCell>
+              <TableCell
+                isHeader
                 className="px-4 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
               >
                 Product Name
+              </TableCell>
+              <TableCell
+                isHeader
+                className="px-4 py-3 w-36 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
+              >
+                Original Price (VND)
               </TableCell>
               <TableCell
                 isHeader
@@ -53,7 +64,7 @@ export function ProductPromotionTable({
               </TableCell>
               <TableCell
                 isHeader
-                className="px-4 py-3 w-32 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
+                className="px-4 py-3 w-33 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
               >
                 Discount (%)
               </TableCell>
@@ -77,7 +88,7 @@ export function ProductPromotionTable({
             {fields.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={readonly ? 4 : 5}
+                  colSpan={readonly ? 6 : 7}
                   className="px-4 py-10 text-center text-sm text-gray-400 dark:text-gray-500"
                 >
                   {readonly
@@ -88,8 +99,14 @@ export function ProductPromotionTable({
             ) : (
               fields.map((field, index) => (
                 <TableRow key={field.id}>
+                  <TableCell className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                    {index + 1}
+                  </TableCell>
                   <TableCell className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
                     {field.productName || `Sản phẩm #${field.productId}`}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    {field.originalPrice?.toLocaleString("vi-VN")}
                   </TableCell>
                   <TableCell className="px-4 py-3">
                     {readonly ? (
@@ -99,8 +116,22 @@ export function ProductPromotionTable({
                     ) : (
                       <Input
                         type="number"
+                        step="any"
+                        absoluteHint={true}
                         {...form.register(`productPromotions.${index}.salePrice`, {
-                          valueAsNumber: true,
+                          setValueAs: (v) => (v === "" ? null : parseFloat(v)),
+                          onChange: (e) => {
+                            const val = e.target.value;
+                            if (val === "") return;
+                            const salePrice = parseFloat(val);
+                            const originalPrice = form.getValues(`productPromotions.${index}.originalPrice`);
+                            if (!isNaN(salePrice) && originalPrice) {
+                              let discount = ((originalPrice - salePrice) / originalPrice) * 100;
+                              // Round the discount to two decimal places
+                              discount = Math.round(discount * 100) / 100;
+                              form.setValue(`productPromotions.${index}.discountPercent`, discount, { shouldValidate: true });
+                            }
+                          }
                         })}
                         error={!!form.formState.errors.productPromotions?.[index]?.salePrice}
                         hint={form.formState.errors.productPromotions?.[index]?.salePrice?.message}
@@ -111,14 +142,27 @@ export function ProductPromotionTable({
                     {readonly ? (
                       <span className="text-sm font-medium text-gray-800 dark:text-white/90">
                         {field.discountPercent !== null && field.discountPercent !== undefined
-                          ? `${field.discountPercent}%`
+                          ? `${field.discountPercent}`
                           : "-"}
                       </span>
                     ) : (
                       <Input
                         type="number"
+                        step="0.01"
+                        absoluteHint={true}
                         {...form.register(`productPromotions.${index}.discountPercent`, {
-                          valueAsNumber: true,
+                          setValueAs: (v) => (v === "" ? null : parseFloat(v)),
+                          onChange: (e) => {
+                            const val = e.target.value;
+                            if (val === "") return;
+                            const discount = parseFloat(val);
+                            const originalPrice = form.getValues(`productPromotions.${index}.originalPrice`);
+                            if (!isNaN(discount) && originalPrice) {
+                              // Không làm tròn salePrice
+                              const salePrice = originalPrice * (1 - discount / 100);
+                              form.setValue(`productPromotions.${index}.salePrice`, salePrice, { shouldValidate: true });
+                            }
+                          }
                         })}
                         placeholder="%"
                         error={!!form.formState.errors.productPromotions?.[index]?.discountPercent}
@@ -136,10 +180,11 @@ export function ProductPromotionTable({
                     ) : (
                       <Input
                         type="number"
+                        absoluteHint={true}
                         {...form.register(`productPromotions.${index}.saleQuantity`, {
-                          valueAsNumber: true,
+                          setValueAs: (v) => (v === "" ? null : parseInt(v, 10)),
                         })}
-                        placeholder="SL"
+                        placeholder={`Max ${field.stock || 0}`}
                         error={!!form.formState.errors.productPromotions?.[index]?.saleQuantity}
                         hint={form.formState.errors.productPromotions?.[index]?.saleQuantity?.message}
                       />

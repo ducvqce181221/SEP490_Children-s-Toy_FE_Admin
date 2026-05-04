@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react"; 
 import { productApi } from "@/features/product/services/product-api";
 import { ProductListItem } from "@/features/product/types/product";
 import Button from "@/components/ui/button/Button";
@@ -33,38 +33,42 @@ export function ProductCatalogSection({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchProducts = useCallback(async (search: string, pageNum: number) => {
-    setIsLoading(true);
-    try {
-      const res = await productApi.getProducts({
-        pageNumber: pageNum,
-        pageSize: 10,
-        searchTerm: search,
-      });
-      setProducts(res.items);
-      setTotalPages(res.totalPages);
-      setProductCache((prev) => {
-        const newCache = new Map(prev);
-        res.items.forEach((p: ProductListItem) => newCache.set(p.productId, p));
-        return newCache;
-      });
-    } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("[ProductCatalogSection] Failed to fetch products", error);
+  useEffect(() => {
+    let isCancelled = false;
+
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const res = await productApi.getProducts({
+          pageNumber: page,
+          pageSize: 10,
+          searchTerm: debouncedSearch,
+        });
+
+        if (!isCancelled) {
+          setProducts(res.items);
+          setTotalPages(res.totalPages);
+          setProductCache((prev) => {
+            const newCache = new Map(prev);
+            res.items.forEach((p: ProductListItem) => newCache.set(p.productId, p));
+            return newCache;
+          });
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("[ProductCatalogSection] Failed to fetch products", error);
+        }
+      } finally {
+        if (!isCancelled) setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    };
 
-  useEffect(() => {
-    fetchProducts(debouncedSearch, page);
-  }, [debouncedSearch, page, fetchProducts]);
+    fetchProducts();
 
-  // Keep local checkedIds in sync if external selectedProductIds changes (e.g., deleted from Section 2 directly)
-  useEffect(() => {
-    setCheckedIds(new Set(selectedProductIds));
-  }, [selectedProductIds]);
+    return () => {
+      isCancelled = true;
+    };
+  }, [debouncedSearch, page]); 
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
@@ -95,7 +99,7 @@ export function ProductCatalogSection({
   const handleConfirmClick = () => {
     const removedProductIds = selectedProductIds.filter((id) => !checkedIds.has(id));
     const addedProductIds = Array.from(checkedIds).filter((id) => !selectedProductIds.includes(id));
-    
+
     const addedProducts = addedProductIds
       .map((id) => productCache.get(id))
       .filter((p): p is ProductListItem => p !== undefined);

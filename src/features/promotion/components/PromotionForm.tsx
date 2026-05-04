@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { promotionFormSchema, type PromotionFormData } from "../types/promotion.schema";
 import type { Promotion } from "../types/promotion";
-import type { ProductListItem } from "@/features/product/types/product";
 import { usePromotionMutations } from "../hooks/usePromotionMutations";
 import { ProductPromotionTable } from "./ProductPromotionTable";
 import Button from "@/components/ui/button/Button";
@@ -85,6 +84,8 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
         productPromotions: initialData.productPromotions.map((p) => ({
           productId: p.productId,
           productName: p.productName,
+          originalPrice: p.originalPrice,
+          stock: p.stock,
           salePrice: p.salePrice,
           discountPercent: p.discountPercent,
           saleQuantity: p.saleQuantity,
@@ -101,6 +102,7 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
       ...data,
       startDate: new Date(data.startDate).toISOString(),
       endDate: new Date(data.endDate).toISOString(),
+      productPromotions: data.productPromotions.map(({ productName, originalPrice, stock, ...rest }) => rest),
     };
 
     if (initialData) {

@@ -47,6 +47,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
   });
 
   const form = useForm<PromotionFormData>({
+    mode: "onTouched",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(promotionFormSchema) as any,
     defaultValues: {
@@ -92,6 +93,8 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
         productPromotions: initialData.productPromotions.map((p) => ({
           productId: p.productId,
           productName: p.productName,
+          originalPrice: p.originalPrice,
+          stock: p.stock,
           salePrice: p.salePrice,
           discountPercent: p.discountPercent,
           saleQuantity: p.saleQuantity,
@@ -117,6 +120,8 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
       const newItems = addedProducts.map((p) => ({
         productId: p.productId,
         productName: p.productName,
+        originalPrice: p.price,
+        stock: p.quantity,
         salePrice: p.price,
         discountPercent: null as number | null,
         saleQuantity: null as number | null,
@@ -127,10 +132,12 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
   };
 
   const onSubmit = async (data: PromotionFormData) => {
+    // Strip productName and originalPrice before submitting
     const formattedData = {
       ...data,
       startDate: new Date(data.startDate).toISOString(),
       endDate: new Date(data.endDate).toISOString(),
+      productPromotions: data.productPromotions.map(({ productName, originalPrice, stock, ...rest }) => rest),
     };
 
     if (initialData) {
@@ -181,6 +188,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     type="text"
                     error={!!errors.promotionName}
                     hint={errors.promotionName?.message}
+                    placeholder="Enter promotion name..."
                     {...register("promotionName")}
                   />
                 </div>
@@ -272,8 +280,16 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
               >
                 Cancel
               </Button>
+              <Button 
+                type="submit" 
+                variant="outline" 
+                disabled={isSubmitting}
+                className="border-brand-500 text-brand-500 hover:bg-brand-50"
+              >
+                {isSubmitting ? "Saving..." : "Save & Finish"}
+              </Button>
               <Button type="button" variant="primary" onClick={handleNextStep}>
-                Next
+                Next: Select Products
               </Button>
             </div>
           </div>
