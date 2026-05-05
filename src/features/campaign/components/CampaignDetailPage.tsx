@@ -85,40 +85,37 @@ const DELIVERY_STATUS_VI: Record<string, { label: string; color: string }> = {
 
 // ─── Phone Notification Mockup ────────────────────────────────────────────────
 
-const PhonePreview: React.FC<{ campaign: Campaign }> = ({ campaign }) => {
+const DesktopPreview: React.FC<{ campaign: Campaign }> = ({ campaign }) => {
   const title = campaign.titleOverride || "Tiêu đề thông báo";
   const message = campaign.messageOverride || "Nội dung thông báo...";
+  const imageUrl = campaign.imageUrl;
 
   return (
-    <div className="relative mx-auto w-[200px]">
-      <div className="bg-gray-900 rounded-[30px] p-2 shadow-2xl">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-14 h-3.5 bg-gray-900 rounded-b-lg z-10" />
-        <div className="bg-gradient-to-b from-gray-100 to-gray-200 rounded-[24px] overflow-hidden pt-5 pb-3 px-2 min-h-[160px]">
-          <div className="flex justify-between text-[8px] text-gray-500 px-2 mb-2.5">
-            <span className="font-semibold">9:41</span>
-            <span>●●● 🔋</span>
-          </div>
-          <div className="bg-white/90 rounded-xl p-2 mx-0.5 shadow-sm">
-            <div className="flex items-start gap-1.5">
-              <div className="w-7 h-7 bg-brand-500 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold text-[9px]">TS</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between gap-1">
-                  <span className="text-[9px] font-bold text-gray-800">Toy Store</span>
-                  <span className="text-[7px] text-gray-400 flex-shrink-0">bây giờ</span>
-                </div>
-                <p className="text-[10px] font-semibold text-gray-900 mt-0.5 line-clamp-1">{title}</p>
-                <p className="text-[9px] text-gray-500 mt-0.5 line-clamp-2">{message}</p>
-              </div>
-            </div>
-            {campaign.imageUrl && (
-              <img
-                src={campaign.imageUrl}
-                alt=""
-                className="w-full h-14 object-cover rounded-lg mt-2"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-              />
-            )}
-          </div>
+    <div className="mx-auto w-full max-w-[350px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden shadow-md">
+      <div className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 flex items-center gap-1.5 border-b border-zinc-200 dark:border-zinc-700">
+        <div className="w-3.5 h-3.5 rounded-[3px] bg-brand-500 flex items-center justify-center flex-shrink-0">
+          <span className="text-white text-[8px] font-medium">T</span>
+        </div>
+        <span className="text-[11px] text-zinc-500 flex-1 truncate">Toy Store</span>
+        <span className="text-[10px] text-zinc-400 flex-shrink-0">bây giờ</span>
+        <span className="text-[11px] text-zinc-400 ml-1 cursor-pointer flex-shrink-0">✕</span>
+      </div>
+      <div className="p-3 flex gap-2.5 items-start">
+        <img
+          src={imageUrl || "/images/logo/logo-icon.svg"}
+          alt=""
+          className="w-9 h-9 rounded-lg object-cover flex-shrink-0 bg-white"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = "/images/logo/logo-icon.svg";
+          }}
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100 break-words">
+            {title}
+          </p>
+          <p className="text-[11px] text-zinc-500 mt-1 leading-snug whitespace-pre-wrap break-words">
+            {message}
+          </p>
         </div>
       </div>
     </div>
@@ -229,11 +226,10 @@ const RecipientTable: React.FC<{ campaignId: number }> = ({ campaignId }) => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-shrink-0 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? "border-brand-500 text-brand-600 dark:text-brand-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700"
-              }`}
+              className={`flex-shrink-0 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
+                ? "border-brand-500 text-brand-600 dark:text-brand-400"
+                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                }`}
             >
               {tab.label}
             </button>
@@ -496,8 +492,8 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
                   {campaign.scheduledAt
                     ? new Date(campaign.scheduledAt).toLocaleString("vi-VN")
                     : campaign.status === "Sent"
-                    ? "Đã gửi ngay"
-                    : "Gửi ngay sau khi tạo"}
+                      ? "Đã gửi ngay"
+                      : "Gửi ngay sau khi tạo"}
                 </span>
               </InfoRow>
               <InfoRow label="Ngày tạo">
@@ -564,7 +560,7 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
             <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4 text-center">
               Xem trước thông báo
             </h3>
-            <PhonePreview campaign={campaign} />
+            <DesktopPreview campaign={campaign} />
           </div>
         </div>
 
