@@ -53,7 +53,13 @@ export default function EditPromotionPage({ params }: { params: Promise<{ id: st
 
   return (
     <div>
-      <PageBreadcrumb pageTitle={`Edit Promotion #${promotionId}`} />
+      <PageBreadcrumb 
+        pageTitle="Edit Promotion" 
+        breadcrumbItems={[
+          { label: "Promotion Management", href: "/admin/promotions" },
+          { label: promotion.promotionName }
+        ]}
+      />
       <div className="space-y-6">
         <PromotionWizard initialData={promotion} />
       </div>

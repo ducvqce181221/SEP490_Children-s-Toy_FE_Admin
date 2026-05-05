@@ -23,6 +23,7 @@ const Pagination: React.FC<PaginationProps> = ({
   return (
     <div className="flex items-center ">
       <button
+        type="button"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         className="mr-2.5 flex items-center h-10 justify-center rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-gray-700 shadow-theme-xs hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] text-sm"
@@ -34,6 +35,7 @@ const Pagination: React.FC<PaginationProps> = ({
         {pagesAroundCurrent.map((page) => (
           <button
             key={page}
+            type="button"
             onClick={() => onPageChange(page)}
             className={`px-4 py-2 rounded ${
               currentPage === page
@@ -47,6 +49,7 @@ const Pagination: React.FC<PaginationProps> = ({
         {currentPage < totalPages - 2 && <span key="ellipsis-end" className="px-2">...</span>}
       </div>
       <button
+        type="button"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         className="ml-2.5 flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-gray-700 shadow-theme-xs text-sm hover:bg-gray-50 h-10 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"

@@ -19,7 +19,6 @@ interface PromotionRowProps {
 
 export const PromotionRow = React.memo(function PromotionRow({
   promotion,
-  rowNumber,
   isDeleting,
   onDeleteClick,
   onDeleteCancel,
@@ -107,9 +106,9 @@ export const PromotionRow = React.memo(function PromotionRow({
           className="p-4"
         >
           <div className="w-[250px]">
-            <h4 className="text-sm font-semibold text-gray-800 dark:text-white/90 mb-1">Xác nhận xóa</h4>
+            <h4 className="text-sm font-semibold text-gray-800 dark:text-white/90 mb-1">Confirmation</h4>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              Bạn có chắc muốn xóa khuyến mãi <span className="font-bold text-gray-700 dark:text-gray-200">{promotion.promotionName}</span> không?
+              Are you sure you want to delete this promotion: <span className="font-bold text-gray-700 dark:text-gray-200">{promotion.promotionName}</span>?
             </p>
             <div className="flex justify-end gap-2">
               <Button 
@@ -118,7 +117,7 @@ export const PromotionRow = React.memo(function PromotionRow({
                 onClick={onDeleteCancel}
                 className="h-8 text-xs px-3"
               >
-                Hủy
+                Cancel
               </Button>
               <Button 
                 variant="primary" 
@@ -126,7 +125,7 @@ export const PromotionRow = React.memo(function PromotionRow({
                 onClick={onDeleteConfirm}
                 className="h-8 text-xs px-3 bg-error-500 hover:bg-error-600 border-error-500"
               >
-                Xóa
+                Delete
               </Button>
             </div>
           </div>

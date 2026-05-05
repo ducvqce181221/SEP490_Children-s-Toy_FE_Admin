@@ -40,7 +40,8 @@ src/
 ├── configs/          # axios-client.ts (ONLY axios instance to use)
 ├── context/          # React Context (global: theme, sidebar, auth)
 ├── hooks/            # Shared custom hooks
-└── types/            # Shared TypeScript types
+├── types/            # Shared TypeScript types
+└── utils/            # Shared helper functions (date-utils, etc.)
 ```
 
 ---

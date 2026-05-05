@@ -10,7 +10,13 @@ export const metadata: Metadata = {
 export default function CreatePromotionPage() {
   return (
     <div>
-      <PageBreadcrumb pageTitle="Create Promotion" />
+      <PageBreadcrumb 
+        pageTitle="Create Promotion" 
+        breadcrumbItems={[
+          { label: "Promotion Management", href: "/admin/promotions" },
+          { label: "Create Promotion" }
+        ]}
+      />
       <div className="space-y-6">
         <PromotionWizard />
       </div>

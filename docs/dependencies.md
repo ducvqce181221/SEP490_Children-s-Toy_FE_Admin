@@ -33,6 +33,7 @@
 | @react-jvectormap/core | ^1.0.4 | Vector map core | Dashboard map | - | - |
 | @react-jvectormap/world | ^1.1.2 | World map data | Dashboard map | - | - |
 | @tailwindcss/forms | ^0.5.10 | Tailwind forms plugin | Form styling | - | - |
+| @floating-ui/react | ^0.27.19 | Positioning engine cho Tooltip, Popover (Portal rendering, flip, shift) | `src/components/ui/tooltip`, `src/components/ui/popover` | - | 2026-05-04 |
 
 ---
 
