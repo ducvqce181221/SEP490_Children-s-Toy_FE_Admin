@@ -33,6 +33,7 @@ Full details are in `CODING_RULES.md`. These summaries are for quick reference o
 | New feature code | `src/features/<feature>/{components,hooks,services,types}/` |
 | Shared UI | `src/components/` |
 | Shared hooks | `src/hooks/` |
+| Shared utils | `src/utils/` |
 | Global state | `src/context/` — only for theme, sidebar, auth |
 | Path alias | `@/` maps to `src/` |
 

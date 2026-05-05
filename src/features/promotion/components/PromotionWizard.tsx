@@ -8,6 +8,7 @@ import { twMerge } from "tailwind-merge";
 
 import { promotionFormSchema, type PromotionFormData } from "../types/promotion.schema";
 import type { Promotion } from "../types/promotion";
+import { formatUTCtoLocal, formatLocalToUTC } from "@/utils/date-utils";
 import type { ProductListItem } from "@/features/product/types/product";
 import { usePromotionMutations } from "../hooks/usePromotionMutations";
 import { ProductCatalogSection } from "./ProductCatalogSection";
@@ -86,8 +87,8 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
         promotionName: initialData.promotionName,
         promotionType: initialData.promotionType,
         description: initialData.description,
-        startDate: new Date(initialData.startDate).toISOString().slice(0, 16),
-        endDate: new Date(initialData.endDate).toISOString().slice(0, 16),
+        startDate: formatUTCtoLocal(initialData.startDate),
+        endDate: formatUTCtoLocal(initialData.endDate),
         status: initialData.status,
         priority: initialData.priority,
         productPromotions: initialData.productPromotions.map((p) => ({
@@ -135,8 +136,8 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
     // Strip productName and originalPrice before submitting
     const formattedData = {
       ...data,
-      startDate: new Date(data.startDate).toISOString(),
-      endDate: new Date(data.endDate).toISOString(),
+      startDate: formatLocalToUTC(data.startDate),
+      endDate: formatLocalToUTC(data.endDate),
       productPromotions: data.productPromotions.map(({ productName, originalPrice, stock, ...rest }) => rest),
     };
 

@@ -111,7 +111,7 @@ export function ProductPromotionTable({
                   <TableCell className="px-4 py-3">
                     {readonly ? (
                       <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                        {field.salePrice?.toLocaleString("vi-VN") || "0"}
+                        {Math.round(field.salePrice || 0).toLocaleString("vi-VN")}
                       </span>
                     ) : (
                       <Input
@@ -158,8 +158,8 @@ export function ProductPromotionTable({
                             const discount = parseFloat(val);
                             const originalPrice = form.getValues(`productPromotions.${index}.originalPrice`);
                             if (!isNaN(discount) && originalPrice) {
-                              // Không làm tròn salePrice
-                              const salePrice = originalPrice * (1 - discount / 100);
+                              // Làm tròn salePrice để tránh số lẻ như 389988.89999999997
+                              const salePrice = Math.round(originalPrice * (1 - discount / 100));
                               form.setValue(`productPromotions.${index}.salePrice`, salePrice, { shouldValidate: true });
                             }
                           }

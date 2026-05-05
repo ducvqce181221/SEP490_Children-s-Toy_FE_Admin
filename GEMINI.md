@@ -32,6 +32,7 @@ These are non-negotiable. Full details are in `CODING_RULES.md`.
 ### Files & Structure
 - New feature code → `src/features/<feature>/` (components, hooks, services, types)
 - Shared UI → `src/components/`; shared hooks → `src/hooks/`
+- Shared utils → `src/utils/`
 - No cross-feature imports
 
 ### TypeScript
