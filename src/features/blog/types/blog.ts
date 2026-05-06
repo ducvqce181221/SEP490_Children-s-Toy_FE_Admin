@@ -5,6 +5,7 @@ export const blogStatuses = [
   "Scheduled",
   "Rejected",
   "Published",
+  "Hidden",
 ] as const;
 
 export type BlogStatus = (typeof blogStatuses)[number];
@@ -16,16 +17,19 @@ export type BlogSortBy =
   | "createdat"
   | "updatedat";
 
+export type FeaturedFilter = "all" | "featured";
+
 export interface BlogListItem {
   blogPostId: number;
   blogCategoryId: number;
+  blogCategoryName: string;
   blogTitle: string;
   blogThumbnail: string | null;
   status: string;
+  isHidden: boolean;
   isFeatured: boolean;
   blogAt: string | null;
   author: string;
-  approvedBy: string | null;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -52,6 +56,7 @@ export interface BlogQueryParams {
   sortDesc?: boolean;
   searchTerm?: string;
   status?: string;
+  featuredOnly?: boolean;
 }
 
 export interface CreateBlogRequest {
@@ -59,7 +64,6 @@ export interface CreateBlogRequest {
   blogTitle: string;
   blogContent: string;
   blogThumbnail: string | null;
-  isFeatured: boolean;
   blogAt: string | null;
 }
 

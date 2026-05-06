@@ -3,7 +3,7 @@
 import React, { memo } from "react";
 import Badge from "@/components/ui/badge/Badge";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { CheckLineIcon, EyeIcon, PencilIcon } from "@/icons/index";
+import { CheckLineIcon, EyeCloseIcon, EyeIcon, PencilIcon } from "@/icons/index";
 import { BlogListItem } from "../types/blog";
 
 interface BlogRowProps {
@@ -12,10 +12,14 @@ interface BlogRowProps {
   isAdmin: boolean;
   isStaff: boolean;
   isSubmitting: boolean;
+  isPublishingNow: boolean;
+  isHidingBlog: boolean;
   onOpenDetail: (blogPostId: number) => void;
   onOpenEdit: (blogPostId: number) => void;
   onSubmitBlog: (blogPostId: number) => void;
   onOpenApproval: (blogPostId: number) => void;
+  onPublishNow: (blogPostId: number) => void;
+  onHideBlog: (blogPostId: number, blogTitle: string) => void;
   onOpenThumbnailPreview: (imageUrl: string, title: string) => void;
 }
 
@@ -51,15 +55,23 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
   isAdmin,
   isStaff,
   isSubmitting,
+  isPublishingNow,
+  isHidingBlog,
   onOpenDetail,
   onOpenEdit,
   onSubmitBlog,
   onOpenApproval,
+  onPublishNow,
+  onHideBlog,
   onOpenThumbnailPreview,
 }) => {
   const canStaffEdit = isStaff;
   const canStaffSubmit = isStaff && blog.status.toLowerCase() === "draft";
   const canAdminApprove = isAdmin && blog.status.toLowerCase() === "pending";
+  const canPublishNow =
+    (isAdmin || isStaff) &&
+    (blog.status.toLowerCase() === "approved" || blog.status.toLowerCase() === "scheduled");
+  const canAdminHideBlog = isAdmin && blog.status.toLowerCase() !== "hidden";
 
   return (
     <TableRow>
@@ -164,6 +176,32 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
               <CheckLineIcon />
             </button>
           )}
+
+          {canPublishNow && (
+            <button
+              type="button"
+              disabled={isPublishingNow}
+              onClick={() => onPublishNow(blog.blogPostId)}
+              className="rounded-lg border border-brand-300 p-2 text-brand-600 transition-colors hover:border-brand-500 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-brand-700 dark:text-brand-400"
+              aria-label={`Publish blog ${blog.blogTitle} now`}
+            >
+              <CheckLineIcon />
+            </button>
+          )}
+
+          {canAdminHideBlog && (
+            <button
+              type="button"
+              disabled={isHidingBlog}
+              onClick={() => onHideBlog(blog.blogPostId, blog.blogTitle)}
+              className="rounded-lg border border-error-300 p-2 text-error-600 transition-colors hover:border-error-500 hover:text-error-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-error-700 dark:text-error-400"
+              aria-label={`Hide blog ${blog.blogTitle}`}
+              title="Hide Blog"
+            >
+              <EyeCloseIcon />
+            </button>
+          )}
+
         </div>
       </TableCell>
     </TableRow>
