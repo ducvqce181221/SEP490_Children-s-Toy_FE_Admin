@@ -15,6 +15,7 @@ interface ProductRowProps {
 export const ProductRow = React.memo(
   ({ product, rowNumber, onEdit }: ProductRowProps) => {
     const formattedDate = format(new Date(product.createdAt), "dd/MM/yyyy HH:mm");
+    const isInactive = product.status === "Inactive";
     const formattedPrice = new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
@@ -34,7 +35,7 @@ export const ProductRow = React.memo(
     };
 
     return (
-      <TableRow>
+      <TableRow className={isInactive ? "opacity-50" : undefined}>
         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-300">
           {rowNumber}
         </TableCell>

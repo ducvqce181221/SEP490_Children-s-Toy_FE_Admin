@@ -31,16 +31,19 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [localSearchTerm, setLocalSearchTerm] = useState(searchQuery);
   const [localFilters, setLocalFilters] = useState<VoucherFilters>(filters);
-
-  // Sync local state when parent searchQuery changes
-  React.useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
+  const [prevFilters, setPrevFilters] = useState(filters);
+  
+  if (prevSearchQuery !== searchQuery) {
+    setPrevSearchQuery(searchQuery);
     setLocalSearchTerm(searchQuery);
-  }, [searchQuery]);
+  }
 
-  React.useEffect(() => {
+  
+  if (prevFilters.status !== filters.status) { 
+    setPrevFilters(filters);
     setLocalFilters(filters);
-  }, [filters]);
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -65,6 +68,7 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
   };
 
   return (
+    // ... (Phần JSX return ở dưới giữ nguyên không thay đổi)
     <div className="px-5 py-5 sm:px-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5">
         <div>

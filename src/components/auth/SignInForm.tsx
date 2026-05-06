@@ -41,7 +41,7 @@ export default function SignInForm() {
       const response = await authApi.login(data);
 
       if (!ADMIN_ROLE_IDS.includes(response.account.roleId)) {
-        toast.error("Tài khoản không có quyền truy cập hệ thống quản trị.");
+        toast.error("This account does not have access to the admin system.");
         return;
       }
 
@@ -50,7 +50,7 @@ export default function SignInForm() {
       router.push("/admin");
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      const message = err?.response?.data?.message ?? "Đăng nhập thất bại. Vui lòng thử lại.";
+      const message = err?.response?.data?.message ?? "Sign-in failed. Please try again.";
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -128,6 +128,7 @@ export default function SignInForm() {
               >
                 {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
               </Button>
+
             </div>
           </form>
         </div>

@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/table";
 import Pagination from "@/components/common/Pagination";
 import Button from "@/components/ui/button/Button";
-import { PlusIcon } from "@/icons";
+import { PlusIcon, EyeIcon, PencilIcon, TrashBinIcon, PieChartIcon, DocsIcon, BoxCubeIcon, PageIcon, BoltIcon, BellIcon } from "@/icons";
+import SearchInput from "@/components/common/SearchInput";
 import { campaignApi, PaginatedCampaigns } from "../services/campaign-api";
 import { CampaignListItem } from "../types/campaign";
 
@@ -24,7 +25,7 @@ const STATUS_CONFIG: Record<
   { label: string; bg: string; text: string; dot: string; icon: React.ReactNode }
 > = {
   Draft: {
-    label: "Nháp",
+    label: "Draft",
     bg: "bg-gray-100 dark:bg-gray-800",
     text: "text-gray-600 dark:text-gray-400",
     dot: "bg-gray-400",
@@ -35,7 +36,7 @@ const STATUS_CONFIG: Record<
     ),
   },
   Scheduled: {
-    label: "Chờ gửi",
+    label: "Scheduled",
     bg: "bg-blue-50 dark:bg-blue-900/20",
     text: "text-blue-600 dark:text-blue-400",
     dot: "bg-blue-500",
@@ -46,7 +47,7 @@ const STATUS_CONFIG: Record<
     ),
   },
   Sending: {
-    label: "Đang gửi",
+    label: "Sending",
     bg: "bg-orange-50 dark:bg-orange-900/20",
     text: "text-orange-600 dark:text-orange-400",
     dot: "bg-orange-500",
@@ -58,7 +59,7 @@ const STATUS_CONFIG: Record<
     ),
   },
   Sent: {
-    label: "Đã gửi",
+    label: "Sent",
     bg: "bg-green-50 dark:bg-green-900/20",
     text: "text-green-600 dark:text-green-400",
     dot: "bg-green-500",
@@ -69,13 +70,13 @@ const STATUS_CONFIG: Record<
     ),
   },
   Cancelled: {
-    label: "Đã hủy",
+    label: "Cancelled",
     bg: "bg-red-50 dark:bg-red-900/20",
     text: "text-red-600 dark:text-red-400",
     dot: "bg-red-500",
     icon: (
-      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
       </svg>
     ),
   },
@@ -83,48 +84,47 @@ const STATUS_CONFIG: Record<
 
 const REFERENCE_TYPE_CONFIG: Record<
   string,
-  { label: string; bg: string; text: string; icon: string }
+  { label: string; bg: string; text: string; icon: React.ReactNode }
 > = {
   VOUCHER: {
     label: "Voucher",
     bg: "bg-purple-50 dark:bg-purple-900/20",
     text: "text-purple-600 dark:text-purple-400",
-    icon: "🎫",
+    icon: <DocsIcon className="w-6 h-6" />,
   },
   PRODUCT: {
-    label: "Sản phẩm",
+    label: "Product",
     bg: "bg-blue-50 dark:bg-blue-900/20",
     text: "text-blue-600 dark:text-blue-400",
-    icon: "📦",
+    icon: <BoxCubeIcon className="w-6 h-6" />,
   },
   BLOG: {
     label: "Blog",
     bg: "bg-amber-50 dark:bg-amber-900/20",
     text: "text-amber-600 dark:text-amber-400",
-    icon: "📝",
+    icon: <PageIcon className="w-6 h-6" />,
   },
   SALE: {
     label: "Sale",
     bg: "bg-red-50 dark:bg-red-900/20",
     text: "text-red-600 dark:text-red-400",
-    icon: "🏷️",
+    icon: <BoltIcon className="w-6 h-6" />,
   },
 };
-
 const TARGET_TYPE_LABELS: Record<string, string> = {
-  ALL: "Tất cả KH",
-  ROLE: "Theo nhóm",
-  INDIVIDUAL: "Cụ thể",
-  SEGMENT: "Phân khúc",
+  ALL: "All Customers",
+  ROLE: "By Role",
+  INDIVIDUAL: "Individual",
+  SEGMENT: "Segment",
 };
 
 const STATUS_TABS = [
-  { id: "", label: "Tất cả" },
-  { id: "Draft", label: "Nháp" },
-  { id: "Scheduled", label: "Chờ gửi" },
-  { id: "Sending", label: "Đang gửi" },
-  { id: "Sent", label: "Đã gửi" },
-  { id: "Cancelled", label: "Đã hủy" },
+  { id: "", label: "All" },
+  { id: "Draft", label: "Draft" },
+  { id: "Scheduled", label: "Scheduled" },
+  { id: "Sending", label: "Sending" },
+  { id: "Sent", label: "Sent" },
+  { id: "Cancelled", label: "Cancelled" },
 ];
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -153,7 +153,7 @@ const ReferenceBadge: React.FC<{ referenceType?: string | null }> = ({ reference
   if (!referenceType) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs text-gray-400 dark:text-gray-500">
-        🔔 Chung
+        <BellIcon className="w-5 h-5" /> General
       </span>
     );
   }
@@ -179,19 +179,19 @@ const EmptyState: React.FC<{ hasFilter: boolean; onClear: () => void }> = ({
       📣
     </div>
     <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-1">
-      {hasFilter ? "Không tìm thấy chiến dịch" : "Chưa có chiến dịch nào"}
+      {hasFilter ? "No campaigns found" : "No campaigns yet"}
     </h3>
     <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-6">
       {hasFilter
-        ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm."
-        : "Bắt đầu bằng cách tạo chiến dịch thông báo đầu tiên để tiếp cận khách hàng của bạn."}
+        ? "Try changing your filters or search term."
+        : "Start by creating your first notification campaign to reach your customers."}
     </p>
     {hasFilter ? (
       <button
         onClick={onClear}
         className="text-sm text-brand-500 hover:underline font-medium"
       >
-        Xóa bộ lọc
+        Clear filters
       </button>
     ) : (
       <Link
@@ -199,7 +199,7 @@ const EmptyState: React.FC<{ hasFilter: boolean; onClear: () => void }> = ({
         className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600 transition-colors"
       >
         <PlusIcon />
-        Tạo chiến dịch đầu tiên
+        Create your first campaign
       </Link>
     )}
   </div>
@@ -214,7 +214,7 @@ export const CampaignListPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   const [data, setData] = useState<PaginatedCampaigns | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
@@ -232,7 +232,7 @@ export const CampaignListPage: React.FC = () => {
       );
       setData(res);
     } catch {
-      toast.error("Không thể tải danh sách chiến dịch");
+      toast.error("Failed to load campaigns");
     } finally {
       setIsLoading(false);
     }
@@ -247,25 +247,20 @@ export const CampaignListPage: React.FC = () => {
     setCurrentPage(1);
   }, [activeStatus, searchQuery]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearchQuery(searchInput);
-  };
-
   const handleCancel = async (campaign: CampaignListItem) => {
     if (
       !confirm(
-        `Bạn có chắc muốn hủy chiến dịch "${campaign.campaignName}"? Hành động này không thể hoàn tác.`
+        `Are you sure you want to cancel campaign "${campaign.campaignName}"? This action cannot be undone.`
       )
     )
       return;
     setCancellingId(campaign.campaignId);
     try {
       await campaignApi.cancelCampaign(campaign.campaignId);
-      toast.success("Chiến dịch đã được hủy");
+      toast.success("Campaign cancelled successfully");
       fetchData();
     } catch {
-      toast.error("Không thể hủy chiến dịch. Vui lòng thử lại.");
+      toast.error("Failed to cancel campaign. Please try again.");
     } finally {
       setCancellingId(null);
     }
@@ -277,40 +272,51 @@ export const CampaignListPage: React.FC = () => {
   const hasFilter = !!searchQuery || !!activeStatus;
 
   return (
-    <div className="space-y-5">
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">
-            Chiến dịch thông báo
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Quản lý các chiến dịch gửi thông báo đến khách hàng
-          </p>
+    <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+      <div className="px-5 py-5 sm:px-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+              Campaigns
+            </h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Manage your notification campaigns.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/admin/campaigns/new">
+              <Button variant="primary" startIcon={<PlusIcon />}>
+                Create Campaign
+              </Button>
+            </Link>
+          </div>
         </div>
-        <Link href="/admin/campaigns/new">
-          <Button variant="primary" startIcon={<PlusIcon />}>
-            Tạo chiến dịch mới
-          </Button>
-        </Link>
-      </div>
 
-      {/* ── Main Card ───────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] overflow-hidden">
-        {/* Status Filter Tabs */}
-        <div className="border-b border-gray-100 dark:border-white/[0.05] px-5 pt-4">
-          <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-hide">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-xs">
+            <SearchInput
+              value={searchInput}
+              onChange={setSearchInput}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setSearchQuery(searchInput);
+                }
+              }}
+              placeholder="Search by name... (Press Enter)"
+            />
+          </div>
+
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
             {STATUS_TABS.map((tab) => {
               const active = activeStatus === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveStatus(tab.id)}
-                  className={`flex-shrink-0 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 ${
-                    active
-                      ? "border-brand-500 text-brand-600 dark:text-brand-400"
-                      : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
+                  className={`flex-shrink-0 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${active
+                    ? "bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:bg-gray-50 dark:hover:text-gray-300 dark:hover:bg-white/[0.02]"
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -318,74 +324,33 @@ export const CampaignListPage: React.FC = () => {
             })}
           </div>
         </div>
+      </div>
 
-        {/* Search Bar */}
-        <div className="px-5 py-4 border-b border-gray-100 dark:border-white/[0.05]">
-          <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
-            <div className="relative flex-1">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              <input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Tìm theo tên chiến dịch..."
-                className="w-full h-10 pl-9 pr-4 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent text-sm text-gray-800 dark:text-white/90 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-300 dark:focus:border-brand-700"
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-4 h-10 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
-            >
-              Tìm
-            </button>
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchInput("");
-                  setSearchQuery("");
-                }}
-                className="px-3 h-10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm"
-              >
-                ✕
-              </button>
-            )}
-          </form>
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
+      <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
+        <div className="min-w-[900px]">
           <Table>
-            <TableHeader className="bg-gray-50 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/[0.05]">
+            <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
-                <TableCell isHeader className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-left">
-                  Tên chiến dịch
+                <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                  #
                 </TableCell>
-                <TableCell isHeader className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-left">
-                  Đối tượng
+                <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                  Campaign Name
                 </TableCell>
-                <TableCell isHeader className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-left">
-                  Gửi cho
+                <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                  Reference Type
                 </TableCell>
-                <TableCell isHeader className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-left">
-                  Trạng thái
+                <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                  Target Audience
                 </TableCell>
-                <TableCell isHeader className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-left">
-                  Lịch gửi
+                <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                  Status
                 </TableCell>
-                <TableCell isHeader className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center">
-                  Hành động
+                <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                  Scheduled For
+                </TableCell>
+                <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400">
+                  Actions
                 </TableCell>
               </TableRow>
             </TableHeader>
@@ -393,7 +358,7 @@ export const CampaignListPage: React.FC = () => {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 7 }).map((_, j) => (
                       <TableCell key={j} className="px-5 py-4">
                         <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
                       </TableCell>
@@ -402,7 +367,7 @@ export const CampaignListPage: React.FC = () => {
                 ))
               ) : items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={7}>
                     <EmptyState
                       hasFilter={hasFilter}
                       onClear={() => {
@@ -414,11 +379,16 @@ export const CampaignListPage: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                items.map((campaign) => (
+                items.map((campaign, index) => (
                   <TableRow
                     key={campaign.campaignId}
                     className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
                   >
+                    {/* STT */}
+                    <TableCell className="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
+                      {(currentPage - 1) * pageSize + index + 1}
+                    </TableCell>
+
                     {/* Name */}
                     <TableCell className="px-5 py-4">
                       <Link
@@ -469,30 +439,24 @@ export const CampaignListPage: React.FC = () => {
 
                     {/* Actions */}
                     <TableCell className="px-5 py-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                      <div className="flex items-center justify-center gap-2">
                         {/* View detail — always */}
                         <Link
                           href={`/admin/campaigns/${campaign.campaignId}`}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                          title="Xem chi tiết"
+                          className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
+                          title="View details"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                          Chi tiết
+                          <EyeIcon className="w-5 h-5" />
                         </Link>
 
                         {/* Sent → view results */}
                         {campaign.status === "Sent" && (
                           <Link
                             href={`/admin/campaigns/${campaign.campaignId}`}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                            className="rounded-lg border border-gray-300 p-1.5 text-gray-500 transition-colors hover:border-green-400 hover:text-green-500 dark:border-gray-700 dark:text-gray-300"
+                            title="View results"
                           >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                            Kết quả
+                            <PieChartIcon className="w-5.7 h-5.7" />
                           </Link>
                         )}
 
@@ -500,12 +464,10 @@ export const CampaignListPage: React.FC = () => {
                         {(campaign.status === "Draft" || campaign.status === "Scheduled") && (
                           <Link
                             href={`/admin/campaigns/${campaign.campaignId}/edit`}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-500 dark:border-gray-700 dark:text-gray-300"
+                            title="Edit campaign"
                           >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Sửa
+                            <PencilIcon className="w-5 h-5" />
                           </Link>
                         )}
 
@@ -514,20 +476,19 @@ export const CampaignListPage: React.FC = () => {
                           <button
                             onClick={() => handleCancel(campaign)}
                             disabled={cancellingId === campaign.campaignId}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
-                            title="Hủy chiến dịch"
+                            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-error-400 hover:text-error-500 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
+                            title="Cancel campaign"
                           >
                             {cancellingId === campaign.campaignId ? (
-                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                               </svg>
                             ) : (
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                               </svg>
                             )}
-                            Hủy
                           </button>
                         )}
                       </div>
@@ -540,14 +501,29 @@ export const CampaignListPage: React.FC = () => {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {totalPages > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-5 py-4 border-t border-gray-100 dark:border-white/[0.05]">
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              Hiển thị{" "}
-              <strong>{Math.min((currentPage - 1) * pageSize + 1, totalItems)}</strong> –{" "}
-              <strong>{Math.min(currentPage * pageSize, totalItems)}</strong> /{" "}
-              <strong>{totalItems}</strong> chiến dịch
-            </span>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+              <span>
+                Showing {Math.min((currentPage - 1) * pageSize + 1, totalItems)} - {Math.min(currentPage * pageSize, totalItems)} / {totalItems} campaigns
+              </span>
+              <div className="flex items-center gap-2">
+                <span>Rows per page:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="py-1 px-2 border border-gray-300 rounded-md dark:border-gray-700 dark:bg-gray-800 focus:outline-hidden focus:ring-2 focus:ring-brand-500/20"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}

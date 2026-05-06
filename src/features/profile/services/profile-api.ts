@@ -1,5 +1,6 @@
 import axiosClient from "@/configs/axios-client";
 import {
+  ChangePasswordRequest,
   Profile,
   UpdateProfileRequest,
 } from "../types/profile";
@@ -15,6 +16,10 @@ export const profileApi = {
 
   updateMyProfile: async (payload: UpdateProfileRequest): Promise<Profile> => {
     return axiosClient.put<Profile, UpdateProfileRequest>("/profiles/me", payload);
+  },
+
+  changeMyPassword: async (payload: ChangePasswordRequest): Promise<void> => {
+    return axiosClient.put<void, ChangePasswordRequest>("/profiles/me/change-password", payload);
   },
 
   uploadMyAvatar: async (file: File): Promise<UploadImageResponse> => {

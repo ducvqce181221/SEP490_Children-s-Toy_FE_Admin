@@ -51,6 +51,7 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
     defaultValues: {
       categoryName: "",
       superCategoryId: 0,
+      status: "Active",
     },
   });
 
@@ -60,11 +61,13 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
         reset({
           categoryName: category.categoryName,
           superCategoryId: category.superCategoryId,
+          status: category.status,
         });
       } else {
         reset({
           categoryName: "",
           superCategoryId: 0,
+          status: "Active",
         });
       }
     }
@@ -75,7 +78,6 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
       const fetchSuperCategories = async () => {
         setIsLoadingSuperCategories(true);
         try {
-          // Fetch all super categories (up to 100 as per API limit)
           const res = await superCategoryApi.getSuperCategories({
             pageNumber: 1,
             pageSize: 100,
@@ -103,6 +105,8 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             ? "categoryName"
             : field.toLowerCase() === "supercategoryid"
             ? "superCategoryId"
+            : field.toLowerCase() === "status"
+            ? "status"
             : field;
         setError(fieldName as keyof CategoryFormData, {
           type: "server",
@@ -113,12 +117,14 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   };
 
   const superCategoryOptions = [
-    { value: 0, label: "Chọn danh mục lớn..." },
+    { value: 0, label: "Select super category..." },
     ...superCategories.map((sc) => ({
       value: sc.superCategoryId,
       label: sc.superCategoryName,
     })),
   ];
+
+  const isEditMode = mode === "edit";
 
   return (
     <Modal
@@ -128,12 +134,12 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
     >
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
-          {mode === "create" ? "Thêm danh mục" : "Cập nhật danh mục"}
+          {mode === "create" ? "Add Category" : "Update Category"}
         </h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {mode === "create"
-            ? "Nhập thông tin cho danh mục mới."
-            : "Chỉnh sửa thông tin danh mục."}
+            ? "Enter information for the new category."
+            : "Edit category information."}
         </p>
       </div>
 
@@ -141,7 +147,7 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
         <div className="mb-6 space-y-4">
           <div>
             <Label>
-              Danh mục lớn <span className="text-error-500">*</span>
+              Super Category <span className="text-error-500">*</span>
             </Label>
             <Select
               {...register("superCategoryId", { valueAsNumber: true })}
@@ -157,17 +163,38 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
 
           <div>
             <Label>
-              Tên danh mục <span className="text-error-500">*</span>
+              Category Name <span className="text-error-500">*</span>
             </Label>
             <Input
               type="text"
               {...register("categoryName")}
-              placeholder="Nhập tên danh mục"
+              placeholder="Enter category name"
               disabled={isSubmitting}
               error={!!errors.categoryName}
               hint={errors.categoryName?.message}
             />
           </div>
+
+          {isEditMode && (
+            <div>
+              <Label>
+                Status <span className="text-error-500">*</span>
+              </Label>
+              <select
+                {...register("status")}
+                disabled={isSubmitting}
+                className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+              {errors.status && (
+                <p className="mt-1.5 text-sm text-error-500">
+                  {errors.status.message}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-3">
@@ -177,7 +204,7 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             onClick={onClose}
             disabled={isSubmitting}
           >
-            Hủy
+            Cancel
           </Button>
           <Button
             type="submit"
@@ -185,7 +212,7 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             disabled={isSubmitting}
             isLoading={isSubmitting}
           >
-            {mode === "create" ? "Thêm mới" : "Cập nhật"}
+            {mode === "create" ? "Add" : "Update"}
           </Button>
         </div>
       </form>

@@ -2,13 +2,14 @@ import { z } from "zod";
 
 export const CategoryFormSchema = z.object({
   superCategoryId: z.number({
-    required_error: "Vui lòng chọn danh mục lớn",
-    invalid_type_error: "Danh mục lớn không hợp lệ",
-  }).min(1, "Vui lòng chọn danh mục lớn"),
+    required_error: "Please select a super category",
+    invalid_type_error: "Invalid super category",
+  }).min(1, "Please select a super category"),
   categoryName: z
     .string()
-    .min(1, "Tên danh mục không được để trống")
-    .max(100, "Tên danh mục không được vượt quá 100 ký tự"),
+    .min(1, "Category name is required")
+    .max(100, "Category name must not exceed 100 characters"),
+  status: z.enum(["Active", "Inactive"]),
 });
 
 export type CategoryFormData = z.infer<typeof CategoryFormSchema>;

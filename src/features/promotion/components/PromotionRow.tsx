@@ -3,7 +3,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { PromotionListDto } from "../types/promotion";
-import { TrashBinIcon, PencilIcon } from "@/icons/index";
+import { TrashBinIcon, PencilIcon, EyeIcon } from "@/icons/index";
 import { format } from "date-fns";
 import { Popover } from "@/components/ui/popover/Popover";
 import Link from "next/link";
@@ -19,7 +19,6 @@ interface PromotionRowProps {
 
 export const PromotionRow = React.memo(function PromotionRow({
   promotion,
-  rowNumber,
   isDeleting,
   onDeleteClick,
   onDeleteCancel,
@@ -75,6 +74,14 @@ export const PromotionRow = React.memo(function PromotionRow({
           <Link href={`/admin/promotions/${promotion.promotionId}`}>
             <button 
               className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
+              title="Xem chi tiết khuyến mãi"
+            >
+              <EyeIcon className="w-5 h-5" />
+            </button>
+          </Link>
+          <Link href={`/admin/promotions/${promotion.promotionId}/edit`}>
+            <button 
+              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
               title="Chỉnh sửa khuyến mãi"
             >
               <PencilIcon className="w-5 h-5" />
@@ -99,9 +106,9 @@ export const PromotionRow = React.memo(function PromotionRow({
           className="p-4"
         >
           <div className="w-[250px]">
-            <h4 className="text-sm font-semibold text-gray-800 dark:text-white/90 mb-1">Xác nhận xóa</h4>
+            <h4 className="text-sm font-semibold text-gray-800 dark:text-white/90 mb-1">Confirmation</h4>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              Bạn có chắc muốn xóa khuyến mãi <span className="font-bold text-gray-700 dark:text-gray-200">{promotion.promotionName}</span> không?
+              Are you sure you want to delete this promotion: <span className="font-bold text-gray-700 dark:text-gray-200">{promotion.promotionName}</span>?
             </p>
             <div className="flex justify-end gap-2">
               <Button 
@@ -110,7 +117,7 @@ export const PromotionRow = React.memo(function PromotionRow({
                 onClick={onDeleteCancel}
                 className="h-8 text-xs px-3"
               >
-                Hủy
+                Cancel
               </Button>
               <Button 
                 variant="primary" 
@@ -118,7 +125,7 @@ export const PromotionRow = React.memo(function PromotionRow({
                 onClick={onDeleteConfirm}
                 className="h-8 text-xs px-3 bg-error-500 hover:bg-error-600 border-error-500"
               >
-                Xóa
+                Delete
               </Button>
             </div>
           </div>

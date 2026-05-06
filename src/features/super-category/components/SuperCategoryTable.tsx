@@ -112,25 +112,31 @@ const SuperCategoryTable = () => {
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  STT
+                  No.
                 </TableCell>
                 <TableCell
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Tên danh mục lớn
+                  Super Category Name
                 </TableCell>
                 <TableCell
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Ngày tạo
+                  Status
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                >
+                  Created At
                 </TableCell>
                 <TableCell
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400"
                 >
-                  Hành động
+                  Actions
                 </TableCell>
               </TableRow>
             </TableHeader>
@@ -139,16 +145,16 @@ const SuperCategoryTable = () => {
               {showInitialLoading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className="px-5 py-10 text-center text-gray-500"
                   >
-                    Đang tải dữ liệu...
+                    Loading data...
                   </TableCell>
                 </TableRow>
               ) : error ? (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className="px-5 py-10 text-center text-error-500"
                   >
                     {error}
@@ -166,10 +172,10 @@ const SuperCategoryTable = () => {
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className="px-5 py-10 text-center text-gray-500"
                   >
-                    Không tìm thấy danh mục lớn nào.
+                    No super categories found.
                   </TableCell>
                 </TableRow>
               )}
@@ -182,10 +188,10 @@ const SuperCategoryTable = () => {
         <div className="flex flex-col sm:flex-row justify-between items-center px-5 py-4 border-t border-gray-100 dark:border-white/[0.05] gap-4">
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
             <span>
-              Hiển thị {Math.min((pageNumber - 1) * pageSize + 1, totalCount)} - {Math.min(pageNumber * pageSize, totalCount)} / {totalCount} danh mục lớn
+              Showing {Math.min((pageNumber - 1) * pageSize + 1, totalCount)} - {Math.min(pageNumber * pageSize, totalCount)} / {totalCount} super categories
             </span>
             <div className="flex items-center gap-2">
-              <span>Số dòng mỗi trang:</span>
+              <span>Rows per page:</span>
               <select
                 value={pageSize}
                 onChange={(e) => handlePageSizeChange(Number(e.target.value))}

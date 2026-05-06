@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 import { Modal } from "@/components/ui/modal";
@@ -11,6 +11,7 @@ import Button from "@/components/ui/button/Button";
 import { VoucherFormData } from "../types/voucher";
 import { VoucherFormSchema } from "../types/voucher.schema";
 import { voucherApi } from "../services/voucher-api";
+import { formatUTCtoLocal, formatLocalToUTC, formatDisplayDate } from "@/utils/date-utils";
 
 export type VoucherModalMode = "create" | "edit" | "detail";
 
@@ -57,12 +58,16 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<VoucherFormData>({
     resolver: zodResolver(VoucherFormSchema),
     defaultValues,
     mode: "onTouched",
   });
+
+  const startDate = useWatch({ control, name: "startDate" });
+  const endDate = useWatch({ control, name: "endDate" });
 
   useEffect(() => {
     if (isOpen) {
@@ -83,8 +88,8 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               minOrderAmount: data.minOrderAmount,
               totalQuantity: data.totalQuantity,
               maxUsagePerUser: data.maxUsagePerUser,
-              startDate: data.startDate ? new Date(data.startDate).toISOString().slice(0, 16) : "",
-              endDate: data.endDate ? new Date(data.endDate).toISOString().slice(0, 16) : "",
+              startDate: formatUTCtoLocal(data.startDate),
+              endDate: formatUTCtoLocal(data.endDate),
               status: data.status as "Active" | "Inactive" | "Scheduled" | "Expired",
             });
           } catch {
@@ -103,7 +108,15 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
 
   const onFormSubmit = (data: VoucherFormData) => {
     if (isReadOnly) return;
-    onSave?.(data);
+    
+    // Format dates back to UTC
+    const formattedData = {
+      ...data,
+      startDate: formatLocalToUTC(data.startDate),
+      endDate: formatLocalToUTC(data.endDate),
+    };
+    
+    onSave?.(formattedData);
   };
 
   const title = isDetailMode ? "Voucher Details" : isEditMode ? "Edit Voucher" : "Add New Voucher";
@@ -298,25 +311,35 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               <Label>
                 Start Date <span className="text-error-500">*</span>
               </Label>
-              <Input 
-                type="datetime-local" 
-                error={!!errors.startDate}
-                hint={errors.startDate?.message}
-                disabled={isReadOnly}
-                {...register("startDate")}
-              />
+              {isReadOnly ? (
+                <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
+                  {formatDisplayDate(startDate)}
+                </div>
+              ) : (
+                <Input 
+                  type="datetime-local" 
+                  error={!!errors.startDate}
+                  hint={errors.startDate?.message}
+                  {...register("startDate")}
+                />
+              )}
             </div>
             <div>
               <Label>
                 End Date <span className="text-error-500">*</span>
               </Label>
-              <Input 
-                type="datetime-local" 
-                error={!!errors.endDate}
-                hint={errors.endDate?.message}
-                disabled={isReadOnly}
-                {...register("endDate")}
-              />
+              {isReadOnly ? (
+                <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
+                  {formatDisplayDate(endDate)}
+                </div>
+              ) : (
+                <Input 
+                  type="datetime-local" 
+                  error={!!errors.endDate}
+                  hint={errors.endDate?.message}
+                  {...register("endDate")}
+                />
+              )}
             </div>
           </div>
 
