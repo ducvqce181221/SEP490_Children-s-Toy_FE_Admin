@@ -7,6 +7,7 @@ import {
   BlogListItem,
   BlogSortBy,
   BlogStatus,
+  FeaturedFilter,
   PaginatedResponse,
 } from "../types/blog";
 
@@ -27,6 +28,7 @@ export const useBlogs = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<BlogStatus | "all">("all");
+  const [featuredFilter, setFeaturedFilter] = useState<FeaturedFilter>("all");
   const [sortBy, setSortBy] = useState<BlogSortBy>("createdat");
   const [sortDesc, setSortDesc] = useState(true);
   const [pageNumber, setPageNumber] = useState(DEFAULT_PAGE_NUMBER);
@@ -62,6 +64,7 @@ export const useBlogs = () => {
           sortDesc,
           searchTerm: debouncedSearchTerm.length > 0 ? debouncedSearchTerm : undefined,
           status: statusFilter === "all" ? undefined : statusFilter,
+          featuredOnly: featuredFilter === "featured" ? true : undefined,
         };
 
         const response = isAdmin
@@ -100,6 +103,7 @@ export const useBlogs = () => {
     sortDesc,
     debouncedSearchTerm,
     statusFilter,
+    featuredFilter,
     reloadToken,
   ]);
 
@@ -115,6 +119,11 @@ export const useBlogs = () => {
 
   const handleSortByChange = useCallback((value: BlogSortBy) => {
     setSortBy(value);
+    setPageNumber(DEFAULT_PAGE_NUMBER);
+  }, []);
+
+  const handleFeaturedFilterChange = useCallback((value: FeaturedFilter) => {
+    setFeaturedFilter(value);
     setPageNumber(DEFAULT_PAGE_NUMBER);
   }, []);
 
@@ -154,6 +163,7 @@ export const useBlogs = () => {
     error: effectiveError,
     searchTerm,
     statusFilter,
+    featuredFilter,
     sortBy,
     sortDesc,
     pageNumber,
@@ -165,6 +175,7 @@ export const useBlogs = () => {
     isStaff,
     handleSearchChange,
     handleStatusFilterChange,
+    handleFeaturedFilterChange,
     handleSortByChange,
     handleSortDirectionChange,
     handlePageSizeChange,
