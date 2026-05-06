@@ -368,6 +368,7 @@ export function ProductCatalogSection({
                               src={product.mainImageUrl}
                               alt={product.productName}
                               fill
+                              sizes="40px"
                               className="object-cover"
                             />
                           </div>

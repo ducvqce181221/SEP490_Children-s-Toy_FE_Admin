@@ -47,6 +47,7 @@ export const ProductRow = React.memo(
                   src={product.mainImageUrl}
                   alt={product.productName}
                   fill
+                  sizes="40px"
                   className="object-cover"
                 />
               </div>
