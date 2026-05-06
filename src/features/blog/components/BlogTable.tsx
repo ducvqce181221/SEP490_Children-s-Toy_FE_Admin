@@ -3,6 +3,8 @@
 import React, { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import Pagination from "@/components/common/Pagination";
+import Button from "@/components/ui/button/Button";
+import { Modal } from "@/components/ui/modal";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { useBlogMutations } from "../hooks/useBlogMutations";
 import { useBlogs } from "../hooks/useBlogs";
@@ -29,6 +31,7 @@ const BlogTable = () => {
     error,
     searchTerm,
     statusFilter,
+    featuredFilter,
     sortBy,
     sortDesc,
     pageNumber,
@@ -40,6 +43,7 @@ const BlogTable = () => {
     isStaff,
     handleSearchChange,
     handleStatusFilterChange,
+    handleFeaturedFilterChange,
     handleSortByChange,
     handleSortDirectionChange,
     handlePageSizeChange,
@@ -52,10 +56,14 @@ const BlogTable = () => {
     updateBlog,
     submitBlog,
     approveBlog,
+    publishNow,
+    hideBlog,
     isCreating,
     isUpdating,
     isSubmittingBlog,
     isApproving,
+    isPublishingNow,
+    isHidingBlog,
   } = useBlogMutations(reloadBlogs);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -66,6 +74,9 @@ const BlogTable = () => {
     imageUrl: string;
     title: string;
   } | null>(null);
+  const [hideTarget, setHideTarget] = useState<{ blogPostId: number; blogTitle: string } | null>(
+    null,
+  );
 
   const pageRangeText = useMemo(() => {
     if (totalCount === 0) {
@@ -155,6 +166,50 @@ const BlogTable = () => {
     toast.error(result.message);
   };
 
+  const handlePublishNow = async (blogPostId: number) => {
+    const result = await publishNow(blogPostId);
+
+    if (result.success) {
+      toast.success(result.message);
+      return;
+    }
+
+    toast.error(result.message);
+  };
+
+  const handleHideBlog = async (blogPostId: number, blogTitle: string) => {
+    setHideTarget({ blogPostId, blogTitle });
+  };
+
+  const handleHideBlogByStaff = async (blogPostId: number) => {
+    const result = await hideBlog(blogPostId);
+
+    if (result.success) {
+      toast.success(result.message);
+      setSelectedEditBlogId(null);
+      return;
+    }
+
+    toast.error(result.message);
+  };
+
+  const handleConfirmHideBlog = async () => {
+    if (!hideTarget) {
+      return;
+    }
+
+    const { blogPostId } = hideTarget;
+    const result = await hideBlog(blogPostId);
+
+    if (result.success) {
+      toast.success(result.message);
+      setHideTarget(null);
+      return;
+    }
+
+    toast.error(result.message);
+  };
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <BlogToolbar
@@ -162,10 +217,12 @@ const BlogTable = () => {
         canAdd={isStaff}
         searchTerm={searchTerm}
         statusFilter={statusFilter}
+        featuredFilter={featuredFilter}
         sortBy={sortBy}
         sortDesc={sortDesc}
         onSearchChange={handleSearchChange}
         onStatusFilterChange={handleStatusFilterChange}
+        onFeaturedFilterChange={handleFeaturedFilterChange}
         onSortByChange={handleSortByChange}
         onSortDirectionChange={handleSortDirectionChange}
         onAddClick={() => setIsCreateModalOpen(true)}
@@ -232,10 +289,14 @@ const BlogTable = () => {
                     isAdmin={isAdmin}
                     isStaff={isStaff}
                     isSubmitting={isSubmittingBlog}
+                    isPublishingNow={isPublishingNow}
+                    isHidingBlog={isHidingBlog}
                     onOpenDetail={setSelectedDetailBlogId}
                     onOpenEdit={setSelectedEditBlogId}
                     onSubmitBlog={handleSubmitBlog}
                     onOpenApproval={setSelectedApprovalBlogId}
+                    onPublishNow={handlePublishNow}
+                    onHideBlog={handleHideBlog}
                     onOpenThumbnailPreview={(imageUrl, title) =>
                       setThumbnailPreview({ imageUrl, title })
                     }
@@ -303,9 +364,11 @@ const BlogTable = () => {
           mode="edit"
           blogPostId={selectedEditBlogId}
           isSubmitting={isUpdating}
+          isHidingBlog={isHidingBlog}
           onClose={() => setSelectedEditBlogId(null)}
           onCreate={handleCreateBlog}
           onUpdate={handleUpdateBlog}
+          onHideBlog={handleHideBlogByStaff}
         />
       )}
 
@@ -325,6 +388,43 @@ const BlogTable = () => {
         title={thumbnailPreview?.title ?? "Thumbnail"}
         onClose={() => setThumbnailPreview(null)}
       />
+
+      <Modal
+        isOpen={hideTarget !== null}
+        onClose={() => setHideTarget(null)}
+        className="max-w-[520px] p-6 lg:p-7"
+      >
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+            Confirm Hide Blog
+          </h3>
+          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+            <p>Are you sure you want to hide this blog?</p>
+            <p>This blog will no longer be visible to customers.</p>
+            {hideTarget?.blogTitle && (
+              <p className="font-medium text-gray-800 dark:text-white/90">
+                Title: {hideTarget.blogTitle}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setHideTarget(null)}
+              disabled={isHidingBlog}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleConfirmHideBlog}
+              disabled={isHidingBlog}
+            >
+              {isHidingBlog ? "Hiding..." : "Confirm Hide"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

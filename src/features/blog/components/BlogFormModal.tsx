@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AxiosError } from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import type Quill from "quill";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { blogApi } from "../services/blog-api";
@@ -26,18 +27,53 @@ interface BlogFormModalProps {
     blogPostId: number,
     payload: UpdateBlogRequest,
   ) => Promise<CreateOrUpdateBlogResult>;
+  onHideBlog?: (blogPostId: number) => Promise<void>;
+  isHidingBlog?: boolean;
 }
 
 const inputClassName =
   "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
+
+const BLOG_CATEGORY_OPTIONS = [
+  { value: 1, label: "Tin tức & Khuyến mãi" },
+  { value: 2, label: "Kiến thức nuôi dạy trẻ" },
+  { value: 3, label: "Review sản phẩm" },
+] as const;
 
 const defaultValues: BlogFormValues = {
   blogCategoryId: 1,
   blogTitle: "",
   blogContent: "",
   blogThumbnail: "",
-  isFeatured: false,
   blogAt: "",
+};
+
+const decodeHtmlEntities = (value: string) => {
+  if (typeof window === "undefined") {
+    return value;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = value;
+  return textarea.value;
+};
+
+const normalizeIncomingBlogContent = (rawValue: unknown) => {
+  if (typeof rawValue !== "string") {
+    return "";
+  }
+
+  const trimmed = rawValue.trim();
+  if (trimmed.length === 0) {
+    return "";
+  }
+
+  // Some legacy records may store escaped HTML.
+  if (trimmed.includes("&lt;") && trimmed.includes("&gt;")) {
+    return decodeHtmlEntities(trimmed);
+  }
+
+  return trimmed;
 };
 
 const toDateTimeLocal = (dateValue: string | null) => {
@@ -84,10 +120,27 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
   onClose,
   onCreate,
   onUpdate,
+  onHideBlog,
+  isHidingBlog = false,
 }) => {
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [isHideConfirmOpen, setIsHideConfirmOpen] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<string>("");
+  const editorRef = useRef<HTMLDivElement>(null);
+  const quillRef = useRef<Quill | null>(null);
+  const pendingContentRef = useRef("");
+  const isApplyingContentRef = useRef(false);
+  const toolbarId = `blog-content-toolbar-${useId().replace(/:/g, "")}`;
+  const isEditLoading = mode === "edit" && isLoadingDetail;
+
+  const resetQuillEditor = useCallback(() => {
+    quillRef.current = null;
+    if (editorRef.current) {
+      editorRef.current.innerHTML = "";
+    }
+  }, []);
 
   const {
     register,
@@ -103,6 +156,76 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
   });
   const currentThumbnail = useWatch({ control, name: "blogThumbnail" });
 
+  const setQuillContent = useCallback(
+    (html: string) => {
+      const normalizedContent = normalizeIncomingBlogContent(html);
+
+      if (!quillRef.current) {
+        pendingContentRef.current = normalizedContent;
+        return;
+      }
+
+      isApplyingContentRef.current = true;
+      if (normalizedContent.length === 0) {
+        quillRef.current.setText("", "api");
+      } else {
+        const delta = quillRef.current.clipboard.convert({ html: normalizedContent });
+        quillRef.current.setContents(delta, "api");
+      }
+      setValue("blogContent", quillRef.current.root.innerHTML, { shouldValidate: true });
+      queueMicrotask(() => {
+        isApplyingContentRef.current = false;
+      });
+    },
+    [setValue],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const initializeQuill = async () => {
+      if (!isOpen || isEditLoading || !editorRef.current || quillRef.current) {
+        return;
+      }
+
+      const QuillModule = await import("quill");
+      if (cancelled || !editorRef.current || quillRef.current) {
+        return;
+      }
+
+      const Quill = QuillModule.default;
+      const quill = new Quill(editorRef.current, {
+        theme: "snow",
+        modules: {
+          toolbar: `#${toolbarId}`,
+        },
+        placeholder: "Write blog content...",
+      });
+
+      quill.on("text-change", (_delta, _oldDelta, source) => {
+        if (source !== "user" || isApplyingContentRef.current) {
+          return;
+        }
+        setValue("blogContent", quill.root.innerHTML, { shouldValidate: true });
+      });
+
+      quillRef.current = quill;
+      setQuillContent(pendingContentRef.current);
+    };
+
+    void initializeQuill();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditLoading, isOpen, setQuillContent, setValue, toolbarId]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetQuillEditor();
+    }
+  }, [isOpen, resetQuillEditor]);
+
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -110,6 +233,9 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
 
     if (mode === "create") {
       reset(defaultValues);
+      setCurrentStatus("");
+      pendingContentRef.current = "";
+      setQuillContent("");
       return;
     }
 
@@ -118,21 +244,29 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
     }
 
     let isCancelled = false;
+    pendingContentRef.current = "";
+    setQuillContent("");
 
     const fetchBlogDetail = async () => {
+      setFormError(null);
       setIsLoadingDetail(true);
       try {
         const detail = await blogApi.getBlogById(blogPostId);
         if (!isCancelled) {
           const thumbnailValue = detail.blogThumbnail ?? "";
+          const incomingContent = normalizeIncomingBlogContent(
+            detail.blogContent ?? (detail as unknown as Record<string, unknown>).content,
+          );
           reset({
             blogCategoryId: detail.blogCategoryId,
             blogTitle: detail.blogTitle,
-            blogContent: detail.blogContent,
+            blogContent: incomingContent,
             blogThumbnail: thumbnailValue,
-            isFeatured: detail.isFeatured,
             blogAt: toDateTimeLocal(detail.blogAt),
           });
+          setCurrentStatus(detail.status ?? "");
+          pendingContentRef.current = incomingContent;
+          setQuillContent(pendingContentRef.current);
         }
       } catch (error) {
         if (!isCancelled) {
@@ -153,7 +287,15 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [isOpen, mode, blogPostId, reset]);
+  }, [blogPostId, isOpen, mode, reset, resetQuillEditor, setQuillContent]);
+
+  useEffect(() => {
+    if (!quillRef.current) {
+      return;
+    }
+
+    quillRef.current.enable(!isEditLoading && !isSubmitting);
+  }, [isEditLoading, isSubmitting]);
 
   const handleThumbnailFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -195,7 +337,6 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
       blogTitle: values.blogTitle.trim(),
       blogContent: values.blogContent.trim(),
       blogThumbnail: values.blogThumbnail.trim() === "" ? null : values.blogThumbnail.trim(),
-      isFeatured: values.isFeatured,
       blogAt: toApiDateTime(values.blogAt),
     };
 
@@ -245,6 +386,23 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
     onClose();
   };
 
+  const handleHideBlog = async () => {
+    if (mode !== "edit" || !blogPostId || !onHideBlog) {
+      return;
+    }
+
+    setIsHideConfirmOpen(true);
+  };
+
+  const handleConfirmHideBlog = async () => {
+    if (mode !== "edit" || !blogPostId || !onHideBlog) {
+      return;
+    }
+
+    await onHideBlog(blogPostId);
+    setIsHideConfirmOpen(false);
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -257,44 +415,13 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
         </h2>
       </div>
 
-      {isLoadingDetail ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">Loading blog data...</p>
-      ) : (
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit(handleFormSubmit)}>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Blog Category ID
-            </label>
-            <input type="number" className={inputClassName} {...register("blogCategoryId")} />
-            {errors.blogCategoryId?.message && (
-              <p className="mt-1 text-sm text-error-600">{errors.blogCategoryId.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Blog Title
-            </label>
-            <input type="text" className={inputClassName} {...register("blogTitle")} />
-            {errors.blogTitle?.message && (
-              <p className="mt-1 text-sm text-error-600">{errors.blogTitle.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Blog Content
-            </label>
-            <textarea
-              rows={6}
-              className={`${inputClassName} h-auto min-h-[140px] resize-y`}
-              {...register("blogContent")}
-            />
-            {errors.blogContent?.message && (
-              <p className="mt-1 text-sm text-error-600">{errors.blogContent.message}</p>
-            )}
-          </div>
-
+      {isEditLoading && (
+        <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">Loading blog data...</p>
+      )}
+      <form
+        className={`flex flex-col gap-4 ${isEditLoading ? "pointer-events-none opacity-70" : ""}`}
+        onSubmit={handleSubmit(handleFormSubmit)}
+      >
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Thumbnail (Local File)
@@ -304,7 +431,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
               accept="image/*"
               className={`${inputClassName} h-auto cursor-pointer py-2.5 file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-600 hover:file:bg-brand-100 dark:file:bg-brand-500/15 dark:file:text-brand-300`}
               onChange={handleThumbnailFileChange}
-              disabled={isUploadingThumbnail}
+              disabled={isUploadingThumbnail || isEditLoading || isSubmitting}
             />
             <input type="hidden" {...register("blogThumbnail")} />
             {currentThumbnail && (
@@ -318,12 +445,12 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
               </p>
             )}
             {currentThumbnail && (
-              <div className="mt-3 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="mt-3 flex min-h-[220px] w-full items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800 sm:min-h-[280px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={currentThumbnail}
                   alt="Thumbnail preview"
-                  className="h-36 w-full object-cover"
+                  className="h-full max-h-[360px] w-full rounded-md object-contain"
                 />
               </div>
             )}
@@ -332,22 +459,103 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Blog At (schedule)
-              </label>
-              <input type="datetime-local" className={inputClassName} {...register("blogAt")} />
-              {errors.blogAt?.message && (
-                <p className="mt-1 text-sm text-error-600">{errors.blogAt.message}</p>
-              )}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Blog Title
+            </label>
+            <input
+              type="text"
+              className={inputClassName}
+              {...register("blogTitle")}
+              disabled={isEditLoading || isSubmitting}
+            />
+            {errors.blogTitle?.message && (
+              <p className="mt-1 text-sm text-error-600">{errors.blogTitle.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Blog Category
+            </label>
+            <select
+              className={inputClassName}
+              {...register("blogCategoryId")}
+              disabled={isEditLoading || isSubmitting}
+            >
+              {BLOG_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {errors.blogCategoryId?.message && (
+              <p className="mt-1 text-sm text-error-600">{errors.blogCategoryId.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Blog Content
+            </label>
+            <div className="rounded-lg border border-gray-300 dark:border-gray-700">
+              <div id={toolbarId} className="border-b border-gray-300 p-2 dark:border-gray-700">
+                <span className="ql-formats">
+                  <select className="ql-font">
+                    <option value="sans-serif">Sans</option>
+                    <option value="serif">Serif</option>
+                    <option value="monospace">Mono</option>
+                  </select>
+                  <select className="ql-size">
+                    <option value="small">Small</option>
+                    <option value="">Normal</option>
+                    <option value="large">Large</option>
+                    <option value="huge">Huge</option>
+                  </select>
+                </span>
+                <span className="ql-formats">
+                  <button className="ql-bold" />
+                  <button className="ql-italic" />
+                  <button className="ql-underline" />
+                  <button className="ql-strike" />
+                </span>
+                <span className="ql-formats">
+                  <select className="ql-color" />
+                  <select className="ql-background" />
+                </span>
+                <span className="ql-formats">
+                  <button className="ql-list" value="ordered" />
+                  <button className="ql-list" value="bullet" />
+                </span>
+                <span className="ql-formats">
+                  <button className="ql-link" />
+                  <button className="ql-clean" />
+                </span>
+              </div>
+              <div
+                ref={editorRef}
+                className="min-h-[180px] text-sm text-gray-800 dark:text-white/90"
+              />
             </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                <input type="checkbox" className="h-4 w-4" {...register("isFeatured")} />
-                Mark as featured
-              </label>
-            </div>
+            <input type="hidden" {...register("blogContent")} />
+            {errors.blogContent?.message && (
+              <p className="mt-1 text-sm text-error-600">{errors.blogContent.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Blog At (schedule)
+            </label>
+            <input
+              type="datetime-local"
+              className={inputClassName}
+              {...register("blogAt")}
+              disabled={isEditLoading || isSubmitting}
+            />
+            {errors.blogAt?.message && (
+              <p className="mt-1 text-sm text-error-600">{errors.blogAt.message}</p>
+            )}
           </div>
 
           {mode === "edit" && (
@@ -363,17 +571,64 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
           )}
 
           <div className="mt-3 flex items-center justify-end gap-3">
-            <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            {mode === "edit" &&
+              currentStatus.toLowerCase() !== "hidden" &&
+              typeof onHideBlog === "function" && (
+                <Button
+                  variant="outline"
+                  onClick={handleHideBlog}
+                  disabled={isSubmitting || isEditLoading || isHidingBlog}
+                >
+                  {isHidingBlog ? "Hiding..." : "Hide Blog"}
+                </Button>
+              )}
+            <Button variant="outline" onClick={onClose} disabled={isSubmitting || isEditLoading}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={isSubmitting || isUploadingThumbnail}>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isSubmitting || isUploadingThumbnail || isEditLoading}
+            >
               {isSubmitting ? "Saving..." : mode === "create" ? "Create Blog" : "Save Blog"}
             </Button>
           </div>
-        </form>
-      )}
+      </form>
+
+      <Modal
+        isOpen={isHideConfirmOpen}
+        onClose={() => setIsHideConfirmOpen(false)}
+        className="max-w-[520px] p-6 lg:p-7"
+      >
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+            Confirm Hide Blog
+          </h3>
+          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+            <p>Are you sure you want to hide this blog?</p>
+            <p>This blog will no longer be visible to customers.</p>
+          </div>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsHideConfirmOpen(false)}
+              disabled={isHidingBlog}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleConfirmHideBlog}
+              disabled={isHidingBlog}
+            >
+              {isHidingBlog ? "Hiding..." : "Confirm Hide"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </Modal>
   );
 };
 
 export default BlogFormModal;
+

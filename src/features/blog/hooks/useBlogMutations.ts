@@ -22,6 +22,8 @@ export const useBlogMutations = (onSuccess?: () => void) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSubmittingBlog, setIsSubmittingBlog] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [isPublishingNow, setIsPublishingNow] = useState(false);
+  const [isHidingBlog, setIsHidingBlog] = useState(false);
 
   const createBlog = async (
     payload: CreateBlogRequest,
@@ -169,14 +171,68 @@ export const useBlogMutations = (onSuccess?: () => void) => {
     }
   };
 
+  const publishNow = async (blogPostId: number): Promise<SubmitResult> => {
+    setIsPublishingNow(true);
+
+    try {
+      const updatedBlog = await blogApi.publishNow(blogPostId);
+      onSuccess?.();
+
+      return {
+        success: true,
+        message: "Blog published successfully.",
+        data: updatedBlog,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+      return {
+        success: false,
+        message:
+          axiosError.response?.data?.message ??
+          "Unable to publish blog now. Please try again.",
+      };
+    } finally {
+      setIsPublishingNow(false);
+    }
+  };
+
+  const hideBlog = async (blogPostId: number): Promise<SubmitResult> => {
+    setIsHidingBlog(true);
+
+    try {
+      const updatedBlog = await blogApi.hideBlog(blogPostId);
+      onSuccess?.();
+
+      return {
+        success: true,
+        message: "Blog hidden successfully.",
+        data: updatedBlog,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+      return {
+        success: false,
+        message:
+          axiosError.response?.data?.message ??
+          "Unable to hide blog. Please try again.",
+      };
+    } finally {
+      setIsHidingBlog(false);
+    }
+  };
+
   return {
     createBlog,
     updateBlog,
     submitBlog,
     approveBlog,
+    publishNow,
+    hideBlog,
     isCreating,
     isUpdating,
     isSubmittingBlog,
     isApproving,
+    isPublishingNow,
+    isHidingBlog,
   };
 };

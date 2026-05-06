@@ -17,7 +17,6 @@ export const blogFormSchema = z.object({
     .trim()
     .max(500, "Thumbnail URL must not exceed 500 characters.")
     .or(z.literal("")),
-  isFeatured: z.boolean(),
   blogAt: z.string().optional(),
 });
 
