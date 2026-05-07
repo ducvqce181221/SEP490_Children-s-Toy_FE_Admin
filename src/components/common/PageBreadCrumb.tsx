@@ -6,6 +6,11 @@ interface BreadcrumbItem {
   href?: string;
 }
 
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
 interface BreadcrumbProps {
   pageTitle: string;
   breadcrumbs?: BreadcrumbItem[];

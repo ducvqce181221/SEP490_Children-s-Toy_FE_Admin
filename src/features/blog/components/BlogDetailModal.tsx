@@ -101,13 +101,13 @@ const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Thumbnail
             </label>
-            <div className="flex h-44 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+            <div className="flex min-h-[220px] w-full items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800 sm:min-h-[280px]">
               {blogDetail.blogThumbnail ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={blogDetail.blogThumbnail}
                   alt={blogDetail.blogTitle}
-                  className="h-full w-full object-cover"
+                  className="h-full max-h-[360px] w-full rounded-md object-contain"
                 />
               ) : (
                 <span className="text-sm text-gray-500 dark:text-gray-400">No thumbnail</span>
@@ -120,8 +120,8 @@ const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
             <input className={`${inputClassName} h-11`} value={blogDetail.blogPostId} readOnly />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Category ID</label>
-            <input className={`${inputClassName} h-11`} value={blogDetail.blogCategoryId} readOnly />
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+            <input className={`${inputClassName} h-11`} value={blogDetail.blogCategoryName} readOnly />
           </div>
           <div className="sm:col-span-2">
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
@@ -140,8 +140,8 @@ const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
             <input className={`${inputClassName} h-11`} value={blogDetail.author} readOnly />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Approved By</label>
-            <input className={`${inputClassName} h-11`} value={blogDetail.approvedBy ?? "--"} readOnly />
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Created At</label>
+            <input className={`${inputClassName} h-11`} value={formatDateTime(blogDetail.createdAt)} readOnly />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Blog At</label>
@@ -153,11 +153,14 @@ const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
           </div>
           <div className="sm:col-span-2">
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Content</label>
-            <textarea
-              className={`${inputClassName} min-h-[160px] resize-y`}
-              value={blogDetail.blogContent}
-              readOnly
-            />
+            <div
+              className={`${inputClassName} min-h-[160px] whitespace-normal`}
+            >
+              <div
+                className="ql-editor p-0"
+              dangerouslySetInnerHTML={{ __html: blogDetail.blogContent || "<p>--</p>" }}
+              />
+            </div>
           </div>
 
           {blogDetail.reason && (

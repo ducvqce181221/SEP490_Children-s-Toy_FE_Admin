@@ -38,7 +38,8 @@ src/
 ├── context/                    # Global Context (Theme, Sidebar)
 ├── hooks/                      # Global Hooks (useModal, useGoBack)
 ├── layout/                     # Shell components (Sidebar, AppHeader)
-└── types/                      # Shared Types dùng toàn dự án
+├── types/                      # Shared Types dùng toàn dự án
+└── utils/                      # 🛠 Shared Helper Functions (date, string, validation...)
 
 docs/
 └── dependencies.md             # Registry các package đã cài

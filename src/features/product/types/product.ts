@@ -63,6 +63,9 @@ export interface ProductQueryParams {
   sortBy?: ProductSortBy;
   sortDesc?: boolean;
   searchTerm?: string;
+  brandId?: number | null;
+  categoryId?: number | null;
+  status?: string;
 }
 
 export interface ApiErrorResponse {
@@ -86,8 +89,13 @@ export interface ProductLookupOption {
   label: string;
 }
 
+export interface ProductPriceRangeLookup extends ProductLookupOption {
+  min: number;
+  max: number;
+}
+
 export interface ProductLookupsResponse {
-  priceRanges: ProductLookupOption[];
+  priceRanges: ProductPriceRangeLookup[];
   materials: ProductLookupOption[];
   ages: ProductLookupOption[];
   sexes: ProductLookupOption[];

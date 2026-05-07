@@ -9,6 +9,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@floating-ui/react": "^0.27.19",
     "@fullcalendar/core": "^6.1.19",
     "@fullcalendar/daygrid": "^6.1.19",
     "@fullcalendar/interaction": "^6.1.19",
@@ -27,6 +28,7 @@
     "date-fns": "^4.1.0",
     "flatpickr": "^4.6.13",
     "next": "^16.1.6",
+    "quill": "^2.0.3",
     "react": "^19.2.0",
     "react-apexcharts": "^1.8.0",
     "react-dnd": "^16.0.1",

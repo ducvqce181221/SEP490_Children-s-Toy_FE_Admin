@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { promotionFormSchema, type PromotionFormData } from "../types/promotion.schema";
 import type { Promotion } from "../types/promotion";
-import type { ProductListItem } from "@/features/product/types/product";
+import { formatUTCtoLocal, formatLocalToUTC, formatDisplayDate } from "@/utils/date-utils";
 import { usePromotionMutations } from "../hooks/usePromotionMutations";
 import { ProductPromotionTable } from "./ProductPromotionTable";
 import Button from "@/components/ui/button/Button";
@@ -70,21 +70,21 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
     name: "productPromotions",
   });
 
-  const { fields, append, remove } = fieldArray;
-
   useEffect(() => {
     if (initialData) {
       reset({
         promotionName: initialData.promotionName,
         promotionType: initialData.promotionType,
         description: initialData.description,
-        startDate: new Date(initialData.startDate).toISOString().slice(0, 16),
-        endDate: new Date(initialData.endDate).toISOString().slice(0, 16),
+        startDate: formatUTCtoLocal(initialData.startDate),
+        endDate: formatUTCtoLocal(initialData.endDate),
         status: initialData.status,
         priority: initialData.priority,
         productPromotions: initialData.productPromotions.map((p) => ({
           productId: p.productId,
           productName: p.productName,
+          originalPrice: p.originalPrice,
+          stock: p.stock,
           salePrice: p.salePrice,
           discountPercent: p.discountPercent,
           saleQuantity: p.saleQuantity,
@@ -99,8 +99,9 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
   const onSubmit = async (data: PromotionFormData) => {
     const formattedData = {
       ...data,
-      startDate: new Date(data.startDate).toISOString(),
-      endDate: new Date(data.endDate).toISOString(),
+      startDate: formatLocalToUTC(data.startDate),
+      endDate: formatLocalToUTC(data.endDate),
+      productPromotions: data.productPromotions.map(({ ...rest }) => rest),
     };
 
     if (initialData) {
@@ -150,27 +151,37 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
             {/* Start Date */}
             <div>
               <Label htmlFor="startDate">Start Date <span className="text-error-500">*</span></Label>
-              <Input
-                id="startDate"
-                type="datetime-local"
-                error={!!errors.startDate}
-                hint={errors.startDate?.message}
-                disabled={readonly}
-                {...register("startDate")}
-              />
+              {readonly ? (
+                <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
+                  {formatDisplayDate(watch("startDate"))}
+                </div>
+              ) : (
+                <Input
+                  id="startDate"
+                  type="datetime-local"
+                  error={!!errors.startDate}
+                  hint={errors.startDate?.message}
+                  {...register("startDate")}
+                />
+              )}
             </div>
 
             {/* End Date */}
             <div>
               <Label htmlFor="endDate">End Date <span className="text-error-500">*</span></Label>
-              <Input
-                id="endDate"
-                type="datetime-local"
-                error={!!errors.endDate}
-                hint={errors.endDate?.message}
-                disabled={readonly}
-                {...register("endDate")}
-              />
+              {readonly ? (
+                <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
+                  {formatDisplayDate(watch("endDate"))}
+                </div>
+              ) : (
+                <Input
+                  id="endDate"
+                  type="datetime-local"
+                  error={!!errors.endDate}
+                  hint={errors.endDate?.message}
+                  {...register("endDate")}
+                />
+              )}
             </div>
 
             {/* Status */}

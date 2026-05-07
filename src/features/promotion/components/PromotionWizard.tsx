@@ -8,6 +8,7 @@ import { twMerge } from "tailwind-merge";
 
 import { promotionFormSchema, type PromotionFormData } from "../types/promotion.schema";
 import type { Promotion } from "../types/promotion";
+import { formatUTCtoLocal, formatLocalToUTC } from "@/utils/date-utils";
 import type { ProductListItem } from "@/features/product/types/product";
 import { usePromotionMutations } from "../hooks/usePromotionMutations";
 import { ProductCatalogSection } from "./ProductCatalogSection";
@@ -47,6 +48,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
   });
 
   const form = useForm<PromotionFormData>({
+    mode: "onTouched",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(promotionFormSchema) as any,
     defaultValues: {
@@ -85,13 +87,15 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
         promotionName: initialData.promotionName,
         promotionType: initialData.promotionType,
         description: initialData.description,
-        startDate: new Date(initialData.startDate).toISOString().slice(0, 16),
-        endDate: new Date(initialData.endDate).toISOString().slice(0, 16),
+        startDate: formatUTCtoLocal(initialData.startDate),
+        endDate: formatUTCtoLocal(initialData.endDate),
         status: initialData.status,
         priority: initialData.priority,
         productPromotions: initialData.productPromotions.map((p) => ({
           productId: p.productId,
           productName: p.productName,
+          originalPrice: p.originalPrice,
+          stock: p.stock,
           salePrice: p.salePrice,
           discountPercent: p.discountPercent,
           saleQuantity: p.saleQuantity,
@@ -117,6 +121,8 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
       const newItems = addedProducts.map((p) => ({
         productId: p.productId,
         productName: p.productName,
+        originalPrice: p.price,
+        stock: p.quantity,
         salePrice: p.price,
         discountPercent: null as number | null,
         saleQuantity: null as number | null,
@@ -127,10 +133,12 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
   };
 
   const onSubmit = async (data: PromotionFormData) => {
+    // Strip productName and originalPrice before submitting
     const formattedData = {
       ...data,
-      startDate: new Date(data.startDate).toISOString(),
-      endDate: new Date(data.endDate).toISOString(),
+      startDate: formatLocalToUTC(data.startDate),
+      endDate: formatLocalToUTC(data.endDate),
+      productPromotions: data.productPromotions.map(({ productName, originalPrice, stock, ...rest }) => rest),
     };
 
     if (initialData) {
@@ -181,6 +189,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     type="text"
                     error={!!errors.promotionName}
                     hint={errors.promotionName?.message}
+                    placeholder="Enter promotion name..."
                     {...register("promotionName")}
                   />
                 </div>
@@ -272,8 +281,16 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
               >
                 Cancel
               </Button>
+              <Button 
+                type="submit" 
+                variant="outline" 
+                disabled={isSubmitting}
+                className="border-brand-500 text-brand-500 hover:bg-brand-50"
+              >
+                {isSubmitting ? "Saving..." : "Save & Finish"}
+              </Button>
               <Button type="button" variant="primary" onClick={handleNextStep}>
-                Next
+                Next: Select Products
               </Button>
             </div>
           </div>

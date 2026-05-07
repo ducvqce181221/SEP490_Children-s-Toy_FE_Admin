@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { promotionApi } from "../services/promotion-api";
-import { PromotionListDto, Promotion, PaginatedResponse } from "../types/promotion";
+import { PromotionListDto, Promotion, PaginatedResponse, ApiErrorResponse } from "../types/promotion";
+import { AxiosError } from "axios";
 
 export interface PromotionFilters {
   status: string;
@@ -34,8 +35,9 @@ export const usePromotions = () => {
         status: filters.status || undefined
       }) as unknown as PaginatedResponse<PromotionListDto>;
       setData(response);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err.message || "Tải danh sách khuyến mãi thất bại";
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const message = axiosError.response?.data?.message || axiosError.message || "Tải danh sách khuyến mãi thất bại";
       setError(message);
       toast.error(message);
     } finally {
@@ -97,9 +99,10 @@ export const usePromotionDetail = (id?: number) => {
       try {
         const response = await promotionApi.getById(id) as unknown as Promotion;
         if (!cancelled) setPromotion(response);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!cancelled) {
-          const message = err?.response?.data?.message || err.message || "Tải thông tin khuyến mãi thất bại";
+          const axiosError = err as AxiosError<ApiErrorResponse>;
+          const message = axiosError.response?.data?.message || axiosError.message || "Tải thông tin khuyến mãi thất bại";
           setError(message);
           toast.error(message);
         }

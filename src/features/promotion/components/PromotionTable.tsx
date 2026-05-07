@@ -129,7 +129,7 @@ export const PromotionTable = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="px-5 py-10 text-center text-gray-500">
-                    Không tìm thấy khuyến mãi nào.
+                    No promotion found.
                   </TableCell>
                 </TableRow>
               )}

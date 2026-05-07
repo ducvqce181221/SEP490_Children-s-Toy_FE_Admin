@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { PromotionForm } from "@/features/promotion/components/PromotionForm";
 import { usePromotionDetail } from "@/features/promotion/hooks/usePromotions";
+import Button from "@/components/ui/button/Button";
 
 export default function ViewPromotionPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -53,8 +54,23 @@ export default function ViewPromotionPage({ params }: { params: Promise<{ id: st
 
   return (
     <div>
-      <PageBreadcrumb pageTitle={`Promotion Details #${promotionId}`} />
+      <PageBreadcrumb 
+        pageTitle="Promotion Details" 
+        breadcrumbItems={[
+          { label: "Promotion Management", href: "/admin/promotions" },
+          { label: promotion.promotionName }
+        ]}
+      />
       <div className="space-y-6">
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/admin/promotions")}
+          >
+            Back to List
+          </Button>
+        </div>
         <PromotionForm initialData={promotion} readonly={true} />
       </div>
     </div>

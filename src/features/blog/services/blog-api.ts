@@ -66,6 +66,14 @@ export const blogApi = {
     );
   },
 
+  publishNow: async (blogPostId: number): Promise<BlogDetail> => {
+    return axiosClient.patch<BlogDetail>(`/blogs/${blogPostId}/publish-now`);
+  },
+
+  hideBlog: async (blogPostId: number): Promise<BlogDetail> => {
+    return axiosClient.patch<BlogDetail>(`/blogs/${blogPostId}/hide`);
+  },
+
   uploadThumbnail: async (file: File): Promise<{ url: string }> => {
     const formData = new FormData();
     formData.append("file", file);

@@ -17,11 +17,13 @@ export interface Promotion {
 export interface ProductPromotion {
   productId: number;
   productName: string;
+  originalPrice: number;
   salePrice: number;
   discountPercent: number | null;
   saleQuantity: number | null;
   soldQuantity: number;
   reservedQuantity: number;
+  stock: number;
   isActive: boolean;
 }
 
@@ -52,4 +54,13 @@ export interface PaginatedResponse<T> {
   totalCount: number;
   hasPreviousPage: boolean;
   hasNextPage: boolean;
+}
+
+export interface ApiErrorResponse {
+  code?: string;
+  message: string;
+}
+
+export interface ValidationErrorResponse extends ApiErrorResponse {
+  errors?: Record<string, string[]>;
 }

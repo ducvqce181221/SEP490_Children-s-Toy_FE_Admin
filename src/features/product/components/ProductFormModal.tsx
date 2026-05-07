@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type Quill from "quill";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Label from "@/components/form/Label";
@@ -14,6 +15,7 @@ import {
   ProductListItem,
   ProductMutationResult,
   ProductLookupOption,
+  ProductPriceRangeLookup,
 } from "../types/product";
 import { categoryApi } from "@/features/category/services/category-api";
 import { brandApi } from "@/features/brand/services/brand-api";
@@ -47,12 +49,17 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [brands, setBrands] = useState<BrandListItem[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-  const [priceRanges, setPriceRanges] = useState<ProductLookupOption[]>([]);
+  const [priceRanges, setPriceRanges] = useState<ProductPriceRangeLookup[]>([]);
   const [materials, setMaterials] = useState<ProductLookupOption[]>([]);
   const [ages, setAges] = useState<ProductLookupOption[]>([]);
   const [sexes, setSexes] = useState<ProductLookupOption[]>([]);
   const [origins, setOrigins] = useState<ProductLookupOption[]>([]);
   const { uploadImage, isUploading } = useCloudinaryUpload();
+  const editorRef = useRef<HTMLDivElement>(null);
+  const quillRef = useRef<Quill | null>(null);
+  const pendingDescriptionRef = useRef("");
+  const isApplyingDescriptionRef = useRef(false);
+  const toolbarId = `product-description-toolbar-${useId().replace(/:/g, "")}`;
 
   const normalizeProductStatus = (status: string | null | undefined): string => {
     if (!status) return "Active";
@@ -99,6 +106,80 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const additionalImageUrls = watch("additionalImageUrls") ?? [];
   const selectedCategoryId = watch("categoryId");
   const selectedBrandId = watch("brandId");
+  const selectedPrice = watch("price");
+  const selectedPriceRangeId = watch("priceRangeId");
+  const isFormDisabled = isSubmitting || isLoadingOptions || isLoadingDetail || isUploading;
+
+  const getMatchedPriceRangeId = useCallback(
+    (priceValue: number | null | undefined) => {
+      if (typeof priceValue !== "number" || Number.isNaN(priceValue) || priceValue < 0) {
+        return null;
+      }
+
+      const matched = priceRanges.find((range) => priceValue >= range.min && priceValue <= range.max);
+      return matched?.id ?? null;
+    },
+    [priceRanges],
+  );
+
+  const normalizeDescriptionHtml = useCallback((rawValue: unknown) => {
+    if (typeof rawValue !== "string") {
+      return "";
+    }
+
+    const trimmed = rawValue.trim();
+    if (trimmed.length === 0 || trimmed === "<p><br></p>") {
+      return "";
+    }
+
+    return trimmed;
+  }, []);
+
+  const toDescriptionFormValue = useCallback(
+    (html: string): string | null => {
+      const normalizedHtml = normalizeDescriptionHtml(html);
+      if (normalizedHtml.length === 0) {
+        return null;
+      }
+
+      if (typeof window === "undefined") {
+        return normalizedHtml;
+      }
+
+      const parser = document.createElement("div");
+      parser.innerHTML = normalizedHtml;
+      const plainText = parser.textContent?.replace(/\u00a0/g, " ").trim() ?? "";
+      return plainText.length === 0 ? null : normalizedHtml;
+    },
+    [normalizeDescriptionHtml],
+  );
+
+  const setDescriptionEditorContent = useCallback(
+    (html: string) => {
+      const normalizedContent = normalizeDescriptionHtml(html);
+      if (!quillRef.current) {
+        pendingDescriptionRef.current = normalizedContent;
+        return;
+      }
+
+      isApplyingDescriptionRef.current = true;
+      if (normalizedContent.length === 0) {
+        quillRef.current.setText("", "api");
+      } else {
+        const delta = quillRef.current.clipboard.convert({ html: normalizedContent });
+        quillRef.current.setContents(delta, "api");
+      }
+
+      setValue("description", toDescriptionFormValue(quillRef.current.root.innerHTML), {
+        shouldValidate: true,
+      });
+
+      queueMicrotask(() => {
+        isApplyingDescriptionRef.current = false;
+      });
+    },
+    [normalizeDescriptionHtml, setValue, toDescriptionFormValue],
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -128,6 +209,73 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   }, [isOpen]);
 
   useEffect(() => {
+    const matchedPriceRangeId = getMatchedPriceRangeId(selectedPrice);
+    if ((selectedPriceRangeId ?? null) !== matchedPriceRangeId) {
+      setValue("priceRangeId", matchedPriceRangeId, { shouldValidate: true });
+    }
+  }, [getMatchedPriceRangeId, selectedPrice, selectedPriceRangeId, setValue]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const initializeDescriptionEditor = async () => {
+      if (!isOpen || isLoadingDetail || !editorRef.current || quillRef.current) {
+        return;
+      }
+
+      const QuillModule = await import("quill");
+      if (cancelled || !editorRef.current || quillRef.current) {
+        return;
+      }
+
+      const Quill = QuillModule.default;
+      const quill = new Quill(editorRef.current, {
+        theme: "snow",
+        modules: {
+          toolbar: `#${toolbarId}`,
+        },
+        placeholder: "Enter product description...",
+      });
+
+      quill.on("text-change", (_delta, _oldDelta, source) => {
+        if (source !== "user" || isApplyingDescriptionRef.current) {
+          return;
+        }
+
+        setValue("description", toDescriptionFormValue(quill.root.innerHTML), {
+          shouldValidate: true,
+        });
+      });
+
+      quillRef.current = quill;
+      setDescriptionEditorContent(pendingDescriptionRef.current);
+    };
+
+    void initializeDescriptionEditor();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoadingDetail, isOpen, setDescriptionEditorContent, setValue, toDescriptionFormValue, toolbarId]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      quillRef.current = null;
+      if (editorRef.current) {
+        editorRef.current.innerHTML = "";
+      }
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!quillRef.current) {
+      return;
+    }
+
+    quillRef.current.enable(!isFormDisabled);
+  }, [isFormDisabled]);
+
+  useEffect(() => {
     if (isOpen) {
       if (mode === "edit" && product) {
         setIsLoadingDetail(true);
@@ -152,6 +300,8 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               sexId: detail.sexId,
               originId: detail.originId,
             });
+            pendingDescriptionRef.current = normalizeDescriptionHtml(detail.description);
+            setDescriptionEditorContent(pendingDescriptionRef.current);
           })
           .catch((err) => console.error("Failed to load product details", err))
           .finally(() => setIsLoadingDetail(false));
@@ -175,9 +325,11 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
           mainImageUrl: "",
           additionalImageUrls: [],
         });
+        pendingDescriptionRef.current = "";
+        setDescriptionEditorContent("");
       }
     }
-  }, [isOpen, mode, product, reset]);
+  }, [isOpen, mode, product, reset, normalizeDescriptionHtml, setDescriptionEditorContent]);
 
   const handleFormSubmit = async (data: Record<string, unknown>) => {
     const formData = data as ProductFormData;
@@ -319,8 +471,6 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     })),
   ];
 
-  const isFormDisabled = isSubmitting || isLoadingOptions || isLoadingDetail || isUploading;
-
   return (
     <Modal
       isOpen={isOpen}
@@ -395,20 +545,16 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             <div>
               <Label>Price Range</Label>
               <Select
-                value={watch("priceRangeId") === null || watch("priceRangeId") === undefined ? "" : String(watch("priceRangeId"))}
-                onChange={(e) =>
-                  setValue(
-                    "priceRangeId",
-                    e.target.value === "" ? null : Number(e.target.value),
-                    { shouldValidate: true },
-                  )
-                }
+                value={selectedPriceRangeId === null || selectedPriceRangeId === undefined ? "" : String(selectedPriceRangeId)}
                 options={priceRangeOptions}
-                disabled={isFormDisabled}
+                disabled
               />
               {errors.priceRangeId && (
                 <p className="mt-1.5 text-sm text-error-500">{errors.priceRangeId.message}</p>
               )}
+              <p className="mt-1 text-xs text-gray-500">
+                Price range is auto-selected based on the entered price.
+              </p>
             </div>
 
             <div>
@@ -564,18 +710,32 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
             <div className="sm:col-span-2">
               <Label>Description</Label>
-              <textarea
-                value={watch("description") ?? ""}
-                onChange={(e) =>
-                  setValue("description", e.target.value === "" ? null : e.target.value, {
-                    shouldValidate: true,
-                  })
-                }
-                placeholder="Enter product description"
-                disabled={isFormDisabled}
-                rows={4}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-              />
+              <div className="overflow-hidden rounded-lg border border-gray-300 dark:border-gray-700">
+                <div id={toolbarId} className="border-b border-gray-300 p-2 dark:border-gray-700">
+                  <span className="ql-formats">
+                    <button className="ql-bold" />
+                    <button className="ql-italic" />
+                    <button className="ql-underline" />
+                    <button className="ql-strike" />
+                  </span>
+                  <span className="ql-formats">
+                    <select className="ql-color" />
+                    <select className="ql-background" />
+                  </span>
+                  <span className="ql-formats">
+                    <button className="ql-list" value="ordered" />
+                    <button className="ql-list" value="bullet" />
+                  </span>
+                  <span className="ql-formats">
+                    <button className="ql-clean" />
+                  </span>
+                </div>
+                <div
+                  ref={editorRef}
+                  className="min-h-[140px] bg-white text-sm text-gray-800 dark:bg-gray-900 dark:text-white/90"
+                />
+              </div>
+              <input type="hidden" {...register("description")} />
               {errors.description && (
                 <p className="mt-1.5 text-sm text-error-500">
                   {errors.description.message}
@@ -594,6 +754,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       src={mainImageUrl}
                       alt="Preview"
                       fill
+                      sizes="96px"
                       className="object-cover"
                     />
                   </div>
@@ -645,7 +806,13 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       key={`${url}-${index}`}
                       className="relative h-24 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
                     >
-                      <Image src={url} alt={`Additional ${index + 1}`} fill className="object-cover" />
+                      <Image
+                        src={url}
+                        alt={`Additional ${index + 1}`}
+                        fill
+                        sizes="96px"
+                        className="object-cover"
+                      />
                       <button
                         type="button"
                         onClick={() => handleRemoveAdditionalImage(index)}

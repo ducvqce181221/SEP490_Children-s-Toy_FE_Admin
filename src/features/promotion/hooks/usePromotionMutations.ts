@@ -1,7 +1,8 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { promotionApi } from "../services/promotion-api";
-import { PromotionFormData } from "../types/promotion";
+import { PromotionFormData, ApiErrorResponse, ValidationErrorResponse } from "../types/promotion";
+import { AxiosError } from "axios";
 
 export const usePromotionMutations = (onSuccess?: () => void) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -12,8 +13,9 @@ export const usePromotionMutations = (onSuccess?: () => void) => {
       await promotionApi.create(data);
       toast.success("Tạo chương trình khuyến mãi thành công");
       onSuccess?.();
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err.message || "Tạo thất bại";
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<ValidationErrorResponse>;
+      const message = axiosError.response?.data?.message || axiosError.message || "Tạo thất bại";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -26,8 +28,9 @@ export const usePromotionMutations = (onSuccess?: () => void) => {
       await promotionApi.update(id, data);
       toast.success("Cập nhật chương trình khuyến mãi thành công");
       onSuccess?.();
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err.message || "Cập nhật thất bại";
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<ValidationErrorResponse>;
+      const message = axiosError.response?.data?.message || axiosError.message || "Cập nhật thất bại";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -40,8 +43,9 @@ export const usePromotionMutations = (onSuccess?: () => void) => {
       await promotionApi.delete(id);
       toast.success("Xóa chương trình khuyến mãi thành công");
       onSuccess?.();
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err.message || "Xóa thất bại";
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const message = axiosError.response?.data?.message || axiosError.message || "Xóa thất bại";
       toast.error(message);
       throw err; // throw so caller can catch
     } finally {
