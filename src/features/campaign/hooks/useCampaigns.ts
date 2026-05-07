@@ -1,28 +1,35 @@
 import { useState, useEffect, useCallback } from "react";
-import { CampaignListItem } from "../types/campaign";
+import toast from "react-hot-toast";
 import { campaignApi, PaginatedCampaigns } from "../services/campaign-api";
+import type { CampaignFilters } from "../types/campaign";
 
-export interface CampaignFilters {
-  status: string;
-  sourceType: string;
-}
+export type { CampaignFilters };
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const DEFAULT_SORT_BY = undefined;
+const DEFAULT_SORT_DESC = false;
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export const useCampaigns = () => {
+  // ── UI state ──────────────────────────────────────────────────────────────
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewCampaignId, setViewCampaignId] = useState<number | null>(null);
+  const [editCampaignId, setEditCampaignId] = useState<number | null>(null);
+
+  // ── Filter / pagination state ─────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<CampaignFilters>({ status: "", sourceType: "" });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [sortBy] = useState<string | undefined>(undefined);
-  const [sortDesc] = useState(false);
 
-  // Store only IDs for modal; full data fetched lazily inside modal
-  const [viewCampaignId, setViewCampaignId] = useState<number | null>(null);
-  const [editCampaignId, setEditCampaignId] = useState<number | null>(null);
-
+  // ── Data state ────────────────────────────────────────────────────────────
   const [data, setData] = useState<PaginatedCampaigns | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Fetch ─────────────────────────────────────────────────────────────────
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -31,25 +38,30 @@ export const useCampaigns = () => {
       const response = await campaignApi.getCampaigns(
         currentPage,
         itemsPerPage,
-        sortBy,
-        sortDesc,
+        DEFAULT_SORT_BY,
+        DEFAULT_SORT_DESC,
         searchQuery || undefined,
         filters.status || undefined,
-        filters.sourceType || undefined
+        filters.sourceType || undefined,
       );
       setData(response);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Tải dữ liệu thất bại";
+      const message = err instanceof Error ? err.message : "Tải dữ liệu thất bại.";
       setError(message);
+      // FIX: toast để user biết fetch lỗi
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, itemsPerPage, sortBy, sortDesc, searchQuery, filters.status, filters.sourceType]);
+  }, [currentPage, itemsPerPage, searchQuery, filters.status, filters.sourceType]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  // Reset về trang 1 khi thay đổi search/filter/pageSize
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     setCurrentPage(1);
@@ -66,23 +78,26 @@ export const useCampaigns = () => {
   };
 
   return {
+    // UI
     isModalOpen,
     setIsModalOpen,
-    searchQuery,
-    filters,
-    handleSearch,
-    handleFilters,
-    handleItemsPerPage,
-    currentPage,
-    setCurrentPage,
-    itemsPerPage,
     viewCampaignId,
     setViewCampaignId,
     editCampaignId,
     setEditCampaignId,
+    // Filters & pagination
+    searchQuery,
+    filters,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    handleSearch,
+    handleFilters,
+    handleItemsPerPage,
+    // Data
     data,
     isLoading,
     error,
-    refetch: fetchData
+    refetch: fetchData,
   };
 };

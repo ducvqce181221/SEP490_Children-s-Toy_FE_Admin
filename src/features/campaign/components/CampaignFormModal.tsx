@@ -49,13 +49,13 @@ const getDefaultValues = (accountId: number): CampaignFormData => ({
 
 const getStatusBadge = (status: string) => {
   switch (status?.toLowerCase()) {
-    case "active":    return <Badge color="success">Active</Badge>;
-    case "draft":     return <Badge color="warning">Draft</Badge>;
-    case "sent":      return <Badge color="success">Sent</Badge>;
-    case "sending":   return <Badge color="info">Sending</Badge>;
+    case "draft": return <Badge color="warning">Draft</Badge>;
+    case "sent": return <Badge color="success">Sent</Badge>;
+    case "sending": return <Badge color="info">Sending</Badge>;
     case "scheduled": return <Badge color="info">Scheduled</Badge>;
     case "cancelled": return <Badge color="error">Cancelled</Badge>;
-    default:          return <Badge color="light">{status}</Badge>;
+    case "failed": return <Badge color="error">Failed</Badge>;
+    default: return <Badge color="light">{status}</Badge>;
   }
 };
 
@@ -95,7 +95,7 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
     mode: "onTouched",
   });
 
-  // Dynamic targets list (only used when targetType === "SEGMENT")
+  // Dynamic targets list (only used when targetType === "ROLE" or "INDIVIDUAL")
   const { fields: targetFields, append: appendTarget, remove: removeTarget } = useFieldArray({
     control,
     name: "targets",
@@ -109,7 +109,7 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
 
   useEffect(() => {
     setIsMounted(true);
-    
+
     // Fetch active templates for dropdown
     templateApi.getTemplates(1, 100, undefined, false, undefined, true)
       .then(res => setActiveTemplates(res.items))
@@ -146,22 +146,27 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
             titleOverride: data.titleOverride || "",
             messageOverride: data.messageOverride || "",
             sourceType: data.sourceType as "ADMIN" | "SYSTEM",
-            targetType: data.targetType as "ALL" | "SEGMENT",
-            scheduledAt: data.scheduledAt
-              ? new Date(data.scheduledAt).toISOString().slice(0, 16)
-              : "",
+            targetType: data.targetType as "ALL" | "ROLE" | "INDIVIDUAL",
+            scheduledAt: (() => {
+              if (!data.scheduledAt) return "";
+              const scheduled = new Date(data.scheduledAt);
+              const now = new Date();
+              // Nếu scheduledAt đã qua → đây là "gửi ngay", để trống field
+              if (scheduled <= now) return "";
+              return scheduled.toISOString().slice(0, 16);
+            })(),
             eventKey: data.eventKey || "",
             imageUrl: data.imageUrl || "",
             actionType: data.actionType || "",
             actionTarget: data.actionTarget || "",
             createdByAccountId: data.createdByAccountId,
             targets: data.targets.map((t) => ({
-              targetType: t.targetType as "ACCOUNT_ID" | "ROLE" | "SEGMENT",
+              targetType: t.targetType as "ACCOUNT_ID" | "ROLE_ID",
               targetValue: t.targetValue,
             })),
           });
         } catch {
-          toast.error("Gặp lỗi khi tải thông tin chiến dịch");
+          toast.error("Error loading campaign information");
           onClose();
         } finally {
           setIsLoading(false);
@@ -189,8 +194,11 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
       imageUrl: data.imageUrl || null,
       actionType: data.actionType || null,
       actionTarget: data.actionTarget || null,
-      // Only send targets if SEGMENT, otherwise send empty array
-      targets: data.targetType === "SEGMENT" ? data.targets : [],
+      // Only send targets for ROLE or INDIVIDUAL, otherwise send empty array
+      targets:
+        data.targetType === "ROLE" || data.targetType === "INDIVIDUAL"
+          ? data.targets ?? []
+          : [],
     };
     onSave?.(payload);
   };
@@ -246,55 +254,55 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
               </div>
 
               <div>
-                <Label>Nguồn Chiến Dịch (Source Type) <span className="text-error-500">*</span></Label>
+                <Label>Source Type <span className="text-error-500">*</span></Label>
                 <Select
                   options={[
-                    { value: "ADMIN", label: "Tạo thủ công (Admin)" },
-                    { value: "SYSTEM", label: "Gửi tự động (System)" },
+                    { value: "ADMIN", label: "Manual Creation (Admin)" },
+                    { value: "SYSTEM", label: "Auto Send (System)" },
                   ]}
                   error={!!errors.sourceType}
-                  hint={errors.sourceType?.message || "Admin: Gửi ngay hoặc theo lịch. System: Gửi tự động khi có sự kiện."}
+                  hint={errors.sourceType?.message || "Admin: Send now or scheduled. System: Auto send on event."}
                   disabled={isReadOnly}
                   {...register("sourceType")}
                 />
               </div>
 
               <div>
-                <Label>Loại Đối Tượng (Reference Type)</Label>
+                <Label>Reference Type</Label>
                 <Select
                   options={[
-                    { value: "", label: "-- Không gắn đối tượng --" },
+                    { value: "", label: "-- No object attached --" },
                     ...referenceTypes.map(rt => ({
                       value: rt.referenceType,
                       label: rt.displayName
                     }))
                   ]}
                   error={!!errors.referenceType}
-                  hint={errors.referenceType?.message || "Loại dữ liệu liên kết với chiến dịch này."}
+                  hint={errors.referenceType?.message || "Data type linked with this campaign."}
                   disabled={isReadOnly}
                   {...register("referenceType")}
                 />
               </div>
 
               <div>
-                <Label>ID Đối Tượng (Reference ID)</Label>
+                <Label>Reference ID</Label>
                 <Input
                   type="number"
-                  placeholder="VD: 123"
+                  placeholder="Ex: 123"
                   error={!!errors.referenceId}
-                  hint={errors.referenceId?.message || "ID của đối tượng tương ứng."}
+                  hint={errors.referenceId?.message || "ID of the corresponding object."}
                   disabled={isReadOnly}
                   {...register("referenceId")}
                 />
               </div>
 
               <div>
-                <Label>Lịch Gửi (Scheduled Date)</Label>
+                <Label>Scheduled Date</Label>
                 <Input
                   type="datetime-local"
                   min={!isReadOnly ? minScheduled : undefined}
                   error={!!errors.scheduledAt}
-                  hint={errors.scheduledAt?.message || "Bỏ trống để gửi ngay (đối với Admin)."}
+                  hint={errors.scheduledAt?.message || "Leave blank to send immediately (for Admin)."}
                   disabled={isReadOnly}
                   {...register("scheduledAt")}
                 />
@@ -302,13 +310,13 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
 
               {watchedSourceType === "SYSTEM" && (
                 <div>
-                  <Label>Mã Sự Kiện Kích Hoạt (Event Key)</Label>
+                  <Label>Event Key</Label>
                   <Input
                     type="text"
-                    placeholder="VD: ORDER_PLACED"
+                    placeholder="Ex: ORDER_PLACED"
                     maxLength={100}
                     error={!!errors.eventKey}
-                    hint={errors.eventKey?.message || "Sự kiện hệ thống để tự động kích hoạt chiến dịch này."}
+                    hint={errors.eventKey?.message || "System event to auto trigger this campaign."}
                     disabled={isReadOnly}
                     {...register("eventKey")}
                   />
@@ -326,21 +334,22 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
             </h3>
 
             <div className="mb-5">
-              <Label>Đối Tượng Nhận (Target Type) <span className="text-error-500">*</span></Label>
+              <Label>Target Type <span className="text-error-500">*</span></Label>
               <Select
                 options={[
-                  { value: "ALL", label: "Gửi đến Toàn Bộ Khách Hàng (ALL)" },
-                  { value: "SEGMENT", label: "Gửi theo Nhóm Chỉ Định (SEGMENT)" },
+                  { value: "ALL", label: "Send to All Accounts (ALL)" },
+                  { value: "ROLE", label: "Send by User Role (ROLE)" },
+                  { value: "INDIVIDUAL", label: "Send to Specific Customers (INDIVIDUAL)" },
                 ]}
                 error={!!errors.targetType}
-                hint={errors.targetType?.message}
+                hint={errors.targetType?.message || "ALL: only send to active accounts (excluding locked/inactive ones)."}
                 disabled={isReadOnly}
                 {...register("targetType")}
               />
             </div>
 
-            {/* Dynamic Targets — only shown when SEGMENT */}
-            {watchedTargetType === "SEGMENT" && (
+            {/* Dynamic Targets — only shown when ROLE or INDIVIDUAL */}
+            {(watchedTargetType === "ROLE" || watchedTargetType === "INDIVIDUAL") && (
               <div className="rounded-xl border border-brand-100 dark:border-gray-700 bg-brand-50/40 dark:bg-gray-800/40 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -356,7 +365,10 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => appendTarget({ targetType: "ACCOUNT_ID", targetValue: "" })}
+                      onClick={() => appendTarget({
+                        targetType: watchedTargetType === "ROLE" ? "ROLE_ID" : "ACCOUNT_ID",
+                        targetValue: "",
+                      })}
                     >
                       + Add Target
                     </Button>
@@ -377,9 +389,9 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
                         <div className="w-44 flex-shrink-0">
                           <Select
                             options={[
-                              { value: "ACCOUNT_ID", label: "Tài Khoản (Account ID)" },
-                              { value: "ROLE", label: "Vai Trò (Role Code)" },
-                              { value: "SEGMENT", label: "Nhóm KH (Segment Code)" },
+                              ...(watchedTargetType === "ROLE"
+                                ? [{ value: "ROLE_ID", label: "Role ID" }]
+                                : [{ value: "ACCOUNT_ID", label: "Account ID" }]),
                             ]}
                             disabled={isReadOnly}
                             error={!!errors.targets?.[index]?.targetType}
@@ -394,7 +406,11 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
                         <div className="flex-1">
                           <Input
                             type="text"
-                            placeholder="VD: 1, 5, admin, vip_customer..."
+                            placeholder={
+                              watchedTargetType === "ROLE"
+                                ? "Ex: 2 (Role ID)"
+                                : "Ex: 123 (Account ID)"
+                            }
                             maxLength={200}
                             disabled={isReadOnly}
                             error={!!errors.targets?.[index]?.targetValue}
@@ -431,10 +447,10 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <Label>Mẫu Thông Báo (Template)</Label>
+                <Label>Template</Label>
                 <Select
                   options={[
-                    { value: "", label: "-- Không dùng Template --" },
+                    { value: "", label: "-- No Template --" },
                     ...(isDetailMode && fullCampaign?.templateCode && !activeTemplates.find(t => t.templateCode === fullCampaign.templateCode)
                       ? [{ value: fullCampaign.templateCode, label: `${fullCampaign.templateCode} (Inactive/Deleted)` }]
                       : []),
@@ -444,7 +460,7 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
                     }))
                   ]}
                   error={!!errors.templateCode}
-                  hint={errors.templateCode?.message || "Chọn mẫu thông báo định sẵn."}
+                  hint={errors.templateCode?.message || "Select a predefined notification template."}
                   disabled={isReadOnly}
                   {...register("templateCode")}
                 />
@@ -452,15 +468,15 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
 
               <div>
                 <Label className="flex justify-between w-full">
-                  <span>Tiêu Đề Tùy Chỉnh (Title Override)</span>
+                  <span>Title Override</span>
                   <span className="text-[10px] text-gray-400 font-normal">{(watchedTitle || "").length}/255</span>
                 </Label>
                 <Input
                   type="text"
-                  placeholder="Tiêu đề thông báo..."
+                  placeholder="Notification title..."
                   maxLength={255}
                   error={!!errors.titleOverride}
-                  hint={errors.titleOverride?.message || "Sẽ ghi đè tiêu đề của Template (nếu có)."}
+                  hint={errors.titleOverride?.message || "Will override Template title (if any)."}
                   disabled={isReadOnly}
                   {...register("titleOverride")}
                 />
@@ -468,15 +484,15 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
 
               <div className="sm:col-span-2">
                 <Label className="flex justify-between w-full">
-                  <span>Nội Dung Tùy Chỉnh (Message Override)</span>
+                  <span>Message Override</span>
                   <span className="text-[10px] text-gray-400 font-normal">{(watchedMessage || "").length}/500</span>
                 </Label>
                 <TextArea
-                  placeholder="Nội dung chi tiết thông báo gửi đến khách hàng..."
+                  placeholder="Detailed notification content sent to customers..."
                   rows={4}
                   maxLength={500}
                   error={!!errors.messageOverride}
-                  hint={errors.messageOverride?.message || "Sẽ ghi đè nội dung của Template (nếu có)."}
+                  hint={errors.messageOverride?.message || "Will override Template content (if any)."}
                   readOnly={isReadOnly}
                   {...register("messageOverride")}
                 />
@@ -493,48 +509,48 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="sm:col-span-2">
-                <Label>Ảnh Banner / Image URL</Label>
+                <Label>Banner / Image URL</Label>
                 <Input
                   type="text"
                   placeholder="https://example.com/banner.png"
                   maxLength={500}
                   error={!!errors.imageUrl}
-                  hint={errors.imageUrl?.message || "URL ảnh hiển thị kèm thông báo (không bắt buộc)."}
+                  hint={errors.imageUrl?.message || "Image URL displayed with notification (optional)."}
                   disabled={isReadOnly}
                   {...register("imageUrl")}
                 />
               </div>
 
               <div>
-                <Label>Loại Hành Động (Action Type)</Label>
+                <Label>Action Type</Label>
                 <Select
                   options={[
-                    { value: "", label: "-- Không có hành động --" },
-                    { value: "OPEN_URL", label: "Mở liên kết web (OPEN_URL)" },
-                    { value: "OPEN_APP", label: "Mở ứng dụng (OPEN_APP)" },
-                    { value: "VOUCHER", label: "Xem Voucher (VOUCHER)" },
-                    { value: "PRODUCT", label: "Xem Sản Phẩm (PRODUCT)" },
+                    { value: "", label: "-- No action --" },
+                    { value: "OPEN_URL", label: "Open web link (OPEN_URL)" },
+                    { value: "OPEN_APP", label: "Open app (OPEN_APP)" },
+                    { value: "VOUCHER", label: "View Voucher (VOUCHER)" },
+                    { value: "PRODUCT", label: "View Product (PRODUCT)" },
                   ]}
                   error={!!errors.actionType}
-                  hint={errors.actionType?.message || "Hành động khi KH nhấn vào thông báo."}
+                  hint={errors.actionType?.message || "Action when customer clicks the notification."}
                   disabled={isReadOnly}
                   {...register("actionType")}
                 />
               </div>
 
               <div>
-                <Label>Đích Đến (Action Target)</Label>
+                <Label>Action Target</Label>
                 <Input
                   type="text"
                   placeholder={
-                    watchedActionType === "OPEN_URL" ? "Nhập đường link web (VD: https://...)" :
-                    watchedActionType === "VOUCHER" ? "Nhập mã Voucher (VD: TET2026)" :
-                    watchedActionType === "PRODUCT" ? "Nhập ID sản phẩm (VD: 123)" :
-                    "VD: Voucher Code, URL..."
+                    watchedActionType === "OPEN_URL" ? "Enter web link (Ex: https://...)" :
+                      watchedActionType === "VOUCHER" ? "Enter Voucher code (Ex: TET2026)" :
+                        watchedActionType === "PRODUCT" ? "Enter Product ID (Ex: 123)" :
+                          "Ex: Voucher Code, URL..."
                   }
                   maxLength={500}
                   error={!!errors.actionTarget}
-                  hint={errors.actionTarget?.message || "Giá trị tương ứng với Loại Hành Động."}
+                  hint={errors.actionTarget?.message || "Value corresponding to the Action Type."}
                   disabled={isReadOnly}
                   {...register("actionTarget")}
                 />
@@ -610,9 +626,9 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
               )}
 
               <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
-                <span>Created: <strong className="text-gray-700 dark:text-gray-300">{new Date(fullCampaign.createdAt).toLocaleString("vi-VN")}</strong></span>
+                <span>Created: <strong className="text-gray-700 dark:text-gray-300">{new Date(fullCampaign.createdAt).toLocaleString("en-US")}</strong></span>
                 {fullCampaign.updatedAt && (
-                  <span>Updated: <strong className="text-gray-700 dark:text-gray-300">{new Date(fullCampaign.updatedAt).toLocaleString("vi-VN")}</strong></span>
+                  <span>Updated: <strong className="text-gray-700 dark:text-gray-300">{new Date(fullCampaign.updatedAt).toLocaleString("en-US")}</strong></span>
                 )}
               </div>
             </>

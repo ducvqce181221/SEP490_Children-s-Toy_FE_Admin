@@ -1,72 +1,106 @@
-import axios, { AxiosError } from "axios";
+import axios, {
+  AxiosError,
+  InternalAxiosRequestConfig,
+  AxiosResponse,
+} from "axios";
 import toast from "react-hot-toast";
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:7083/api";
+
+const LOGIN_PATHS = ["/login", "/admin/login"] as const;
+
+const SILENT_STATUSES = new Set([400, 401]);
+
+const HTTP_ERROR_MESSAGES: Record<number, string> = {
+  403: "Bạn không có quyền thực hiện thao tác này.",
+  404: "Không tìm thấy dữ liệu.",
+  500: "Lỗi server. Vui lòng thử lại sau.",
+};
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function clearAuthStorage(): void {
+  if (typeof window === "undefined") return; // SSR guard
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("account_info");
+}
+
+function redirectToLogin(): void {
+  if (typeof window === "undefined") return;
+
+  const currentPath = window.location.pathname.replace(/\/+$/, "");
+  const isAlreadyOnLogin = LOGIN_PATHS.some((p) => currentPath.startsWith(p));
+
+  if (!isAlreadyOnLogin) {
+    const target = currentPath.startsWith("/admin") ? "/admin/login" : "/login";
+    window.location.replace(target);
+  }
+}
+
+// ─── Axios instance ───────────────────────────────────────────────────────────
+
 const axiosClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://localhost:7083/api", // Default fallback if not in env
-  timeout: 10000,
+  baseURL: BASE_URL,
+  timeout: 10_000,
   headers: { "Content-Type": "application/json" },
 });
 
-// Request interceptor – đính kèm token từ localStorage
-axiosClient.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("access_token");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-  }
+// ─── Request interceptor ──────────────────────────────────────────────────────
 
-  if (config.data instanceof FormData) {
-    config.headers["Content-Type"] = undefined;
-  }
+axiosClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
 
-  return config;
-});
+    if (config.data instanceof FormData) {
+      if (typeof config.headers.delete === 'function') {
+        config.headers.delete("Content-Type");
+      } else {
+        delete config.headers["Content-Type"];
+      }
+    }
 
-// Response interceptor – xử lý lỗi global theo HTTP status
+    return config;
+  },
+  (error: unknown) => Promise.reject(error),
+);
+
+// ─── Response interceptor ─────────────────────────────────────────────────────
+
 axiosClient.interceptors.response.use(
-  (response) => response.data,
+  <T>(response: AxiosResponse<T>): T => response.data,
+
   (error: AxiosError) => {
-    // Dev-only logging để debug interceptor
-    if (process.env.NODE_ENV === "development") {
-      console.error(
-        `[axiosClient] ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
-        error.response?.status,
-        error.response?.data
-      );
+    // eslint-disable-next-line no-console
+    if (process.env.NODE_ENV === "development") console.error(
+      `[axiosClient] ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
+      error.response?.status,
+      error.response?.data,
+    );
+
+    if (!error.response) {
+      toast.error("Mất kết nối. Vui lòng kiểm tra mạng và thử lại.");
+      return Promise.reject(error);
     }
 
-    switch (error.response?.status) {
-      case 400:
-        // Validation error từ server – để service layer tự xử lý chi tiết
-        break;
-      case 401:
-        // Token hết hạn – xóa token và redirect login
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("access_token");
-          window.location.href = "/login";
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("account_info");
-            const normalizedPath = window.location.pathname.replace(/\/+$/, "");
-            const requestUrl = error.config?.url ?? "";
-            const isLoginRequest = requestUrl.includes("/auth/login");
-            if (!isLoginRequest && !normalizedPath.startsWith("/admin/login")) {
-              window.location.href = "/admin/login";
-            }
-        }
-        break;
-      case 403:
-        toast.error("Bạn không có quyền thực hiện thao tác này");
-        break;
-      case 404:
-        toast.error("Không tìm thấy dữ liệu");
-        break;
-      case 500:
-        toast.error("Lỗi server. Vui lòng thử lại sau");
-        break;
-      default:
-        if (!error.response) {
-          toast.error("Mất kết nối. Vui lòng kiểm tra mạng và thử lại");
-        }
+    const status = error.response.status;
+
+    if (!SILENT_STATUSES.has(status)) {
+      toast.error(HTTP_ERROR_MESSAGES[status] ?? `Đã xảy ra lỗi (${status}).`);
     }
+
+    if (status === 401 && !error.config?.url?.includes("/auth/login")) {
+      clearAuthStorage();
+      redirectToLogin();
+    }
+
     return Promise.reject(error);
   },
 );

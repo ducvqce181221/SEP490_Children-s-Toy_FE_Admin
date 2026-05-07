@@ -21,8 +21,6 @@ export const CampaignRow: React.FC<CampaignRowProps> = ({
 }) => {
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
-      case "active":
-        return <Badge color="success">Active</Badge>;
       case "draft":
         return <Badge color="warning">Draft</Badge>;
       case "scheduled":
@@ -33,6 +31,8 @@ export const CampaignRow: React.FC<CampaignRowProps> = ({
         return <Badge color="success">Sent</Badge>;
       case "cancelled":
         return <Badge color="error">Cancelled</Badge>;
+      case "failed":
+        return <Badge color="error">Failed</Badge>;
       default:
         return <Badge color="light">{status || "Unknown"}</Badge>;
     }
@@ -68,7 +68,7 @@ export const CampaignRow: React.FC<CampaignRowProps> = ({
       </TableCell>
       <TableCell className="px-5 py-4 sm:py-3 text-sm text-gray-500 dark:text-gray-400">
         {campaign.scheduledAt
-          ? new Date(campaign.scheduledAt).toLocaleString("vi-VN")
+          ? new Date(campaign.scheduledAt).toLocaleString("en-US")
           : <span className="text-gray-300">—</span>}
       </TableCell>
       <TableCell className="px-5 py-4 sm:py-3 text-center">

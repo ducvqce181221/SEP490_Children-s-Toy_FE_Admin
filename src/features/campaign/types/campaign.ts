@@ -1,6 +1,10 @@
 export type { CampaignFormData } from "./campaign.schema";
 
-// ─── Sub-types ────────────────────────────────────────────────────────────────
+export interface CampaignFilters {
+  status: string;
+  sourceType: string;
+}
+
 
 export interface CampaignTarget {
   campaignTargetId: number;
@@ -39,6 +43,8 @@ export interface Campaign {
   resolvedReference?: ResolvedReference | null;
   titleOverride?: string | null;
   messageOverride?: string | null;
+  resolvedTitle?: string | null;
+  resolvedMessage?: string | null;
   sourceType: string;
   targetType: string;
   status: string;
@@ -165,7 +171,7 @@ export interface PaginatedDeliveries {
 export interface WizardState {
   // Step 1
   campaignName: string;
-  referenceType: string; // "" = general, "VOUCHER"|"PRODUCT"|"BLOG"|"SALE"
+  referenceType: string; // "" = general, "VOUCHER"|"PRODUCT"|"BLOG"|"SALE"|"OTHER"
   referenceId: number | null;
   resolvedObject: ResolvedReference | null;
   referenceDisplayName: string;
@@ -177,13 +183,14 @@ export interface WizardState {
   titleOverride: string;
   messageOverride: string;
   imageUrl: string;
+  imageFile: File | null;
+  imagePreviewUrl: string;
 
   // Step 3
-  targetMode: "ALL" | "ROLE" | "INDIVIDUAL" | "SEGMENT";
+  targetMode: "ALL" | "ROLE" | "INDIVIDUAL";
   selectedRoleId: string;
   individualAccountIds: number[];
   individualAccountNames: string[];
-  segmentName: string;
   scheduleType: "immediate" | "scheduled";
   scheduledAt: string;
 }

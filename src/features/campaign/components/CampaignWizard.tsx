@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
-import FileInput from "@/components/form/input/FileInput";
+
 import { campaignApi, templateApi, referenceSearchApi, audienceApi } from "../services/campaign-api";
 import {
   WizardState,
@@ -31,7 +31,6 @@ import {
   GroupIcon,
   GridIcon,
   UserIcon,
-  PieChartIcon,
   PaperPlaneIcon,
   TimeIcon,
 } from "@/icons";
@@ -39,18 +38,17 @@ import {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const REFERENCE_TYPE_CARDS = [
-  { id: "VOUCHER", label: "Voucher / Mã giảm giá", icon: <DocsIcon className="w-8 h-8" />, desc: "Thông báo về voucher mới cho khách hàng" },
-  { id: "PRODUCT", label: "Sản phẩm mới", icon: <BoxCubeIcon className="w-8 h-8" />, desc: "Giới thiệu sản phẩm mới vừa ra mắt" },
-  { id: "BLOG", label: "Bài viết / Blog", icon: <PageIcon className="w-8 h-8" />, desc: "Chia sẻ bài viết hữu ích đến khách hàng" },
-  { id: "SALE", label: "Chương trình sale", icon: <BoltIcon className="w-8 h-8" />, desc: "Thông báo chương trình khuyến mãi" },
-  { id: "GENERAL", label: "Thông báo chung", icon: <BellIcon className="w-8 h-8" />, desc: "Không gắn với sản phẩm/chương trình cụ thể" },
+  { id: "VOUCHER", label: "Voucher / Discount Code", icon: <DocsIcon className="w-8 h-8" />, desc: "Notify customers about new vouchers" },
+  { id: "PRODUCT", label: "New Product", icon: <BoxCubeIcon className="w-8 h-8" />, desc: "Announce newly launched products" },
+  { id: "BLOG", label: "Blog Post", icon: <PageIcon className="w-8 h-8" />, desc: "Share useful blog posts with customers" },
+  { id: "SALE", label: "Sale Campaign", icon: <BoltIcon className="w-8 h-8" />, desc: "Announce promotions" },
+  { id: "", label: "General Notification", icon: <BellIcon className="w-8 h-8" />, desc: "Not tied to a specific product or campaign" },
 ];
 
 const TARGET_MODE_CARDS = [
-  { id: "ALL", label: "Tất cả khách hàng", icon: <GroupIcon className="w-8 h-8" />, desc: "Gửi đến toàn bộ khách hàng trong hệ thống" },
-  { id: "ROLE", label: "Theo nhóm", icon: <GridIcon className="w-8 h-8" />, desc: "Chọn nhóm người dùng cụ thể (VD: VIP, thường)" },
-  { id: "INDIVIDUAL", label: "Khách hàng cụ thể", icon: <UserIcon className="w-8 h-8" />, desc: "Tìm và chọn từng khách hàng" },
-  { id: "SEGMENT", label: "Theo phân khúc", icon: <PieChartIcon className="w-8 h-8" />, desc: "Nhập tên nhóm phân khúc khách hàng" },
+  { id: "ALL", label: "All Accounts", icon: <GroupIcon className="w-8 h-8" />, desc: "Send to all active accounts (excluding locked/inactive accounts)" },
+  { id: "ROLE", label: "By Role", icon: <GridIcon className="w-8 h-8" />, desc: "Select a specific role (e.g., Customer, Staff)" },
+  { id: "INDIVIDUAL", label: "Specific Customers", icon: <UserIcon className="w-8 h-8" />, desc: "Search and select individual customers" },
 ];
 
 const EMPTY_WIZARD: WizardState = {
@@ -65,11 +63,12 @@ const EMPTY_WIZARD: WizardState = {
   titleOverride: "",
   messageOverride: "",
   imageUrl: "",
+  imageFile: null,
+  imagePreviewUrl: "",
   targetMode: "ALL",
   selectedRoleId: "",
   individualAccountIds: [],
   individualAccountNames: [],
-  segmentName: "",
   scheduleType: "immediate",
   scheduledAt: "",
 };
@@ -92,7 +91,7 @@ function getPreviewTitle(state: WizardState): string {
       state.resolvedObject?.placeholders ?? {}
     );
   }
-  return "Tiêu đề thông báo";
+  return "Notification title";
 }
 
 function getPreviewMessage(state: WizardState): string {
@@ -103,7 +102,7 @@ function getPreviewMessage(state: WizardState): string {
       state.resolvedObject?.placeholders ?? {}
     );
   }
-  return "Nội dung thông báo sẽ hiển thị ở đây...";
+  return "Notification content will appear here...";
 }
 
 // ─── Phone Notification Mockup ────────────────────────────────────────────────
@@ -116,7 +115,7 @@ const DesktopPreview: React.FC<{ title: string; message: string; imageUrl?: stri
         <span className="text-white text-[8px] font-medium">T</span>
       </div>
       <span className="text-[11px] text-zinc-500 flex-1 truncate">Toy Store</span>
-      <span className="text-[10px] text-zinc-400 flex-shrink-0">bây giờ</span>
+      <span className="text-[10px] text-zinc-400 flex-shrink-0">now</span>
       <span className="text-[11px] text-zinc-400 ml-1 cursor-pointer flex-shrink-0">✕</span>
     </div>
     <div className="p-3 flex gap-2.5 items-start">
@@ -130,10 +129,10 @@ const DesktopPreview: React.FC<{ title: string; message: string; imageUrl?: stri
       />
       <div className="flex-1 min-w-0">
         <p className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100 break-words">
-          {title || "Tiêu đề thông báo"}
+          {title || "Notification title"}
         </p>
         <p className="text-[11px] text-zinc-500 mt-1 leading-snug whitespace-pre-wrap break-words">
-          {message || "Nội dung thông báo sẽ hiển thị ở đây..."}
+          {message || "Notification content will appear here..."}
         </p>
       </div>
     </div>
@@ -142,7 +141,7 @@ const DesktopPreview: React.FC<{ title: string; message: string; imageUrl?: stri
 
 // ─── Step Progress Bar ────────────────────────────────────────────────────────
 
-const STEP_LABELS = ["Chủ đề", "Nội dung", "Đối tượng & Lịch"];
+const STEP_LABELS = ["Subject", "Content", "Audience & Schedule"];
 
 const WizardProgress: React.FC<{ currentStep: number }> = ({ currentStep }) => (
   <div className="flex items-center gap-0 mb-8">
@@ -249,7 +248,7 @@ const SearchDropdown: React.FC<{
         <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-52 overflow-y-auto">
           {items.length === 0 ? (
             <div className="px-4 py-3 text-sm text-gray-400 text-center">
-              {loading ? "Đang tìm kiếm..." : "Không tìm thấy kết quả"}
+              {loading ? "Searching..." : "No results found"}
             </div>
           ) : (
             items.map((item) => (
@@ -291,28 +290,28 @@ const Step1: React.FC<{
         items = res.map((v: VoucherSearchItem) => ({
           id: v.voucherId,
           label: v.voucherName || v.voucherCode,
-          subtitle: `Mã: ${v.voucherCode} · Giảm: ${v.discountValue}${v.discountType === "PERCENT" ? "%" : "đ"} · HSD: ${new Date(v.endDate).toLocaleDateString("vi-VN")}`,
+          subtitle: `Code: ${v.voucherCode} · Discount: ${v.discountValue}${v.discountType === "PERCENT" ? "%" : " VND"} · Expires: ${new Date(v.endDate).toLocaleDateString("en-US")}`,
         }));
       } else if (state.referenceType === "PRODUCT") {
         const res = await referenceSearchApi.searchProducts(term);
         items = res.map((p: ProductSearchItem) => ({
           id: p.productId,
           label: p.productName,
-          subtitle: `Giá: ${p.price.toLocaleString("vi-VN")}đ`,
+          subtitle: `Price: ${p.price.toLocaleString("en-US")} VND`,
         }));
       } else if (state.referenceType === "BLOG") {
         const res = await referenceSearchApi.searchBlogPosts(term);
         items = res.map((b: BlogPostSearchItem) => ({
           id: b.blogPostId,
           label: b.blogTitle,
-          subtitle: b.blogAt ? new Date(b.blogAt).toLocaleDateString("vi-VN") : undefined,
+          subtitle: b.blogAt ? new Date(b.blogAt).toLocaleDateString("en-US") : undefined,
         }));
       } else if (state.referenceType === "SALE") {
         const res = await referenceSearchApi.searchPromotions(term);
         items = res.map((s: PromotionSearchItem) => ({
           id: s.promotionId,
           label: s.promotionName,
-          subtitle: `${new Date(s.startDate).toLocaleDateString("vi-VN")} – ${new Date(s.endDate).toLocaleDateString("vi-VN")}`,
+          subtitle: `${new Date(s.startDate).toLocaleDateString("en-US")} - ${new Date(s.endDate).toLocaleDateString("en-US")}`,
         }));
       }
       setSearchResults(items);
@@ -340,11 +339,11 @@ const Step1: React.FC<{
       {/* Campaign Name */}
       <div>
         <Label>
-          Tên chiến dịch <span className="text-red-500">*</span>
+          Campaign name <span className="text-red-500">*</span>
         </Label>
         <Input
           type="text"
-          placeholder="VD: Thông báo voucher sinh nhật tháng 6"
+          placeholder="e.g. Birthday voucher announcement in June"
           maxLength={255}
           value={state.campaignName}
           onChange={(e) => update({ campaignName: e.target.value })}
@@ -356,7 +355,7 @@ const Step1: React.FC<{
       {/* Reference Type Cards */}
       <div>
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-          Chiến dịch này liên quan đến?
+          What is this campaign about?
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {REFERENCE_TYPE_CARDS.map((card) => {
@@ -395,20 +394,20 @@ const Step1: React.FC<{
       {state.referenceType && (
         <div className="p-5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            {state.referenceType === "VOUCHER" && "Chọn voucher muốn thông báo:"}
-            {state.referenceType === "PRODUCT" && "Chọn sản phẩm muốn thông báo:"}
-            {state.referenceType === "BLOG" && "Chọn bài viết muốn chia sẻ:"}
-            {state.referenceType === "SALE" && "Chọn chương trình sale:"}
+            {state.referenceType === "VOUCHER" && "Select the voucher to announce:"}
+            {state.referenceType === "PRODUCT" && "Select the product to announce:"}
+            {state.referenceType === "BLOG" && "Select the blog post to share:"}
+            {state.referenceType === "SALE" && "Select the promotion:"}
           </p>
           <SearchDropdown
             placeholder={
               state.referenceType === "VOUCHER"
-                ? "Tìm theo tên hoặc mã voucher..."
+                ? "Search by voucher name or code..."
                 : state.referenceType === "PRODUCT"
-                  ? "Tìm theo tên sản phẩm..."
+                  ? "Search by product name..."
                   : state.referenceType === "BLOG"
-                    ? "Tìm theo tiêu đề bài viết..."
-                    : "Tìm theo tên chương trình..."
+                    ? "Search by blog title..."
+                    : "Search by promotion name..."
             }
             items={searchResults}
             loading={searching}
@@ -430,7 +429,7 @@ const Step1: React.FC<{
                 <p className="text-sm font-semibold text-gray-800 dark:text-white/90 truncate">
                   {state.referenceDisplayName}
                 </p>
-                <p className="text-xs text-brand-500 mt-0.5">Đã chọn ✓</p>
+                <p className="text-xs text-brand-500 mt-0.5">Selected ✓</p>
               </div>
               <button
                 type="button"
@@ -458,17 +457,20 @@ const Step2: React.FC<{
   update: (patch: Partial<WizardState>) => void;
   errors: Record<string, string>;
   templates: NotificationTemplate[];
-}> = ({ state, update, errors, templates }) => {
+  isUploading: boolean;
+  onSelectImage: (file: File) => void;
+  onImageUrlChange: (value: string) => void;
+  onClearImage: () => void;
+}> = ({ state, update, errors, templates, isUploading, onSelectImage, onImageUrlChange, onClearImage }) => {
   const previewTitle = getPreviewTitle(state);
   const previewMessage = getPreviewMessage(state);
-  const { uploadImage, isUploading } = useCampaignImageUpload();
+  const previewImageUrl = state.imagePreviewUrl || state.imageUrl || undefined;
 
-  const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const url = await uploadImage(file);
-    if (url) update({ imageUrl: url });
+    onSelectImage(file);
     event.target.value = "";
   };
 
@@ -478,7 +480,7 @@ const Step2: React.FC<{
       <div className="space-y-5">
         {/* Template selector */}
         <div>
-          <Label>Chọn mẫu thông báo</Label>
+          <Label>Choose a notification template</Label>
           <select
             value={state.templateCode}
             onChange={(e) => {
@@ -488,7 +490,7 @@ const Step2: React.FC<{
             }}
             className="h-11 w-full appearance-none rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-white/90 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-300"
           >
-            <option value="">-- Soạn nội dung tự do --</option>
+            <option value="">-- Write custom content --</option>
             {templates.map((t) => (
               <option key={t.templateCode} value={t.templateCode}>
                 {t.titleTemplate}
@@ -496,7 +498,7 @@ const Step2: React.FC<{
             ))}
           </select>
           <p className="text-xs text-gray-400 mt-1.5">
-            Chọn mẫu có sẵn để tiết kiệm thời gian soạn thảo
+            Choose a template to save time
           </p>
         </div>
 
@@ -504,10 +506,10 @@ const Step2: React.FC<{
         <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div>
             <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
-              Tùy chỉnh nội dung
+              Customize content
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Tự soạn tiêu đề và nội dung thông báo
+              Write a custom title and message
             </p>
           </div>
           <button
@@ -530,12 +532,12 @@ const Step2: React.FC<{
           <div className="space-y-4 p-4 rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50/50 dark:bg-brand-500/5">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <Label>Tiêu đề thông báo</Label>
+                <Label>Notification title</Label>
                 <span className="text-xs text-gray-400">{state.titleOverride.length}/255</span>
               </div>
               <Input
                 type="text"
-                placeholder="VD: 🎉 Voucher sinh nhật dành riêng cho bạn!"
+                placeholder="e.g. 🎉 A birthday voucher just for you!"
                 maxLength={255}
                 value={state.titleOverride}
                 onChange={(e) => update({ titleOverride: e.target.value })}
@@ -545,11 +547,11 @@ const Step2: React.FC<{
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
-                <Label>Nội dung thông báo</Label>
+                <Label>Notification message</Label>
                 <span className="text-xs text-gray-400">{state.messageOverride.length}/500</span>
               </div>
               <TextArea
-                placeholder="VD: Chúc mừng sinh nhật! Dùng mã BDAY25 để được giảm 25%..."
+                placeholder="e.g. Happy birthday! Use code BDAY25 for 25% off..."
                 rows={4}
                 maxLength={500}
                 value={state.messageOverride}
@@ -561,54 +563,115 @@ const Step2: React.FC<{
           </div>
         )}
 
-        {/* Image */}
-        <div className="space-y-2">
-          <Label>Ảnh kèm theo (không bắt buộc)</Label>
-          <FileInput
-            accept="image/*"
-            disabled={isUploading}
-            onChange={handleImageFileChange}
-          />
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span>Chon anh tu may (toi da 5MB, jpg/png/webp/gif)</span>
-            {isUploading && <span>Dang tai anh...</span>}
+        {/* Image Upload Area */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label>Image (optional)</Label>
+            {state.imageFile && (
+              <span className="text-xs font-medium px-2 py-1 bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300 rounded-md">
+                Selected: {state.imageFile.name}
+              </span>
+            )}
           </div>
+
+          <div className="relative group rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-brand-500 dark:hover:border-brand-400 transition-all bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden">
+            {state.imagePreviewUrl || state.imageUrl ? (
+              <div className="relative aspect-video w-full bg-black/5 dark:bg-black/20 flex items-center justify-center">
+                <img
+                  src={state.imagePreviewUrl || state.imageUrl || ""}
+                  alt="Campaign preview"
+                  className="w-full h-full object-contain"
+                />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-sm">
+                  <label
+                    htmlFor="campaign-image-upload"
+                    className="p-2.5 rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors cursor-pointer"
+                    title="Change Image"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={onClearImage}
+                    className="p-2.5 rounded-full bg-red-500/80 text-white hover:bg-red-500 transition-colors"
+                    title="Remove Image"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label htmlFor="campaign-image-upload" className="flex flex-col items-center justify-center py-10 px-6 cursor-pointer hover:bg-brand-50/50 dark:hover:bg-brand-500/5 transition-colors">
+                <div className="w-14 h-14 mb-4 rounded-full bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-500 ring-4 ring-white dark:ring-gray-900 shadow-sm">
+                  <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">
+                  Click to upload image
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center max-w-xs">
+                  SVG, PNG, JPG or WEBP (max 5MB)
+                </p>
+              </label>
+            )}
+            <input
+              id="campaign-image-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={isUploading}
+              onChange={handleImageFileChange}
+            />
+          </div>
+
+          {isUploading && (
+            <div className="flex items-center justify-center gap-2 py-2 text-sm text-brand-600 dark:text-brand-400 font-medium">
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Uploading image...
+            </div>
+          )}
+
+          <div className="relative flex items-center py-2">
+            <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+            <span className="flex-shrink-0 mx-4 text-xs font-medium text-gray-400 uppercase tracking-wider">Or provide URL</span>
+            <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+          </div>
+
           <Input
             type="text"
             placeholder="https://example.com/banner.jpg"
             maxLength={500}
             value={state.imageUrl}
-            onChange={(e) => update({ imageUrl: e.target.value })}
+            onChange={(e) => onImageUrlChange(e.target.value)}
             error={!!errors.imageUrl}
-            hint={errors.imageUrl || "Hoac dan URL anh neu khong upload"}
+            hint={errors.imageUrl || "Paste an image URL if you don't want to upload a file"}
           />
-          {state.imageUrl && (
-            <button
-              type="button"
-              onClick={() => update({ imageUrl: "" })}
-              className="text-xs text-brand-600 hover:text-brand-700"
-            >
-              Xoa anh
-            </button>
-          )}
         </div>
       </div>
 
       {/* Right: Preview */}
       <div className="space-y-4 lg:sticky lg:top-6">
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">
-          Xem trước thông báo
+          Notification preview
         </p>
         <div className="max-h-[70vh] overflow-y-auto custom-scrollbar pr-1">
           <DesktopPreview
             title={previewTitle}
             message={previewMessage}
-            imageUrl={state.imageUrl || undefined}
+            imageUrl={previewImageUrl}
           />
         </div>
         {state.templateCode && (
           <p className="text-xs text-center text-gray-400">
-            Đang dùng mẫu:{" "}
+            Using template:{" "}
             <span className="font-medium text-gray-600 dark:text-gray-300">
               {templates.find((t) => t.templateCode === state.templateCode)?.titleTemplate}
             </span>
@@ -679,7 +742,7 @@ const Step3: React.FC<{
         {/* Audience Cards */}
         <div>
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            Gửi cho ai?
+            Who should receive it?
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {TARGET_MODE_CARDS.map((card) => {
@@ -694,7 +757,6 @@ const Step3: React.FC<{
                       selectedRoleId: "",
                       individualAccountIds: [],
                       individualAccountNames: [],
-                      segmentName: "",
                     })
                   }
                   className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${selected
@@ -721,13 +783,13 @@ const Step3: React.FC<{
         {/* Dynamic targeting input */}
         {state.targetMode === "ROLE" && (
           <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-            <Label>Chọn nhóm người dùng</Label>
+            <Label>Select a user role</Label>
             <select
               value={state.selectedRoleId}
               onChange={(e) => update({ selectedRoleId: e.target.value })}
               className="h-11 w-full appearance-none rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-white/90 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
             >
-              <option value="">-- Chọn nhóm --</option>
+              <option value="">-- Select role --</option>
               {roles.map((r) => (
                 <option key={r.roleId} value={String(r.roleId)}>
                   {r.roleName}
@@ -740,7 +802,7 @@ const Step3: React.FC<{
 
         {state.targetMode === "INDIVIDUAL" && (
           <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 space-y-3">
-            <Label>Tìm và thêm khách hàng</Label>
+            <Label>Search and add customers</Label>
             <div className="relative">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -748,7 +810,7 @@ const Step3: React.FC<{
               <input
                 value={accountSearch}
                 onChange={(e) => handleAccountInput(e.target.value)}
-                placeholder="Tìm theo tên hoặc email khách hàng..."
+                placeholder="Search by customer name or email..."
                 className="w-full h-11 pl-9 pr-4 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-white/90 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
               />
               {accountSearching && (
@@ -792,29 +854,16 @@ const Step3: React.FC<{
           </div>
         )}
 
-        {state.targetMode === "SEGMENT" && (
-          <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-            <Label>Tên phân khúc</Label>
-            <Input
-              type="text"
-              placeholder="VD: vip_customers, new_users, inactive_30days"
-              value={state.segmentName}
-              onChange={(e) => update({ segmentName: e.target.value })}
-              error={!!errors.segmentName}
-              hint={errors.segmentName || "Nhập tên phân khúc khách hàng đã được định nghĩa trong hệ thống"}
-            />
-          </div>
-        )}
 
         {/* Schedule */}
         <div>
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            Gửi khi nào?
+            When to send?
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { id: "immediate", label: "Gửi ngay sau khi tạo", icon: <PaperPlaneIcon className="w-8 h-8" />, desc: "Thông báo sẽ được gửi đi ngay lập tức" },
-              { id: "scheduled", label: "Đặt lịch gửi", icon: <TimeIcon className="w-8 h-8" />, desc: "Chọn ngày giờ gửi cụ thể" },
+              { id: "immediate", label: "Send immediately", icon: <PaperPlaneIcon className="w-8 h-8" />, desc: "Notification will be sent immediately" },
+              { id: "scheduled", label: "Schedule send", icon: <TimeIcon className="w-8 h-8" />, desc: "Choose a specific date and time" },
             ].map((card) => {
               const selected = state.scheduleType === card.id;
               return (
@@ -835,7 +884,7 @@ const Step3: React.FC<{
 
           {state.scheduleType === "scheduled" && (
             <div className="mt-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-              <Label>Thời gian gửi</Label>
+              <Label>Send time</Label>
               <Input
                 type="datetime-local"
                 min={minDate}
@@ -854,37 +903,37 @@ const Step3: React.FC<{
         <div className="sticky top-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-5">
           <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 mb-4 flex items-center gap-2">
             <span className="w-6 h-6 bg-brand-100 dark:bg-brand-500/20 rounded-full flex items-center justify-center text-brand-600 dark:text-brand-400 text-xs font-bold">✓</span>
-            Tóm tắt chiến dịch
+            Campaign summary
           </h3>
           <ul className="space-y-3">
-            <SummaryRow label="Tên chiến dịch" value={state.campaignName || "Chưa đặt tên"} empty={!state.campaignName} />
+            <SummaryRow label="Campaign name" value={state.campaignName || "Not set yet"} empty={!state.campaignName} />
             <SummaryRow
-              label="Đối tượng"
-              value={REFERENCE_TYPE_CARDS.find((c) => c.id === state.referenceType)?.label || "Thông báo chung"}
+              label="Reference"
+              value={REFERENCE_TYPE_CARDS.find((c) => c.id === state.referenceType)?.label || "General notification"}
             />
             {state.referenceDisplayName && (
-              <SummaryRow label="Gắn với" value={state.referenceDisplayName} />
+              <SummaryRow label="Linked to" value={state.referenceDisplayName} />
             )}
             <SummaryRow
-              label="Nội dung"
+              label="Content"
               value={
                 state.selectedTemplate
-                  ? `Mẫu: ${state.selectedTemplate.titleTemplate}`
+                  ? `Template: ${state.selectedTemplate.titleTemplate}`
                   : state.useCustomContent && state.titleOverride
                     ? state.titleOverride
-                    : "Chưa chọn mẫu"
+                    : "No template selected"
               }
               empty={!state.selectedTemplate && !(state.useCustomContent && state.titleOverride)}
             />
-            <SummaryRow label="Gửi cho" value={TARGET_MODE_CARDS.find((c) => c.id === state.targetMode)?.label || ""} />
+            <SummaryRow label="Audience" value={TARGET_MODE_CARDS.find((c) => c.id === state.targetMode)?.label || ""} />
             <SummaryRow
-              label="Lịch gửi"
+              label="Schedule"
               value={
                 state.scheduleType === "immediate"
-                  ? "Gửi ngay sau khi tạo"
+                  ? "Send immediately"
                   : state.scheduledAt
-                    ? new Date(state.scheduledAt).toLocaleString("vi-VN")
-                    : "Chưa đặt lịch"
+                    ? new Date(state.scheduledAt).toLocaleString("en-US")
+                    : "Not scheduled"
               }
               empty={state.scheduleType === "scheduled" && !state.scheduledAt}
             />
@@ -927,6 +976,48 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
   const [referenceTypes, setReferenceTypes] = useState<ReferenceTypeInfo[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingCampaign, setIsLoadingCampaign] = useState(false);
+  const { uploadImage, isUploading } = useCampaignImageUpload();
+
+  const handleImageFileSelect = useCallback((file: File) => {
+    setState((prev) => {
+      if (prev.imagePreviewUrl) {
+        URL.revokeObjectURL(prev.imagePreviewUrl);
+      }
+      return {
+        ...prev,
+        imageFile: file,
+        imagePreviewUrl: URL.createObjectURL(file),
+      };
+    });
+  }, []);
+
+  const handleImageUrlChange = useCallback((value: string) => {
+    setState((prev) => {
+      if (prev.imagePreviewUrl) {
+        URL.revokeObjectURL(prev.imagePreviewUrl);
+      }
+      return {
+        ...prev,
+        imageUrl: value,
+        imageFile: null,
+        imagePreviewUrl: "",
+      };
+    });
+  }, []);
+
+  const handleClearImage = useCallback(() => {
+    setState((prev) => {
+      if (prev.imagePreviewUrl) {
+        URL.revokeObjectURL(prev.imagePreviewUrl);
+      }
+      return {
+        ...prev,
+        imageUrl: "",
+        imageFile: null,
+        imagePreviewUrl: "",
+      };
+    });
+  }, []);
 
   const update = useCallback((patch: Partial<WizardState>) => {
     setState((prev) => ({ ...prev, ...patch }));
@@ -956,16 +1047,17 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
         titleOverride: c.titleOverride || "",
         messageOverride: c.messageOverride || "",
         imageUrl: c.imageUrl || "",
+        imageFile: null,
+        imagePreviewUrl: "",
         targetMode: (c.targetType as WizardState["targetMode"]) || "ALL",
         selectedRoleId: c.targets.find((t) => t.targetType === "ROLE_ID")?.targetValue || "",
         individualAccountIds: c.targets.filter((t) => t.targetType === "ACCOUNT_ID").map((t) => Number(t.targetValue)),
         individualAccountNames: c.targets.filter((t) => t.targetType === "ACCOUNT_ID").map((t) => t.targetValue),
-        segmentName: c.targets.find((t) => t.targetType === "SEGMENT")?.targetValue || "",
         scheduleType: c.scheduledAt ? "scheduled" : "immediate",
         scheduledAt: c.scheduledAt ? new Date(c.scheduledAt).toISOString().slice(0, 16) : "",
       });
     }).catch(() => {
-      toast.error("Không thể tải thông tin chiến dịch");
+      toast.error("Failed to load campaign info");
       router.push("/admin/campaigns");
     }).finally(() => setIsLoadingCampaign(false));
   }, [campaignId, isEditing, router]);
@@ -980,27 +1072,25 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
   const validateStep = (): boolean => {
     const errs: Record<string, string> = {};
     if (step === 1) {
-      if (!state.campaignName.trim()) errs.campaignName = "Vui lòng đặt tên cho chiến dịch";
-      if (state.referenceType && !state.referenceId) errs.referenceId = "Vui lòng chọn đối tượng cụ thể";
+      if (!state.campaignName.trim()) errs.campaignName = "Please name the campaign";
+      if (state.referenceType && !state.referenceId) errs.referenceId = "Please select a specific reference";
     }
     if (step === 2) {
-      if (state.imageUrl && !/^https?:\/\/.+/.test(state.imageUrl))
-        errs.imageUrl = "Đường dẫn ảnh không hợp lệ (phải bắt đầu bằng https://)";
+      if (state.imageUrl && !/^https?:\/\/.+/.test(state.imageUrl) && !state.imageFile)
+        errs.imageUrl = "Invalid image URL (must start with https://)";
       if (state.useCustomContent && state.titleOverride && state.titleOverride.length > 255)
-        errs.titleOverride = "Tiêu đề không được vượt quá 255 ký tự";
+        errs.titleOverride = "Title must not exceed 255 characters";
       if (state.useCustomContent && state.messageOverride && state.messageOverride.length > 500)
-        errs.messageOverride = "Nội dung không được vượt quá 500 ký tự";
+        errs.messageOverride = "Message must not exceed 500 characters";
     }
     if (step === 3) {
-      if (state.targetMode === "ROLE" && !state.selectedRoleId) errs.selectedRoleId = "Vui lòng chọn nhóm người dùng";
+      if (state.targetMode === "ROLE" && !state.selectedRoleId) errs.selectedRoleId = "Please select a user role";
       if (state.targetMode === "INDIVIDUAL" && state.individualAccountIds.length === 0)
-        errs.targeting = "Vui lòng thêm ít nhất một khách hàng";
-      if (state.targetMode === "SEGMENT" && !state.segmentName.trim())
-        errs.segmentName = "Vui lòng nhập tên phân khúc";
+        errs.targeting = "Please add at least one customer";
       if (state.scheduleType === "scheduled" && !state.scheduledAt)
-        errs.scheduledAt = "Vui lòng chọn thời gian gửi";
+        errs.scheduledAt = "Please select a scheduled time";
       if (state.scheduleType === "scheduled" && state.scheduledAt && new Date(state.scheduledAt) <= new Date())
-        errs.scheduledAt = "Thời gian gửi phải ở tương lai";
+        errs.scheduledAt = "Scheduled time must be in the future";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -1019,8 +1109,6 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
       state.individualAccountIds.forEach((id) =>
         targets.push({ targetType: "ACCOUNT_ID", targetValue: String(id) })
       );
-    } else if (state.targetMode === "SEGMENT" && state.segmentName) {
-      targets.push({ targetType: "SEGMENT", targetValue: state.segmentName });
     }
 
     return {
@@ -1032,7 +1120,7 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
       messageOverride: state.useCustomContent && state.messageOverride ? state.messageOverride : null,
       sourceType: "ADMIN" as const,
       targetType: state.targetMode,
-      scheduledAt: state.scheduleType === "scheduled" && state.scheduledAt ? state.scheduledAt : null,
+      scheduledAt: state.scheduleType === "scheduled" && state.scheduledAt ? new Date(state.scheduledAt).toISOString() : null,
       imageUrl: state.imageUrl || null,
       actionType: null,
       actionTarget: null,
@@ -1045,18 +1133,28 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
     if (!validateStep()) return;
     setIsSubmitting(true);
     try {
-      const payload = buildPayload();
+      let uploadedImageUrl = state.imageUrl || null;
+      if (state.imageFile) {
+        const url = await uploadImage(state.imageFile);
+        if (!url) return;
+        uploadedImageUrl = url;
+      }
+
+      const payload = {
+        ...buildPayload(),
+        imageUrl: uploadedImageUrl,
+      };
       if (isEditing && campaignId) {
         await campaignApi.updateCampaign(campaignId, payload);
-        toast.success("Chiến dịch đã được cập nhật!");
+        toast.success("Campaign updated successfully!");
         router.push(`/admin/campaigns/${campaignId}`);
       } else {
         const created = await campaignApi.createCampaign(payload);
-        toast.success("Chiến dịch đã được tạo thành công!");
+        toast.success("Campaign created successfully!");
         router.push(`/admin/campaigns/${created.campaignId}`);
       }
     } catch {
-      toast.error(isEditing ? "Cập nhật chiến dịch thất bại. Vui lòng thử lại." : "Tạo chiến dịch thất bại. Vui lòng thử lại.");
+      toast.error(isEditing ? "Failed to update campaign. Please try again." : "Failed to create campaign. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -1091,12 +1189,12 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
       <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-6 lg:p-8">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
-            Bước {step}: {stepTitles[step - 1]}
+            Step {step}: {stepTitles[step - 1]}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {step === 1 && "Đặt tên và chọn loại nội dung cho chiến dịch của bạn"}
-            {step === 2 && "Thiết kế nội dung thông báo sẽ gửi đến khách hàng"}
-            {step === 3 && "Xác định đối tượng nhận và thời gian gửi"}
+            {step === 1 && "Name your campaign and choose content type"}
+            {step === 2 && "Design the notification content to send to customers"}
+            {step === 3 && "Determine recipients and send time"}
           </p>
         </div>
 
@@ -1104,7 +1202,16 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
           <Step1 state={state} update={update} errors={errors} referenceTypes={referenceTypes} />
         )}
         {step === 2 && (
-          <Step2 state={state} update={update} errors={errors} templates={templates} />
+          <Step2
+            state={state}
+            update={update}
+            errors={errors}
+            templates={templates}
+            isUploading={isUploading}
+            onSelectImage={handleImageFileSelect}
+            onImageUrlChange={handleImageUrlChange}
+            onClearImage={handleClearImage}
+          />
         )}
         {step === 3 && (
           <Step3 state={state} update={update} errors={errors} roles={roles} />
@@ -1123,7 +1230,7 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
-              Quay lại
+              Back
             </button>
           )}
         </div>
@@ -1133,7 +1240,7 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
             onClick={() => router.push("/admin/campaigns")}
             className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
-            Hủy bỏ
+            Cancel
           </button>
           {step < 3 ? (
             <button
@@ -1159,12 +1266,12 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Đang xử lý...
+                  Processing...
                 </>
               ) : isEditing ? (
-                "Cập nhật chiến dịch"
+                "Update campaign"
               ) : (
-                "Tạo chiến dịch"
+                "Create campaign"
               )}
             </button>
           )}

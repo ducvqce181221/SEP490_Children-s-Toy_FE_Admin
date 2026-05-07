@@ -4,8 +4,8 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { CampaignDetailPage } from "@/features/campaign/components/CampaignDetailPage";
 
 export const metadata: Metadata = {
-  title: "Chi tiết chiến dịch | Toy Store Admin",
-  description: "Xem chi tiết và kết quả của chiến dịch thông báo",
+  title: "Campaign Detail | Toy Store Admin",
+  description: "View campaign details and delivery results",
 };
 
 interface Props {
@@ -19,14 +19,17 @@ export default async function CampaignDetailRoute({ params }: Props) {
   if (isNaN(campaignId)) {
     return (
       <div className="flex items-center justify-center py-24">
-        <p className="text-gray-500">Không tìm thấy chiến dịch</p>
+        <p className="text-gray-500">Campaign not found</p>
       </div>
     );
   }
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Chi tiết chiến dịch" />
+      <PageBreadcrumb
+        pageTitle="Campaign Detail"
+        breadcrumbs={[{ label: "Campaigns", href: "/admin/campaigns" }]}
+      />
       <CampaignDetailPage campaignId={campaignId} />
     </div>
   );

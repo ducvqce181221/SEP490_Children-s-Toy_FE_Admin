@@ -4,6 +4,7 @@ import { TemplateFormSchema } from "./template.schema";
 export interface Template {
   templateId: number;
   templateCode: string;
+  usageScope: string;
   titleTemplate: string;
   messageTemplate: string;
   isActive: boolean;

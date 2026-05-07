@@ -17,6 +17,7 @@ import { PlusIcon, EyeIcon, PencilIcon, TrashBinIcon, PieChartIcon, DocsIcon, Bo
 import SearchInput from "@/components/common/SearchInput";
 import { campaignApi, PaginatedCampaigns } from "../services/campaign-api";
 import { CampaignListItem } from "../types/campaign";
+import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -80,6 +81,17 @@ const STATUS_CONFIG: Record<
       </svg>
     ),
   },
+  Failed: {
+    label: "Failed",
+    bg: "bg-red-50 dark:bg-red-900/20",
+    text: "text-red-600 dark:text-red-400",
+    dot: "bg-red-500",
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+      </svg>
+    ),
+  },
 };
 
 const REFERENCE_TYPE_CONFIG: Record<
@@ -110,12 +122,17 @@ const REFERENCE_TYPE_CONFIG: Record<
     text: "text-red-600 dark:text-red-400",
     icon: <BoltIcon className="w-6 h-6" />,
   },
+  OTHER: {
+    label: "Other",
+    bg: "bg-gray-100 dark:bg-gray-800",
+    text: "text-gray-600 dark:text-gray-400",
+    icon: <BellIcon className="w-6 h-6" />,
+  },
 };
 const TARGET_TYPE_LABELS: Record<string, string> = {
-  ALL: "All Customers",
+  ALL: "All Accounts",
   ROLE: "By Role",
   INDIVIDUAL: "Individual",
-  SEGMENT: "Segment",
 };
 
 const STATUS_TABS = [
@@ -125,6 +142,7 @@ const STATUS_TABS = [
   { id: "Sending", label: "Sending" },
   { id: "Sent", label: "Sent" },
   { id: "Cancelled", label: "Cancelled" },
+  { id: "Failed", label: "Failed" },
 ];
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -218,6 +236,7 @@ export const CampaignListPage: React.FC = () => {
   const [data, setData] = useState<PaginatedCampaigns | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [confirmCancelState, setConfirmCancelState] = useState<{ isOpen: boolean; campaign: CampaignListItem | null }>({ isOpen: false, campaign: null });
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -247,18 +266,20 @@ export const CampaignListPage: React.FC = () => {
     setCurrentPage(1);
   }, [activeStatus, searchQuery]);
 
-  const handleCancel = async (campaign: CampaignListItem) => {
-    if (
-      !confirm(
-        `Are you sure you want to cancel campaign "${campaign.campaignName}"? This action cannot be undone.`
-      )
-    )
-      return;
+  const handleCancelClick = (campaign: CampaignListItem) => {
+    setConfirmCancelState({ isOpen: true, campaign });
+  };
+
+  const handleConfirmCancel = async () => {
+    const campaign = confirmCancelState.campaign;
+    if (!campaign) return;
+
     setCancellingId(campaign.campaignId);
     try {
       await campaignApi.cancelCampaign(campaign.campaignId);
       toast.success("Campaign cancelled successfully");
       fetchData();
+      setConfirmCancelState({ isOpen: false, campaign: null });
     } catch {
       toast.error("Failed to cancel campaign. Please try again.");
     } finally {
@@ -399,7 +420,7 @@ export const CampaignListPage: React.FC = () => {
                         {campaign.campaignName}
                       </Link>
                       <span className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 block">
-                        {new Date(campaign.createdAt).toLocaleDateString("vi-VN")}
+                        {new Date(campaign.createdAt).toLocaleDateString("en-US")}
                       </span>
                     </TableCell>
 
@@ -424,7 +445,7 @@ export const CampaignListPage: React.FC = () => {
                     <TableCell className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">
                       {campaign.scheduledAt ? (
                         <span>
-                          {new Date(campaign.scheduledAt).toLocaleDateString("vi-VN", {
+                          {new Date(campaign.scheduledAt).toLocaleDateString("en-US", {
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
@@ -474,7 +495,7 @@ export const CampaignListPage: React.FC = () => {
                         {/* Draft/Scheduled → cancel */}
                         {(campaign.status === "Draft" || campaign.status === "Scheduled") && (
                           <button
-                            onClick={() => handleCancel(campaign)}
+                            onClick={() => handleCancelClick(campaign)}
                             disabled={cancellingId === campaign.campaignId}
                             className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-error-400 hover:text-error-500 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
                             title="Cancel campaign"
@@ -532,6 +553,17 @@ export const CampaignListPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmCancelState.isOpen}
+        onClose={() => setConfirmCancelState({ isOpen: false, campaign: null })}
+        onConfirm={handleConfirmCancel}
+        title="Cancel Campaign"
+        message={`Are you sure you want to cancel campaign "${confirmCancelState.campaign?.campaignName}"? This action cannot be undone.`}
+        confirmText="Cancel Campaign"
+        isDestructive={true}
+        isLoading={cancellingId !== null}
+      />
     </div>
   );
 };

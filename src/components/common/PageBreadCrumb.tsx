@@ -6,85 +6,73 @@ interface BreadcrumbItem {
   href?: string;
 }
 
-interface BreadcrumbProps {
-  pageTitle: string;
-  breadcrumbItems?: BreadcrumbItem[];
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
 }
 
-const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle, breadcrumbItems }) => {
+interface BreadcrumbProps {
+  pageTitle: string;
+  breadcrumbs?: BreadcrumbItem[];
+}
+
+const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle, breadcrumbs }) => {
+  const chevron = (
+    <svg
+      className="stroke-current"
+      width="17"
+      height="16"
+      viewBox="0 0 17 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M6.0765 12.667L10.2432 8.50033L6.0765 4.33366"
+        stroke=""
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">
+      <h2
+        className="text-xl font-semibold text-gray-800 dark:text-white/90"
+        x-text="pageName"
+      >
         {pageTitle}
       </h2>
       <nav>
         <ol className="flex items-center gap-1.5">
           <li>
             <Link
-              className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-brand-500 transition-colors"
-              href="/"
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              href="/admin/dashboard"
             >
               Home
-              <svg
-                className="stroke-current"
-                width="17"
-                height="16"
-                viewBox="0 0 17 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M6.0765 12.667L10.2432 8.50033L6.0765 4.33366"
-                  stroke=""
-                  strokeWidth="1.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              {chevron}
             </Link>
           </li>
-
-          {breadcrumbItems ? (
-            breadcrumbItems.map((item, index) => (
-              <li key={index} className="flex items-center gap-1.5">
-                {item.href ? (
-                  <Link
-                    href={item.href}
-                    className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-brand-500 transition-colors"
-                  >
-                    {item.label}
-                    <svg
-                      className="stroke-current"
-                      width="17"
-                      height="16"
-                      viewBox="0 0 17 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M6.0765 12.667L10.2432 8.50033L6.0765 4.33366"
-                        stroke=""
-                        strokeWidth="1.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </Link>
-                ) : (
-                  <span 
-                    className="text-sm text-gray-800 dark:text-white/90 truncate max-w-[150px] sm:max-w-[250px]" 
-                    title={item.label}
-                  >
-                    {item.label}
-                  </span>
-                )}
-              </li>
-            ))
-          ) : (
-            <li className="text-sm text-gray-800 dark:text-white/90">
-              {pageTitle}
+          {breadcrumbs?.map((crumb, i) => (
+            <li key={i} className="inline-flex items-center gap-1.5">
+              {crumb.href ? (
+                <Link
+                  href={crumb.href}
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                >
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span className="text-sm text-gray-500 dark:text-gray-400">{crumb.label}</span>
+              )}
+              {chevron}
             </li>
-          )}
+          ))}
+          <li className="text-sm text-gray-800 dark:text-white/90">
+            {pageTitle}
+          </li>
         </ol>
       </nav>
     </div>
