@@ -4,8 +4,8 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { CampaignWizard } from "@/features/campaign/components/CampaignWizard";
 
 export const metadata: Metadata = {
-  title: "Chỉnh sửa chiến dịch | Toy Store Admin",
-  description: "Cập nhật thông tin chiến dịch thông báo",
+  title: "Edit Campaign | Toy Store Admin",
+  description: "Update campaign notification information",
 };
 
 interface Props {
@@ -19,14 +19,17 @@ export default async function EditCampaignPage({ params }: Props) {
   if (isNaN(campaignId)) {
     return (
       <div className="flex items-center justify-center py-24">
-        <p className="text-gray-500">Không tìm thấy chiến dịch</p>
+        <p className="text-gray-500">Campaign not found</p>
       </div>
     );
   }
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Chỉnh sửa chiến dịch" />
+      <PageBreadcrumb
+        pageTitle="Edit Campaign"
+        breadcrumbs={[{ label: "Campaigns", href: "/admin/campaigns" }]}
+      />
       <CampaignWizard campaignId={campaignId} />
     </div>
   );

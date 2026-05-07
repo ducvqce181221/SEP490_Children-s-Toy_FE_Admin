@@ -4,6 +4,7 @@ import { templateApi } from "../services/template-api";
 
 export interface TemplateFilters {
   isActive?: boolean;
+  usageScope?: "SYSTEM" | "ADMIN";
   startDate?: string;
   endDate?: string;
 }
@@ -35,6 +36,7 @@ export const useTemplates = () => {
         sortDesc,
         searchQuery || undefined,
         filters.isActive,
+        filters.usageScope,
         filters.startDate || undefined,
         filters.endDate || undefined
       );

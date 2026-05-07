@@ -9,6 +9,7 @@ export const templateApi = {
     sortDesc = false,
     searchTerm?: string,
     isActive?: boolean,
+    usageScope?: "SYSTEM" | "ADMIN",
     startDate?: string,
     endDate?: string
   ) => {
@@ -20,6 +21,7 @@ export const templateApi = {
         sortDesc,
         ...(searchTerm && { searchTerm }),
         ...(isActive !== undefined && { isActive }),
+        ...(usageScope && { usageScope }),
         ...(startDate && { startDate }),
         ...(endDate && { endDate })
       },

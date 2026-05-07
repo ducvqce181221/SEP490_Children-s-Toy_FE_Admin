@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -15,6 +15,7 @@ import { useCampaigns } from "../hooks/useCampaigns";
 import { useCampaignMutations } from "../hooks/useCampaignMutations";
 import { CampaignRow } from "./CampaignRow";
 import { CampaignFormData } from "../types/campaign";
+import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 
 export const CampaignTable = () => {
   const {
@@ -53,9 +54,16 @@ export const CampaignTable = () => {
     }
   };
 
-  const handleCancel = async (id: number) => {
-    if (window.confirm("Bạn có chắc chắn muốn hủy chiến dịch này không? Hành động này không thể hoàn tác.")) {
-      await cancelCampaign(id);
+  const [cancelId, setCancelId] = useState<number | null>(null);
+
+  const handleCancelClick = (id: number) => {
+    setCancelId(id);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (cancelId) {
+      await cancelCampaign(cancelId);
+      setCancelId(null);
     }
   };
 
@@ -114,7 +122,7 @@ export const CampaignTable = () => {
                     campaign={campaign}
                     onView={() => setViewCampaignId(campaign.campaignId)}
                     onEdit={() => setEditCampaignId(campaign.campaignId)}
-                    onCancel={() => handleCancel(campaign.campaignId)}
+                    onCancel={() => handleCancelClick(campaign.campaignId)}
                   />
                 ))
               ) : (
@@ -169,6 +177,17 @@ export const CampaignTable = () => {
           setViewCampaignId(null);
           setEditCampaignId(null);
         }}
+      />
+
+      <ConfirmModal
+        isOpen={cancelId !== null}
+        onClose={() => setCancelId(null)}
+        onConfirm={handleConfirmCancel}
+        title="Cancel Campaign"
+        message="Are you sure you want to cancel this campaign? This action cannot be undone."
+        confirmText="Cancel Campaign"
+        isDestructive={true}
+        isLoading={isSubmitting}
       />
     </div>
   );

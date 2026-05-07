@@ -119,8 +119,11 @@ export const CampaignToolbar: React.FC<CampaignToolbarProps> = ({
                   options={[
                     { value: "", label: "All Statuses" },
                     { value: "Draft", label: "Draft" },
-                    { value: "Active", label: "Active" },
-                    { value: "Completed", label: "Completed" },
+                    { value: "Scheduled", label: "Scheduled" },
+                    { value: "Sending", label: "Sending" },
+                    { value: "Sent", label: "Sent" },
+                    { value: "Cancelled", label: "Cancelled" },
+                    { value: "Failed", label: "Failed" },
                   ]}
                   onChange={handleStatusChange}
                   value={localFilters.status}

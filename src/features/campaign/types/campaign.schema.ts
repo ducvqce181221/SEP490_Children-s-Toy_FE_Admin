@@ -47,7 +47,7 @@ export const CampaignFormSchema = z
 
     sourceType: z.enum(["ADMIN", "SYSTEM"] as const),
 
-    targetType: z.enum(["ALL", "SEGMENT", "ROLE", "INDIVIDUAL"] as const),
+    targetType: z.enum(["ALL", "ROLE", "INDIVIDUAL"] as const),
 
     scheduledAt: z
       .string()
@@ -95,7 +95,7 @@ export const CampaignFormSchema = z
     targets: z
       .array(
         z.object({
-          targetType: z.enum(["ACCOUNT_ID", "ROLE", "SEGMENT"] as const),
+          targetType: z.enum(["ACCOUNT_ID", "ROLE_ID"] as const),
           targetValue: z
             .string()
             .min(1, "Target value is required.")
@@ -105,11 +105,11 @@ export const CampaignFormSchema = z
       .optional(),
   })
   .superRefine((data, ctx) => {
-    // When TargetType = SEGMENT: at least 1 target required
-    if (data.targetType === "SEGMENT" && (!data.targets || data.targets.length === 0)) {
+    // When TargetType = ROLE or INDIVIDUAL: at least 1 target required
+    if ((data.targetType === "ROLE" || data.targetType === "INDIVIDUAL") && (!data.targets || data.targets.length === 0)) {
       ctx.addIssue({
         code: "custom",
-        message: "At least one target is required when Target Type is SEGMENT.",
+        message: "At least one target is required when Target Type is ROLE or INDIVIDUAL.",
         path: ["targets"],
       });
     }

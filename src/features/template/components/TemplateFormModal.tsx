@@ -74,8 +74,9 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
   // State để quản lý việc mở/đóng danh sách drop list của từng nhóm
   const [expandedGroup, setExpandedGroup] = useState<string | null>(PLACEHOLDER_GROUPS[0].title);
 
-  const isEditMode = mode === "edit";
-  const isDetailMode = mode === "detail";
+  const isSystemTemplate = templateData?.usageScope?.toUpperCase() === "SYSTEM";
+  const isEditMode = mode === "edit" && !isSystemTemplate;
+  const isDetailMode = mode === "detail" || isSystemTemplate;
   const isReadOnly = isDetailMode;
 
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -167,6 +168,11 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
                 ? "Review template details and structure."
                 : "Craft your message template with dynamic placeholders."}
             </p>
+            {isSystemTemplate && (
+              <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+                Template SYSTEM chỉ để xem, không được chỉnh sửa.
+              </p>
+            )}
           </div>
 
           <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col gap-5 flex-1">
