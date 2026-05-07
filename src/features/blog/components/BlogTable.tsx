@@ -8,7 +8,7 @@ import { Modal } from "@/components/ui/modal";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { useBlogMutations } from "../hooks/useBlogMutations";
 import { useBlogs } from "../hooks/useBlogs";
-import { CreateBlogRequest, UpdateBlogRequest } from "../types/blog";
+import { BlogListItem, CreateBlogRequest, UpdateBlogRequest } from "../types/blog";
 import BlogApprovalModal from "./BlogApprovalModal";
 import BlogDetailModal from "./BlogDetailModal";
 import BlogFormModal from "./BlogFormModal";
@@ -125,8 +125,15 @@ const BlogTable = () => {
     return result;
   };
 
-  const handleSubmitBlog = async (blogPostId: number) => {
-    const result = await submitBlog(blogPostId);
+  const handleSubmitBlog = async (blog: BlogListItem) => {
+    const blogAtValue = blog.blogAt?.trim();
+    if (!blogAtValue) {
+      setSelectedEditBlogId(blog.blogPostId);
+      toast.error("Please set Blog At before submitting for admin approval.");
+      return;
+    }
+
+    const result = await submitBlog(blog.blogPostId);
 
     if (result.success) {
       toast.success(result.message);

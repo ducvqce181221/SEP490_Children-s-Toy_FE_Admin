@@ -16,7 +16,7 @@ interface BlogRowProps {
   isHidingBlog: boolean;
   onOpenDetail: (blogPostId: number) => void;
   onOpenEdit: (blogPostId: number) => void;
-  onSubmitBlog: (blogPostId: number) => void;
+  onSubmitBlog: (blog: BlogListItem) => void;
   onOpenApproval: (blogPostId: number) => void;
   onPublishNow: (blogPostId: number) => void;
   onHideBlog: (blogPostId: number, blogTitle: string) => void;
@@ -158,7 +158,7 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
             <button
               type="button"
               disabled={isSubmitting}
-              onClick={() => onSubmitBlog(blog.blogPostId)}
+              onClick={() => onSubmitBlog(blog)}
               className="rounded-lg border border-success-300 p-2 text-success-600 transition-colors hover:border-success-500 hover:text-success-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-success-700 dark:text-success-400"
               aria-label={`Submit blog ${blog.blogTitle}`}
             >
