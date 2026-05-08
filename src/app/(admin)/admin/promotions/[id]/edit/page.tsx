@@ -55,7 +55,7 @@ export default function EditPromotionPage({ params }: { params: Promise<{ id: st
     <div>
       <PageBreadcrumb 
         pageTitle="Edit Promotion" 
-        breadcrumbItems={[
+        breadcrumbs={[
           { label: "Promotion Management", href: "/admin/promotions" },
           { label: promotion.promotionName }
         ]}

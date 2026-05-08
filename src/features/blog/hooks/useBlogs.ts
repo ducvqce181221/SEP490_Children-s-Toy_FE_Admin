@@ -13,7 +13,6 @@ import {
 
 const DEFAULT_PAGE_NUMBER = 1;
 const DEFAULT_PAGE_SIZE = 10;
-const SEARCH_DEBOUNCE_MS = 350;
 
 export const useBlogs = () => {
   const { account } = useAuthContext();
@@ -26,7 +25,7 @@ export const useBlogs = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [submittedSearchTerm, setSubmittedSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<BlogStatus | "all">("all");
   const [featuredFilter, setFeaturedFilter] = useState<FeaturedFilter>("all");
   const [sortBy, setSortBy] = useState<BlogSortBy>("createdat");
@@ -34,16 +33,6 @@ export const useBlogs = () => {
   const [pageNumber, setPageNumber] = useState(DEFAULT_PAGE_NUMBER);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [reloadToken, setReloadToken] = useState(0);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm.trim());
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [searchTerm]);
 
   useEffect(() => {
     if (!isAuthorizedRole) {
@@ -62,7 +51,7 @@ export const useBlogs = () => {
           pageSize,
           sortBy,
           sortDesc,
-          searchTerm: debouncedSearchTerm.length > 0 ? debouncedSearchTerm : undefined,
+          searchTerm: submittedSearchTerm.length > 0 ? submittedSearchTerm : undefined,
           status: statusFilter === "all" ? undefined : statusFilter,
           featuredOnly: featuredFilter === "featured" ? true : undefined,
         };
@@ -101,7 +90,7 @@ export const useBlogs = () => {
     pageSize,
     sortBy,
     sortDesc,
-    debouncedSearchTerm,
+    submittedSearchTerm,
     statusFilter,
     featuredFilter,
     reloadToken,
@@ -109,8 +98,12 @@ export const useBlogs = () => {
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchTerm(value);
-    setPageNumber(DEFAULT_PAGE_NUMBER);
   }, []);
+
+  const handleSearchSubmit = useCallback(() => {
+    setSubmittedSearchTerm(searchTerm.trim());
+    setPageNumber(DEFAULT_PAGE_NUMBER);
+  }, [searchTerm]);
 
   const handleStatusFilterChange = useCallback((value: BlogStatus | "all") => {
     setStatusFilter(value);
@@ -174,6 +167,7 @@ export const useBlogs = () => {
     isAdmin,
     isStaff,
     handleSearchChange,
+    handleSearchSubmit,
     handleStatusFilterChange,
     handleFeaturedFilterChange,
     handleSortByChange,

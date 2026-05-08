@@ -56,7 +56,7 @@ export default function ViewPromotionPage({ params }: { params: Promise<{ id: st
     <div>
       <PageBreadcrumb 
         pageTitle="Promotion Details" 
-        breadcrumbItems={[
+        breadcrumbs={[
           { label: "Promotion Management", href: "/admin/promotions" },
           { label: promotion.promotionName }
         ]}
