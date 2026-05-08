@@ -49,6 +49,7 @@ export interface AccountQueryParams {
   sortBy?: AccountSortBy;
   sortDesc?: boolean;
   searchTerm?: string;
+  roleId?: number;
 }
 
 export interface CreateAccountRequest {
