@@ -13,6 +13,7 @@ interface BlogToolbarProps {
   sortBy: BlogSortBy;
   sortDesc: boolean;
   onSearchChange: (value: string) => void;
+  onSearchSubmit: () => void;
   onStatusFilterChange: (value: BlogStatus | "all") => void;
   onFeaturedFilterChange: (value: FeaturedFilter) => void;
   onSortByChange: (value: BlogSortBy) => void;
@@ -53,12 +54,20 @@ const BlogToolbar: React.FC<BlogToolbarProps> = ({
   sortBy,
   sortDesc,
   onSearchChange,
+  onSearchSubmit,
   onStatusFilterChange,
   onFeaturedFilterChange,
   onSortByChange,
   onSortDirectionChange,
   onAddClick,
 }) => {
+  const handleSearchKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      onSearchSubmit();
+    }
+  };
+
   return (
     <div className="px-5 py-5 sm:px-6">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -87,6 +96,7 @@ const BlogToolbar: React.FC<BlogToolbarProps> = ({
           <SearchInput
             value={searchTerm}
             onChange={onSearchChange}
+            onKeyDown={handleSearchKeyDown}
             placeholder="Search by blog title"
           />
         </div>

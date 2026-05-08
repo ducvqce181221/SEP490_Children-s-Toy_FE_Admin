@@ -42,6 +42,7 @@ const BlogTable = () => {
     isAdmin,
     isStaff,
     handleSearchChange,
+    handleSearchSubmit,
     handleStatusFilterChange,
     handleFeaturedFilterChange,
     handleSortByChange,
@@ -228,6 +229,7 @@ const BlogTable = () => {
         sortBy={sortBy}
         sortDesc={sortDesc}
         onSearchChange={handleSearchChange}
+        onSearchSubmit={handleSearchSubmit}
         onStatusFilterChange={handleStatusFilterChange}
         onFeaturedFilterChange={handleFeaturedFilterChange}
         onSortByChange={handleSortByChange}
