@@ -2,6 +2,8 @@ import axios from "axios";
 import axiosClient from "@/configs/axios-client";
 import {
   ApproveBlogRequest,
+  BlogReview,
+  BlogReviewReply,
   BlogDetail,
   BlogListItem,
   BlogQueryParams,
@@ -96,5 +98,35 @@ export const blogApi = {
     );
 
     return response.data;
+  },
+
+  getBlogReviewsForManagement: async (params: {
+    pageNumber: number;
+    pageSize: number;
+    searchTerm?: string;
+    status?: "Visible" | "Hidden";
+  }): Promise<PaginatedResponse<BlogReview>> => {
+    return axiosClient.get<PaginatedResponse<BlogReview>>("/blogs/reviews/manage", { params });
+  },
+
+  replyToBlogReview: async (
+    reviewBlogId: number,
+    payload: { comment: string; parentReplyId?: number | null; replyToAccountId?: number | null },
+  ): Promise<BlogReviewReply> => {
+    return axiosClient.post<BlogReviewReply>(`/blogs/reviews/${reviewBlogId}/replies`, payload);
+  },
+
+  updateBlogReviewStatus: async (
+    reviewBlogId: number,
+    status: "Visible" | "Hidden",
+  ): Promise<BlogReview> => {
+    return axiosClient.patch<BlogReview>(`/blogs/reviews/${reviewBlogId}/status`, { status });
+  },
+
+  updateBlogReplyStatus: async (
+    replyBlogId: number,
+    status: "Visible" | "Hidden",
+  ): Promise<BlogReviewReply> => {
+    return axiosClient.patch<BlogReviewReply>(`/blogs/reviews/replies/${replyBlogId}/status`, { status });
   },
 };
