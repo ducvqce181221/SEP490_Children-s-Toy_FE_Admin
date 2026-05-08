@@ -4,7 +4,7 @@ import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { PromotionListDto } from "../types/promotion";
 import { TrashBinIcon, PencilIcon, EyeIcon } from "@/icons/index";
-import { format } from "date-fns";
+import { formatDisplayDate } from "@/utils/date-utils";
 import { Popover } from "@/components/ui/popover/Popover";
 import Link from "next/link";
 
@@ -38,8 +38,8 @@ export const PromotionRow = React.memo(function PromotionRow({
     }
   };
 
-  const formattedStartDate = format(new Date(promotion.startDate), "dd/MM/yyyy HH:mm");
-  const formattedEndDate = format(new Date(promotion.endDate), "dd/MM/yyyy HH:mm");
+  const formattedStartDate = formatDisplayDate(promotion.startDate);
+  const formattedEndDate = formatDisplayDate(promotion.endDate);
 
   const deleteBtnRef = useRef<HTMLButtonElement>(null);
 

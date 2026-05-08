@@ -4,7 +4,7 @@ import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { Voucher } from "../types/voucher";
 import { TrashBinIcon, PencilIcon, EyeIcon } from "@/icons/index";
-import { format } from "date-fns";
+import { formatDisplayDate } from "@/utils/date-utils";
 import { Popover } from "@/components/ui/popover/Popover";
 
 interface VoucherRowProps {
@@ -51,8 +51,8 @@ export const VoucherRow = React.memo(function VoucherRow({
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(voucher.discountValue);
   };
 
-  const formattedStartDate = format(new Date(voucher.startDate), "dd/MM/yyyy HH:mm");
-  const formattedEndDate = format(new Date(voucher.endDate), "dd/MM/yyyy HH:mm");
+  const formattedStartDate = formatDisplayDate(voucher.startDate);
+  const formattedEndDate = formatDisplayDate(voucher.endDate);
 
   const deleteBtnRef = useRef<HTMLButtonElement>(null);
 
