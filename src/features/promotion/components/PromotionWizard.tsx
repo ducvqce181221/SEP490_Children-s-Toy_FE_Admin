@@ -8,11 +8,14 @@ import { twMerge } from "tailwind-merge";
 
 import { promotionFormSchema, type PromotionFormData } from "../types/promotion.schema";
 import type { Promotion } from "../types/promotion";
+import { PROMOTION_TYPE_OPTIONS, PROMOTION_TYPE_CONFIG, PROMOTION_TYPES } from "../types/promotion";
 import { formatUTCtoLocal, formatLocalToUTC } from "@/utils/date-utils";
 import type { ProductListItem } from "@/features/product/types/product";
 import { usePromotionMutations } from "../hooks/usePromotionMutations";
 import { ProductCatalogSection } from "./ProductCatalogSection";
 import { ProductPromotionTable } from "./ProductPromotionTable";
+import { PromotionProductSlotsSection } from "./PromotionProductSlotsSection";
+import { PromotionTimeSlotsSection } from "./PromotionTimeSlotsSection";
 import { WizardProgress } from "@/components/ui/wizard/WizardProgress";
 
 import Button from "@/components/ui/button/Button";
@@ -25,11 +28,6 @@ interface PromotionWizardProps {
   initialData?: Promotion | null;
 }
 
-const PROMOTION_TYPE_OPTIONS = [
-  { value: "Discount", label: "Giảm giá trực tiếp" },
-  { value: "Voucher", label: "Voucher" },
-  { value: "FlashSale", label: "Flash Sale" },
-];
 
 const PROMOTION_STATUS_OPTIONS = [
   { value: "Active", label: "Đang diễn ra (Active)" },
@@ -53,13 +51,14 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
     resolver: zodResolver(promotionFormSchema) as any,
     defaultValues: {
       promotionName: "",
-      promotionType: "Discount",
+      promotionType: PROMOTION_TYPES.DISCOUNT,
       description: "",
-      startDate: new Date().toISOString().slice(0, 16),
-      endDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+      startDate: formatUTCtoLocal(new Date().toISOString()),
+      endDate: formatUTCtoLocal(new Date(Date.now() + 86400000).toISOString()),
       status: "Active",
       priority: 0,
       productPromotions: [],
+      promotionTimeSlots: [],
     },
   });
 
@@ -101,6 +100,22 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
           saleQuantity: p.saleQuantity,
           isActive: p.isActive,
         })),
+        // Map startAt/endAt từ UTC (API) → local (datetime-local input)
+        promotionTimeSlots: initialData.promotionTimeSlots?.map((ts) => ({
+          startAt: formatUTCtoLocal(ts.startAt),
+          endAt: formatUTCtoLocal(ts.endAt),
+          status: ts.status,
+          promotionProductSlots: (ts.promotionProductSlots ?? []).map((ps) => ({
+            productId: ps.productId,
+            productName: ps.productName,
+            originalPrice: ps.originalPrice,
+            stock: undefined as number | undefined,
+            salePrice: ps.salePrice,
+            discountPercent: ps.discountPercent,
+            saleQuantity: ps.saleQuantity,
+            isActive: ps.isActive,
+          })),
+        })) ?? [],
       });
     }
   }, [initialData, reset]);
@@ -108,7 +123,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
   const handleSyncProducts = (addedProducts: ProductListItem[], removedProductIds: number[]) => {
     if (removedProductIds.length > 0) {
       // We must iterate backwards or use filter to remove fields
-      // Actually we can find the indices to remove
       const indicesToRemove = fields
         .map((f, index) => (removedProductIds.includes(f.productId) ? index : -1))
         .filter((index) => index !== -1)
@@ -118,27 +132,43 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
     }
 
     if (addedProducts.length > 0) {
-      const newItems = addedProducts.map((p) => ({
-        productId: p.productId,
-        productName: p.productName,
-        originalPrice: p.price,
-        stock: p.quantity,
-        salePrice: p.price,
-        discountPercent: null as number | null,
-        saleQuantity: null as number | null,
-        isActive: true,
-      }));
-      append(newItems);
+      // Filter out products that are already in the list
+      const existingIds = new Set(fields.map(f => f.productId));
+      const filteredNewProducts = addedProducts.filter(p => !existingIds.has(p.productId));
+
+      if (filteredNewProducts.length > 0) {
+        const newItems = filteredNewProducts.map((p) => ({
+          productId: p.productId,
+          productName: p.productName,
+          originalPrice: p.price,
+          stock: p.quantity,
+          salePrice: p.price,
+          discountPercent: 0,
+          saleQuantity: null as number | null,
+          isActive: true,
+        }));
+        append(newItems);
+      }
     }
   };
 
   const onSubmit = async (data: PromotionFormData) => {
-    // Strip productName and originalPrice before submitting
+    // Strip productName và originalPrice trước khi submit, convert timestamps sang UTC
     const formattedData = {
       ...data,
       startDate: formatLocalToUTC(data.startDate),
       endDate: formatLocalToUTC(data.endDate),
-      productPromotions: data.productPromotions.map(({ productName, originalPrice, stock, ...rest }) => rest),
+      productPromotions: data.productPromotions.map(({ ...rest }) => rest),
+      promotionTimeSlots: PROMOTION_TYPE_CONFIG[data.promotionType]?.hasTimeSlots
+        ? data.promotionTimeSlots.map((ts) => ({
+            startAt: formatLocalToUTC(ts.startAt),   // local → UTC ISO string
+            endAt: formatLocalToUTC(ts.endAt),       // local → UTC ISO string
+            status: ts.status,
+            promotionProductSlots: ts.promotionProductSlots.map(
+              ({ productName: _pn, originalPrice: _op, stock: _st, ...rest }) => rest
+            ),
+          }))
+        : [],
     };
 
     if (initialData) {
@@ -262,15 +292,27 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
               </div>
             </div>
 
-            {/* In Edit mode, show current products in readonly mode at the bottom of Step 1 */}
-            {initialData && (
+            {PROMOTION_TYPE_CONFIG[watch("promotionType")]?.hasTimeSlots && (
               <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
-                <ProductPromotionTable
-                  form={form}
-                  fieldArray={fieldArray}
-                  readonly={true}
-                />
+                <PromotionTimeSlotsSection form={form} readonly={false} />
               </div>
+            )}
+
+            {/* In Edit mode, show current products/slots in readonly mode at the bottom of Step 1 */}
+            {initialData && (
+              <>
+                {PROMOTION_TYPE_CONFIG[watch("promotionType")]?.hasTimeSlots ? (
+                  <PromotionProductSlotsSection form={form} readonly={true} />
+                ) : (
+                  <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
+                    <ProductPromotionTable
+                      form={form}
+                      fieldArray={fieldArray}
+                      readonly={true}
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             <div className="flex justify-end gap-3">
@@ -298,22 +340,28 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
 
         {currentStep === 2 && (
           <div className="space-y-6">
-            <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
-              <ProductCatalogSection
-                onConfirm={handleSyncProducts}
-                selectedProductIds={fields.map((f) => f.productId)}
-              />
-            </div>
+            {PROMOTION_TYPE_CONFIG[watch("promotionType")]?.hasTimeSlots ? (
+              <PromotionProductSlotsSection form={form} readonly={false} />
+            ) : (
+              <>
+                <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
+                  <ProductCatalogSection
+                    onConfirm={handleSyncProducts}
+                    selectedProductIds={fields.map((f) => f.productId)}
+                  />
+                </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
-              <ProductPromotionTable
-                form={form}
-                fieldArray={fieldArray}
-                readonly={false}
-              />
-            </div>
+                <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
+                  <ProductPromotionTable
+                    form={form}
+                    fieldArray={fieldArray}
+                    readonly={false}
+                  />
+                </div>
+              </>
+            )}
 
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center pt-6">
               <Button type="button" variant="outline" onClick={handlePrevStep}>
                 Back
               </Button>

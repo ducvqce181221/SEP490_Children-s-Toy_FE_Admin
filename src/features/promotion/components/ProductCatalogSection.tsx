@@ -182,19 +182,23 @@ export function ProductCatalogSection({
     if (checked) {
       // Select all on current page
       products.forEach((p) => {
-        if (selectedProductIds.includes(p.productId)) {
+        // Nếu sản phẩm đang bị đánh dấu xóa -> bỏ đánh dấu xóa (khôi phục)
+        if (newRemoved.has(p.productId)) {
           newRemoved.delete(p.productId);
-        } else {
+        } else if (!selectedProductIds.includes(p.productId)) {
+          // Nếu sản phẩm chưa có trong danh sách gốc -> thêm vào danh sách mới
           newAdded.add(p.productId);
         }
       });
     } else {
       // Deselect all on current page
       products.forEach((p) => {
+        // Luôn xóa khỏi danh sách mới thêm trong phiên này
+        newAdded.delete(p.productId);
+        
+        // Nếu sản phẩm thuộc danh sách gốc -> đánh dấu là bị xóa
         if (selectedProductIds.includes(p.productId)) {
           newRemoved.add(p.productId);
-        } else {
-          newAdded.delete(p.productId);
         }
       });
     }
@@ -211,6 +215,10 @@ export function ProductCatalogSection({
       .filter((p): p is ProductListItem => p !== undefined);
 
     onConfirm(addedProducts, removedProductIds);
+    
+    // Clear local session state after confirming to parent
+    setLocalAddedIds(new Set());
+    setLocalRemovedIds(new Set());
   };
 
   return (

@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { promotionFormSchema, type PromotionFormData } from "../types/promotion.schema";
+import { PROMOTION_TYPE_OPTIONS, PROMOTION_TYPE_CONFIG } from "../types/promotion";
 import type { Promotion } from "../types/promotion";
 import { formatUTCtoLocal, formatLocalToUTC, formatDisplayDate } from "@/utils/date-utils";
 import { usePromotionMutations } from "../hooks/usePromotionMutations";
 import { ProductPromotionTable } from "./ProductPromotionTable";
+import { PromotionTimeSlotsSection } from "./PromotionTimeSlotsSection";
+import { PromotionProductSlotsSection } from "./PromotionProductSlotsSection";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
@@ -20,12 +23,6 @@ interface PromotionFormProps {
   initialData?: Promotion | null;
   readonly?: boolean;
 }
-
-const PROMOTION_TYPE_OPTIONS = [
-  { value: "Discount", label: "Giảm giá trực tiếp" },
-  { value: "Voucher", label: "Voucher" },
-  { value: "FlashSale", label: "Flash Sale" },
-];
 
 const PROMOTION_STATUS_OPTIONS = [
   { value: "Active", label: "Đang diễn ra (Active)" },
@@ -47,8 +44,8 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
       promotionName: "",
       promotionType: "Discount",
       description: "",
-      startDate: new Date().toISOString().slice(0, 16),
-      endDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+      startDate: formatUTCtoLocal(new Date().toISOString()),
+      endDate: formatUTCtoLocal(new Date(Date.now() + 86400000).toISOString()),
       status: "Active",
       priority: 0,
       productPromotions: [],
@@ -90,6 +87,22 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
           saleQuantity: p.saleQuantity,
           isActive: p.isActive,
         })),
+        // Map startAt/endAt từ UTC (API) → local (datetime-local input)
+        promotionTimeSlots: initialData.promotionTimeSlots?.map((ts) => ({
+          startAt: formatUTCtoLocal(ts.startAt),
+          endAt: formatUTCtoLocal(ts.endAt),
+          status: ts.status,
+          promotionProductSlots: (ts.promotionProductSlots ?? []).map((ps) => ({
+            productId: ps.productId,
+            productName: ps.productName,
+            originalPrice: ps.originalPrice,
+            stock: undefined as number | undefined,
+            salePrice: ps.salePrice,
+            discountPercent: ps.discountPercent,
+            saleQuantity: ps.saleQuantity,
+            isActive: ps.isActive,
+          })),
+        })) ?? [],
       });
     }
   }, [initialData, reset]);
@@ -102,6 +115,16 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
       startDate: formatLocalToUTC(data.startDate),
       endDate: formatLocalToUTC(data.endDate),
       productPromotions: data.productPromotions.map(({ ...rest }) => rest),
+      promotionTimeSlots: PROMOTION_TYPE_CONFIG[data.promotionType]?.hasTimeSlots
+        ? data.promotionTimeSlots.map((ts) => ({
+            startAt: formatLocalToUTC(ts.startAt),   // local → UTC ISO string
+            endAt: formatLocalToUTC(ts.endAt),       // local → UTC ISO string
+            status: ts.status,
+            promotionProductSlots: ts.promotionProductSlots.map(
+              ({ productName: _pn, originalPrice: _op, stock: _st, ...rest }) => rest
+            ),
+          }))
+        : [],
     };
 
     if (initialData) {
@@ -153,7 +176,7 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
               <Label htmlFor="startDate">Start Date <span className="text-error-500">*</span></Label>
               {readonly ? (
                 <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
-                  {formatDisplayDate(watch("startDate"))}
+                  {formatDisplayDate(initialData?.startDate)}
                 </div>
               ) : (
                 <Input
@@ -171,7 +194,7 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
               <Label htmlFor="endDate">End Date <span className="text-error-500">*</span></Label>
               {readonly ? (
                 <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
-                  {formatDisplayDate(watch("endDate"))}
+                  {formatDisplayDate(initialData?.endDate)}
                 </div>
               ) : (
                 <Input
@@ -224,14 +247,24 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
           </div>
         </div>
 
+        {PROMOTION_TYPE_CONFIG[watch("promotionType")]?.hasTimeSlots && (
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
+            <PromotionTimeSlotsSection form={form} readonly={readonly} />
+          </div>
+        )}
+
         {/* Products Section */}
-        <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
-          <ProductPromotionTable
-            form={form}
-            fieldArray={fieldArray}
-            readonly={readonly}
-          />
-        </div>
+        {PROMOTION_TYPE_CONFIG[watch("promotionType")]?.hasTimeSlots ? (
+          <PromotionProductSlotsSection form={form} readonly={readonly} />
+        ) : (
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
+            <ProductPromotionTable
+              form={form}
+              fieldArray={fieldArray}
+              readonly={readonly}
+            />
+          </div>
+        )}
 
         {/* Actions */}
         {!readonly && (

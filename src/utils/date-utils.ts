@@ -1,36 +1,43 @@
-import { format } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 
 /**
- * Chuyển đổi một chuỗi ISO UTC thành định dạng datetime-local (YYYY-MM-DDTHH:mm)
- * dựa trên múi giờ địa phương của người dùng.
+ * Đảm bảo chuỗi ngày tháng từ DateTime2 (UTC+0) được chuẩn hóa sang ISO 8601
+ */
+const ensureUTC = (dateString: string): string => {
+  if (!dateString) return "";
+  // 1. Thay khoảng trắng bằng 'T' (Ví dụ: "2024-01-01 08:00" -> "2024-01-01T08:00")
+  let formatted = dateString.replace(" ", "T");
+  // 2. Thêm 'Z' nếu thiếu thông tin múi giờ
+  if (!formatted.includes("Z") && !formatted.includes("+")) {
+    formatted += "Z";
+  }
+  return formatted;
+};
+
+/**
+ * UTC (API) -> Local (Input datetime-local)
  */
 export const formatUTCtoLocal = (dateString: string | null | undefined): string => {
   if (!dateString) return "";
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "";
-
-  const offset = date.getTimezoneOffset() * 60000; // offset in milliseconds
-  const localDate = new Date(date.getTime() - offset);
-  return localDate.toISOString().slice(0, 16);
+  const date = parseISO(ensureUTC(dateString));
+  return isValid(date) ? format(date, "yyyy-MM-dd'T'HH:mm") : "";
 };
 
 /**
- * Chuyển đổi giá trị từ datetime-local thành ISO UTC string để gửi lên API.
+ * Local (Input) -> UTC String (API)
  */
 export const formatLocalToUTC = (dateString: string | null | undefined): string => {
   if (!dateString) return "";
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "";
-  return date.toISOString();
+  // Input datetime-local trả về định dạng chuẩn mà constructor Date hiểu được ngay
+  const date = new Date(dateString); 
+  return isValid(date) ? date.toISOString() : "";
 };
 
 /**
- * Định dạng ngày để hiển thị trên UI (giống với trang danh sách)
- * Định dạng: dd/MM/yyyy HH:mm
+ * UTC (API) -> Local (UI Display)
  */
-export const formatDisplayDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return "-";
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "-";
-  return format(date, "dd/MM/yyyy HH:mm");
+export const formatDisplayDate = (dateString: string | null | undefined, fallback = "-"): string => {
+  if (!dateString) return fallback;
+  const date = parseISO(ensureUTC(dateString));
+  return isValid(date) ? format(date, "dd/MM/yyyy HH:mm") : fallback;
 };

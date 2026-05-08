@@ -53,6 +53,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
   const isReadOnly = isDetailMode;
 
   const [isLoading, setIsLoading] = useState(false);
+  const [rawVoucher, setRawVoucher] = useState<any>(null);
 
   const {
     register,
@@ -77,6 +78,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
           setIsLoading(true);
           try {
             const data = await voucherApi.getVoucherById(voucherId);
+            setRawVoucher(data);
             reset({
               voucherCode: data.voucherCode,
               voucherName: data.voucherName,
@@ -101,6 +103,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
         };
         fetchVoucher();
       } else {
+        setRawVoucher(null);
         reset(defaultValues);
       }
     }
@@ -313,7 +316,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               </Label>
               {isReadOnly ? (
                 <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
-                  {formatDisplayDate(startDate)}
+                  {formatDisplayDate(rawVoucher?.startDate)}
                 </div>
               ) : (
                 <Input 
@@ -330,7 +333,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               </Label>
               {isReadOnly ? (
                 <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
-                  {formatDisplayDate(endDate)}
+                  {formatDisplayDate(rawVoucher?.endDate)}
                 </div>
               ) : (
                 <Input 
