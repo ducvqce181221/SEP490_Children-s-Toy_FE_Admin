@@ -15,63 +15,62 @@ export const blogApi = {
   getBlogsForAdmin: async (
     params: BlogQueryParams,
   ): Promise<PaginatedResponse<BlogListItem>> => {
-    return axiosClient.get<PaginatedResponse<BlogListItem>>("/blogs/admin", {
+    const response = await axiosClient.get<PaginatedResponse<BlogListItem>>("/blogs/admin", {
       params,
     });
+    return response.data;
   },
 
   getBlogsForStaff: async (
     params: BlogQueryParams,
   ): Promise<PaginatedResponse<BlogListItem>> => {
-    return axiosClient.get<PaginatedResponse<BlogListItem>>("/blogs/staff", {
+    const response = await axiosClient.get<PaginatedResponse<BlogListItem>>("/blogs/staff", {
       params,
     });
+    return response.data;
   },
 
   getBlogById: async (blogPostId: number): Promise<BlogDetail> => {
-    return axiosClient.get<BlogDetail>(`/blogs/${blogPostId}`);
+    const response = await axiosClient.get<BlogDetail>(`/blogs/${blogPostId}`);
+    return response.data;
   },
 
   createBlog: async (payload: CreateBlogRequest): Promise<BlogDetail> => {
-    return axiosClient.post<BlogDetail, CreateBlogRequest>("/blogs", payload);
+    const response = await axiosClient.post<BlogDetail>("/blogs", payload);
+    return response.data;
   },
 
   updateBlog: async (
     blogPostId: number,
     payload: UpdateBlogRequest,
   ): Promise<BlogDetail> => {
-    return axiosClient.put<BlogDetail, UpdateBlogRequest>(
+    const response = await axiosClient.put<BlogDetail>(
       `/blogs/${blogPostId}`,
       payload,
     );
+    return response.data;
   },
 
   submitBlog: async (
     blogPostId: number,
     payload: SubmitBlogRequest,
   ): Promise<BlogDetail> => {
-    return axiosClient.patch<BlogDetail, SubmitBlogRequest>(
+    const response = await axiosClient.patch<BlogDetail>(
       `/blogs/${blogPostId}/submit`,
       payload,
     );
+    return response.data;
   },
 
   approveBlog: async (
     blogPostId: number,
     payload: ApproveBlogRequest,
   ): Promise<BlogDetail> => {
-    return axiosClient.patch<BlogDetail, ApproveBlogRequest>(
+    const response = await axiosClient.patch<BlogDetail>(
       `/blogs/${blogPostId}/approval`,
       payload,
     );
-  },
-
-  publishNow: async (blogPostId: number): Promise<BlogDetail> => {
-    return axiosClient.patch<BlogDetail>(`/blogs/${blogPostId}/publish-now`);
-  },
-
-  hideBlog: async (blogPostId: number): Promise<BlogDetail> => {
-    return axiosClient.patch<BlogDetail>(`/blogs/${blogPostId}/hide`);
+    return response.data;
   },
 
   uploadThumbnail: async (file: File): Promise<{ url: string }> => {

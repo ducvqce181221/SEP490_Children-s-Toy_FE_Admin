@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.css';
 import Label from './Label';
@@ -23,22 +23,34 @@ export default function DatePicker({
   defaultDate,
   placeholder,
 }: PropsType) {
+  const fpRef = useRef<flatpickr.Instance | null>(null);
+
   useEffect(() => {
-    const flatPickr = flatpickr(`#${id}`, {
+    const instance = flatpickr(`#${id}`, {
       mode: mode || "single",
-      static: true,
       monthSelectorType: "static",
       dateFormat: "Y-m-d",
       defaultDate,
       onChange,
     });
+    
+    fpRef.current = Array.isArray(instance) ? instance[0] : instance;
 
     return () => {
-      if (!Array.isArray(flatPickr)) {
-        flatPickr.destroy();
-      }
+      fpRef.current?.destroy();
     };
-  }, [mode, onChange, id, defaultDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, id]); // Initialize once
+
+  useEffect(() => {
+    if (fpRef.current) {
+      if (defaultDate) {
+        fpRef.current.setDate(defaultDate, false);
+      } else {
+        fpRef.current.clear(false);
+      }
+    }
+  }, [defaultDate]);
 
   return (
     <div>
