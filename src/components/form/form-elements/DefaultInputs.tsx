@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, type ChangeEvent } from 'react';
 import ComponentCard from '../../common/ComponentCard';
 import Label from '../Label';
 import Input from '../input/InputField';
@@ -14,8 +14,8 @@ export default function DefaultInputs() {
     { value: "template", label: "Template" },
     { value: "development", label: "Development" },
   ];
-  const handleSelectChange = (value: string) => {
-    console.log("Selected value:", value);
+  const handleSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    console.log("Selected value:", e.target.value);
   };
   return (
     <ComponentCard title="Default Inputs">

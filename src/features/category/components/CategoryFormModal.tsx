@@ -117,9 +117,9 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   };
 
   const superCategoryOptions = [
-    { value: 0, label: "Select super category..." },
+    { value: "0", label: "Select super category..." },
     ...superCategories.map((sc) => ({
-      value: sc.superCategoryId,
+      value: String(sc.superCategoryId),
       label: sc.superCategoryName,
     })),
   ];
@@ -210,7 +210,6 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             type="submit"
             variant="primary"
             disabled={isSubmitting}
-            isLoading={isSubmitting}
           >
             {mode === "create" ? "Add" : "Update"}
           </Button>

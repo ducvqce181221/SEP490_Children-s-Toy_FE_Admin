@@ -10,7 +10,7 @@ export const voucherApi = {
     searchTerm?: string,
     status?: string
   ) => {
-    return axiosClient.get<unknown, PaginatedVouchers>("/vouchers", {
+    return axiosClient.get<PaginatedVouchers>("/vouchers", {
       params: {
         pageNumber,
         pageSize,
@@ -23,11 +23,11 @@ export const voucherApi = {
   },
 
   getVoucherById: (id: number) => 
-    axiosClient.get<unknown, Voucher>(`/vouchers/${id}`),
+    axiosClient.get<Voucher>(`/vouchers/${id}`),
 
   createVoucher: (data: VoucherFormData) => 
-    axiosClient.post<unknown, Voucher>("/vouchers", data),
+    axiosClient.post<Voucher, VoucherFormData>("/vouchers", data),
 
   updateVoucher: (id: number, data: Partial<VoucherFormData & { isDeleted: boolean }>) =>
-    axiosClient.put<unknown, Voucher>(`/vouchers/${id}`, data),
+    axiosClient.put<Voucher, Partial<VoucherFormData & { isDeleted: boolean }>>(`/vouchers/${id}`, data),
 };

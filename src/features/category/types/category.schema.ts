@@ -1,10 +1,9 @@
 import { z } from "zod";
 
 export const CategoryFormSchema = z.object({
-  superCategoryId: z.number({
-    required_error: "Please select a super category",
-    invalid_type_error: "Invalid super category",
-  }).min(1, "Please select a super category"),
+  superCategoryId: z
+    .number({ message: "Please select a super category" })
+    .min(1, "Please select a super category"),
   categoryName: z
     .string()
     .min(1, "Category name is required")

@@ -48,7 +48,7 @@ export const useCampaignImageUpload = () => {
       formData.append("file", file);
 
       // Interceptor đã unwrap response.data → response là UploadImageResponse
-      const response = await axiosClient.post<UploadImageResponse, UploadImageResponse>(
+      const response = await axiosClient.post<UploadImageResponse, FormData>(
         "/campaigns/upload-image",
         formData,
         { timeout: 60000 } // Tăng timeout cho file upload

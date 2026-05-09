@@ -22,10 +22,7 @@ export const accountApi = {
   },
 
   createAccount: async (payload: CreateAccountRequest): Promise<AccountDetail> => {
-    return axiosClient.post<AccountDetail, CreateAccountRequest>(
-      "/accounts",
-      payload,
-    );
+    return axiosClient.post<AccountDetail, CreateAccountRequest>("/accounts", payload);
   },
 
   updateAccountStatus: async (

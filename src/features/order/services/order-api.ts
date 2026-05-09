@@ -32,7 +32,7 @@ export const orderApi = {
     if (params.statusIds && params.statusIds.length > 0) {
       cleanParams["statusIds"] = params.statusIds;
     }
-    return axiosClient.get<any, PaginatedResponse<OrderListItem>>("/admin/orders", {
+    return axiosClient.get<PaginatedResponse<OrderListItem>>("/admin/orders", {
       params: cleanParams,
       // axios sẽ serialize array thành ?statusIds=1&statusIds=2 theo mặc định với paramsSerializer
     });
@@ -40,14 +40,14 @@ export const orderApi = {
 
   // ── GET detail ────────────────────────────────────────────────────────────
   getOrderById: (id: number): Promise<OrderDetail> =>
-    axiosClient.get<any, OrderDetail>(`/admin/orders/${id}`),
+    axiosClient.get<OrderDetail>(`/admin/orders/${id}`),
 
   // ── PATCH confirm ─────────────────────────────────────────────────────────
   confirmOrder: (
     id: number,
     body: ConfirmOrderRequest,
   ): Promise<ConfirmOrderResponse> =>
-    axiosClient.patch<any, ConfirmOrderResponse>(
+    axiosClient.patch<ConfirmOrderResponse, ConfirmOrderRequest>(
       `/admin/orders/${id}/confirm`,
       body,
     ),
@@ -57,7 +57,7 @@ export const orderApi = {
     id: number,
     body: ProcessOrderRequest,
   ): Promise<ProcessOrderResponse> =>
-    axiosClient.patch<any, ProcessOrderResponse>(
+    axiosClient.patch<ProcessOrderResponse, ProcessOrderRequest>(
       `/admin/orders/${id}/process`,
       body,
     ),
@@ -67,7 +67,7 @@ export const orderApi = {
     id: number,
     body: ShipOrderRequest,
   ): Promise<ShipOrderResponse> =>
-    axiosClient.patch<any, ShipOrderResponse>(
+    axiosClient.patch<ShipOrderResponse, ShipOrderRequest>(
       `/admin/orders/${id}/ship`,
       body,
     ),
@@ -77,14 +77,14 @@ export const orderApi = {
     id: number,
     body: CancelOrderRequest,
   ): Promise<CancelOrderResponse> =>
-    axiosClient.patch<any, CancelOrderResponse>(
+    axiosClient.patch<CancelOrderResponse, CancelOrderRequest>(
       `/admin/orders/${id}/cancel`,
       body,
     ),
 
   // ── PATCH assign ──────────────────────────────────────────────────────────
   assignOrder: (id: number, body: AssignOrderRequest): Promise<void> =>
-    axiosClient.patch<any, void>(
+    axiosClient.patch<void, AssignOrderRequest>(
       `/admin/orders/${id}/assign`,
       body,
     ),

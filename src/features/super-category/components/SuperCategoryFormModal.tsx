@@ -155,7 +155,6 @@ const SuperCategoryFormModal: React.FC<SuperCategoryFormModalProps> = ({
             type="submit"
             variant="primary"
             disabled={isSubmitting}
-            isLoading={isSubmitting}
           >
             {mode === "create" ? "Add" : "Update"}
           </Button>
