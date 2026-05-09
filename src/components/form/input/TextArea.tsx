@@ -23,7 +23,7 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     } else if (error) {
       textareaClasses += ` bg-transparent text-gray-400 border-error-500 focus:border-error-500 focus:ring-3 focus:ring-error-500/10 dark:border-error-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-error-800`;
     } else {
-      textareaClasses += ` bg-transparent text-gray-400 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`;
+      textareaClasses += ` bg-transparent text-gray-500 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`;
     }
 
     return (
