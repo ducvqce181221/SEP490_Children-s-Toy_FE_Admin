@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const blogFormSchema = z.object({
-  blogCategoryId: z.coerce.number().int().min(1, "Blog category is required."),
+  blogCategoryId: z
+    .union([z.number(), z.string()])
+    .transform((v) => (typeof v === "string" ? Number(v) : v))
+    .pipe(z.number().int().min(1, "Blog category is required.")),
   blogTitle: z
     .string()
     .trim()
@@ -21,3 +24,4 @@ export const blogFormSchema = z.object({
 });
 
 export type BlogFormValues = z.infer<typeof blogFormSchema>;
+export type BlogFormInput = z.input<typeof blogFormSchema>;

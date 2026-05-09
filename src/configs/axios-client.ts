@@ -1,7 +1,9 @@
 import axios, {
   AxiosError,
-  InternalAxiosRequestConfig,
+  type AxiosInstance,
+  type AxiosRequestConfig,
   AxiosResponse,
+  InternalAxiosRequestConfig,
 } from "axios";
 import toast from "react-hot-toast";
 
@@ -41,6 +43,59 @@ function redirectToLogin(): void {
 }
 
 // ─── Axios instance ───────────────────────────────────────────────────────────
+// Response interceptor returns `response.data`, but axios' typings still describe
+// `AxiosResponse<T>`. This alias matches runtime behavior for callers.
+
+type UnwrappedAxiosInstance = Omit<
+  AxiosInstance,
+  | "get"
+  | "delete"
+  | "head"
+  | "options"
+  | "post"
+  | "put"
+  | "patch"
+  | "postForm"
+  | "putForm"
+  | "patchForm"
+  | "request"
+> & {
+  request<T = unknown>(config: AxiosRequestConfig): Promise<T>;
+  get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
+  delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
+  head<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
+  options<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
+  post<TResponse = unknown, TBody = unknown>(
+    url: string,
+    data?: TBody,
+    config?: AxiosRequestConfig<TBody>,
+  ): Promise<TResponse>;
+  put<TResponse = unknown, TBody = unknown>(
+    url: string,
+    data?: TBody,
+    config?: AxiosRequestConfig<TBody>,
+  ): Promise<TResponse>;
+  patch<TResponse = unknown, TBody = unknown>(
+    url: string,
+    data?: TBody,
+    config?: AxiosRequestConfig<TBody>,
+  ): Promise<TResponse>;
+  postForm<TResponse = unknown, TBody = unknown>(
+    url: string,
+    data?: TBody,
+    config?: AxiosRequestConfig<TBody>,
+  ): Promise<TResponse>;
+  putForm<TResponse = unknown, TBody = unknown>(
+    url: string,
+    data?: TBody,
+    config?: AxiosRequestConfig<TBody>,
+  ): Promise<TResponse>;
+  patchForm<TResponse = unknown, TBody = unknown>(
+    url: string,
+    data?: TBody,
+    config?: AxiosRequestConfig<TBody>,
+  ): Promise<TResponse>;
+};
 
 const axiosClient = axios.create({
   baseURL: BASE_URL,
@@ -79,11 +134,12 @@ axiosClient.interceptors.response.use(
 
   (error: AxiosError) => {
     // eslint-disable-next-line no-console
-    if (process.env.NODE_ENV === "development") console.error(
-      `[axiosClient] ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
-      error.response?.status,
-      error.response?.data,
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        `[axiosClient] ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
+        error.response ? { status: error.response.status, data: error.response.data } : error.message
+      );
+    }
 
     if (!error.response) {
       toast.error("Mất kết nối. Vui lòng kiểm tra mạng và thử lại.");
@@ -105,4 +161,4 @@ axiosClient.interceptors.response.use(
   },
 );
 
-export default axiosClient;
+export default axiosClient as UnwrappedAxiosInstance;

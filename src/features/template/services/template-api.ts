@@ -13,7 +13,7 @@ export const templateApi = {
     startDate?: string,
     endDate?: string
   ) => {
-    return axiosClient.get<unknown, PaginatedTemplates>("/templates", {
+    return axiosClient.get<PaginatedTemplates>("/templates", {
       params: {
         pageNumber,
         pageSize,
@@ -29,8 +29,8 @@ export const templateApi = {
   },
 
   createTemplate: (data: TemplateFormData) => 
-    axiosClient.post<unknown, Template>("/templates", data),
+    axiosClient.post<Template, TemplateFormData>("/templates", data),
 
   updateTemplate: (id: number, data: TemplateFormData) =>
-    axiosClient.put<unknown, Template>(`/templates/${id}`, data),
+    axiosClient.put<Template, TemplateFormData>(`/templates/${id}`, data),
 };

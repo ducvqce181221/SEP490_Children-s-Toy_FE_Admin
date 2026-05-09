@@ -5,6 +5,7 @@ import "quill/dist/quill.snow.css";
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { NotificationRealtimeProvider } from '@/features/notifications/context/NotificationRealtimeContext';
 import { Toaster } from "react-hot-toast";
 
 const outfit = Outfit({
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body className={`${outfit.className} dark:bg-gray-900`} suppressHydrationWarning>
         <ThemeProvider>
           <AuthProvider>
+            <NotificationRealtimeProvider>
             <SidebarProvider>
               {children}
               <Toaster
@@ -33,6 +35,7 @@ export default function RootLayout({
                 }}
               />
             </SidebarProvider>
+            </NotificationRealtimeProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

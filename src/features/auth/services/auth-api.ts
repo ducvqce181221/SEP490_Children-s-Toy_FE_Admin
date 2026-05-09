@@ -12,11 +12,17 @@ export const authApi = {
   },
 
   forgotPassword: async (payload: ForgotPasswordRequest): Promise<void> => {
-    return axiosClient.post<void, ForgotPasswordRequest>("/auth/forgot-password", payload);
+    return axiosClient.post<void, ForgotPasswordRequest>(
+      "/auth/forgot-password",
+      payload,
+    );
   },
 
   resetPassword: async (payload: ResetPasswordRequest): Promise<void> => {
-    return axiosClient.post<void, ResetPasswordRequest>("/auth/reset-password", payload);
+    return axiosClient.post<void, ResetPasswordRequest>(
+      "/auth/reset-password",
+      payload,
+    );
   },
 
   logout: async (): Promise<void> => {

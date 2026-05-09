@@ -12,7 +12,7 @@ export default function CreatePromotionPage() {
     <div>
       <PageBreadcrumb 
         pageTitle="Create Promotion" 
-        breadcrumbItems={[
+        breadcrumbs={[
           { label: "Promotion Management", href: "/admin/promotions" },
           { label: "Create Promotion" }
         ]}
