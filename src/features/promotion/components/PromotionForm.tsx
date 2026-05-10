@@ -25,9 +25,10 @@ interface PromotionFormProps {
 }
 
 const PROMOTION_STATUS_OPTIONS = [
-  { value: "Active", label: "Đang diễn ra (Active)" },
-  { value: "Upcoming", label: "Sắp diễn ra (Upcoming)" },
-  { value: "Expired", label: "Đã kết thúc (Expired)" },
+  { value: "Active", label: "Active" },
+  { value: "Inactive", label: "Inactive" },
+  { value: "Scheduled", label: "Scheduled" },
+  { value: "Expired", label: "Expired" },
 ];
 
 export function PromotionForm({ initialData, readonly = false }: PromotionFormProps) {

@@ -26,6 +26,7 @@ const STATUS_OPTIONS = [
   { value: "Active", label: "Active" },
   { value: "Inactive", label: "Inactive" },
   { value: "Scheduled", label: "Scheduled" },
+  { value: "Expired", label: "Expired" },
 ];
 
 export function PromotionTimeSlotsSection({
