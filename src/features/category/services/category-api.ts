@@ -15,6 +15,10 @@ export const categoryApi = {
     });
   },
 
+  getCategoryById: async (categoryId: number): Promise<CategoryListItem> => {
+    return axiosClient.get<CategoryListItem>(`/categories/${categoryId}`);
+  },
+
   createCategory: async (
     payload: CategoryFormData,
   ): Promise<CategoryListItem> => {

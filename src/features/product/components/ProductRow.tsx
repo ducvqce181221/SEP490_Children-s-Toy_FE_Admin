@@ -1,7 +1,7 @@
 import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { ProductListItem } from "../types/product";
-import { PencilIcon } from "@/icons";
+import { PencilIcon, EyeIcon } from "@/icons";
 import { format } from "date-fns";
 import Badge from "@/components/ui/badge/Badge";
 import Image from "next/image";
@@ -10,10 +10,11 @@ interface ProductRowProps {
   product: ProductListItem;
   rowNumber: number;
   onEdit: (product: ProductListItem) => void;
+  onViewDetails: (product: ProductListItem) => void;
 }
 
 export const ProductRow = React.memo(
-  ({ product, rowNumber, onEdit }: ProductRowProps) => {
+  ({ product, rowNumber, onEdit, onViewDetails }: ProductRowProps) => {
     const formattedDate = format(new Date(product.createdAt), "dd/MM/yyyy HH:mm");
     const isInactive = product.status === "Inactive";
     const formattedPrice = new Intl.NumberFormat("vi-VN", {
@@ -80,6 +81,14 @@ export const ProductRow = React.memo(
         </TableCell>
         <TableCell className="px-4 py-3 text-center">
           <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => onViewDetails(product)}
+              aria-label={`View details of ${product.productName}`}
+              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-500 dark:border-gray-700 dark:text-gray-300"
+              title="View product details"
+            >
+              <EyeIcon className="w-5 h-5" />
+            </button>
             <button
               onClick={() => onEdit(product)}
               aria-label={`Edit product ${product.productName}`}

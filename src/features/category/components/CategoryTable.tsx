@@ -19,6 +19,7 @@ import { CategoryFormData } from "../types/category.schema";
 import CategoryFormModal from "./CategoryFormModal";
 import { CategoryRow } from "./CategoryRow";
 import CategoryToolbar from "./CategoryToolbar";
+import CategoryDetailModal from "./CategoryDetailModal";
 
 const CategoryTable = () => {
   const {
@@ -46,6 +47,9 @@ const CategoryTable = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] =
     useState<CategoryListItem | null>(null);
+  const [viewingCategory, setViewingCategory] =
+    useState<CategoryListItem | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const hasData = categories.length > 0;
   const showInitialLoading = isLoading && !hasData;
@@ -59,6 +63,16 @@ const CategoryTable = () => {
   const handleOpenEditModal = (category: CategoryListItem) => {
     setEditingCategory(category);
     setIsFormModalOpen(true);
+  };
+
+  const handleOpenDetailModal = (category: CategoryListItem) => {
+    setViewingCategory(category);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setViewingCategory(null);
   };
 
   const handleCloseFormModal = () => {
@@ -173,6 +187,7 @@ const CategoryTable = () => {
                     category={category}
                     rowNumber={(pageNumber - 1) * pageSize + index + 1}
                     onEdit={handleOpenEditModal}
+                    onViewDetails={handleOpenDetailModal}
                   />
                 ))
               ) : (
@@ -226,6 +241,14 @@ const CategoryTable = () => {
           isSubmitting={isSubmitting}
           onClose={handleCloseFormModal}
           onSubmit={handleSubmit}
+        />
+      )}
+
+      {isDetailModalOpen && viewingCategory && (
+        <CategoryDetailModal
+          isOpen={isDetailModalOpen}
+          categoryId={viewingCategory.categoryId}
+          onClose={handleCloseDetailModal}
         />
       )}
     </div>
