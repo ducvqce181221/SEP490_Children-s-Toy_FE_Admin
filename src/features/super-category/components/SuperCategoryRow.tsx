@@ -3,13 +3,14 @@
 import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { SuperCategoryListItem } from "../types/super-category";
-import { PencilIcon } from "@/icons";
+import { PencilIcon, EyeIcon } from "@/icons";
 import { format } from "date-fns";
 
 interface SuperCategoryRowProps {
   superCategory: SuperCategoryListItem;
   rowNumber: number;
   onEdit: (superCategory: SuperCategoryListItem) => void;
+  onViewDetails: (superCategory: SuperCategoryListItem) => void;
 }
 
 const statusClassNameByValue: Record<SuperCategoryListItem["status"], string> = {
@@ -18,7 +19,7 @@ const statusClassNameByValue: Record<SuperCategoryListItem["status"], string> = 
 };
 
 export const SuperCategoryRow = React.memo(
-  ({ superCategory, rowNumber, onEdit }: SuperCategoryRowProps) => {
+  ({ superCategory, rowNumber, onEdit, onViewDetails }: SuperCategoryRowProps) => {
     const formattedDate = format(new Date(superCategory.createdAt), "dd/MM/yyyy HH:mm");
     const isInactive = superCategory.status === "Inactive";
 
@@ -46,6 +47,14 @@ export const SuperCategoryRow = React.memo(
         </TableCell>
         <TableCell className="px-4 py-3 text-center">
           <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => onViewDetails(superCategory)}
+              aria-label={`View details of ${superCategory.superCategoryName}`}
+              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-500 dark:border-gray-700 dark:text-gray-300"
+              title="View super category details"
+            >
+              <EyeIcon className="w-5 h-5" />
+            </button>
             <button
               onClick={() => onEdit(superCategory)}
               aria-label={`Edit super category ${superCategory.superCategoryName}`}

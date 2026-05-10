@@ -19,6 +19,7 @@ import { ProductFormData } from "../types/product.schema";
 import ProductFormModal from "./ProductFormModal";
 import { ProductRow } from "./ProductRow";
 import ProductToolbar from "./ProductToolbar";
+import ProductDetailModal from "./ProductDetailModal";
 
 const ProductTable = () => {
   const {
@@ -46,6 +47,9 @@ const ProductTable = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] =
     useState<ProductListItem | null>(null);
+  const [viewingProduct, setViewingProduct] =
+    useState<ProductListItem | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const hasData = products.length > 0;
   const showInitialLoading = isLoading && !hasData;
@@ -59,6 +63,16 @@ const ProductTable = () => {
   const handleOpenEditModal = (product: ProductListItem) => {
     setEditingProduct(product);
     setIsFormModalOpen(true);
+  };
+
+  const handleOpenDetailModal = (product: ProductListItem) => {
+    setViewingProduct(product);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setViewingProduct(null);
   };
 
   const handleCloseFormModal = () => {
@@ -179,6 +193,7 @@ const ProductTable = () => {
                     product={product}
                     rowNumber={(pageNumber - 1) * pageSize + index + 1}
                     onEdit={handleOpenEditModal}
+                    onViewDetails={handleOpenDetailModal}
                   />
                 ))
               ) : (
@@ -232,6 +247,14 @@ const ProductTable = () => {
           isSubmitting={isSubmitting}
           onClose={handleCloseFormModal}
           onSubmit={handleSubmit}
+        />
+      )}
+
+      {isDetailModalOpen && viewingProduct && (
+        <ProductDetailModal
+          isOpen={isDetailModalOpen}
+          productId={viewingProduct.productId}
+          onClose={handleCloseDetailModal}
         />
       )}
     </div>

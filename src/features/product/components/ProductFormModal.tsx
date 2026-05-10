@@ -79,8 +79,11 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     watch,
     setError,
     formState: { errors },
+    trigger,
   } = useForm({
     resolver: zodResolver(ProductFormSchema),
+    mode: "onSubmit", // Validate all fields on submit
+    reValidateMode: "onChange", // Re-validate on change after first submit
     defaultValues: {
       productName: "",
       categoryId: 0,
@@ -334,23 +337,35 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const handleFormSubmit = async (data: Record<string, unknown>) => {
     const formData = data as ProductFormData;
     formData.productStatus = normalizeProductStatus(formData.productStatus);
+    
+    // Additional validation for create mode
     if (mode === "create") {
-      if (!formData.mainImageUrl) {
+      let hasError = false;
+      
+      if (!formData.mainImageUrl || formData.mainImageUrl.trim() === "") {
         setError("mainImageUrl", {
           type: "manual",
           message: "Main image is required",
         });
-        return;
+        hasError = true;
       }
 
       const additionalCount = formData.additionalImageUrls?.length ?? 0;
-      if (additionalCount < 4 || additionalCount > 6) {
+      if (additionalCount < 4) {
         setError("additionalImageUrls", {
           type: "manual",
-          message: "Additional images must be between 4 and 6",
+          message: "At least 4 additional images are required",
         });
-        return;
+        hasError = true;
+      } else if (additionalCount > 6) {
+        setError("additionalImageUrls", {
+          type: "manual",
+          message: "Maximum 6 additional images allowed",
+        });
+        hasError = true;
       }
+      
+      if (hasError) return;
     }
 
     const id = mode === "edit" ? product?.productId ?? null : null;
@@ -365,6 +380,39 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         });
       });
     }
+  };
+
+  const handleFormSubmitWrapper = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Pre-validate image fields for create mode before triggering form validation
+    if (mode === "create") {
+      const currentMainImage = watch("mainImageUrl");
+      const currentAdditionalImages = watch("additionalImageUrls") ?? [];
+      
+      if (!currentMainImage || currentMainImage.trim() === "") {
+        setError("mainImageUrl", {
+          type: "manual",
+          message: "Main image is required",
+        });
+      }
+
+      const additionalCount = currentAdditionalImages.length;
+      if (additionalCount < 4) {
+        setError("additionalImageUrls", {
+          type: "manual",
+          message: "At least 4 additional images are required",
+        });
+      } else if (additionalCount > 6) {
+        setError("additionalImageUrls", {
+          type: "manual",
+          message: "Maximum 6 additional images allowed",
+        });
+      }
+    }
+    
+    // Trigger form validation and submission
+    await handleSubmit(handleFormSubmit)(e);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -491,7 +539,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       {isLoadingDetail ? (
         <div className="py-10 text-center text-gray-500">Loading product details...</div>
       ) : (
-        <form onSubmit={handleSubmit(handleFormSubmit)}>
+        <form onSubmit={handleFormSubmitWrapper}>
           <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-3">
             <div className="sm:col-span-2">
               <Label>

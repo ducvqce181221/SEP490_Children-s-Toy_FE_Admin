@@ -18,6 +18,14 @@ export const superCategoryApi = {
     );
   },
 
+  getSuperCategoryById: async (
+    superCategoryId: number,
+  ): Promise<SuperCategoryListItem> => {
+    return axiosClient.get<SuperCategoryListItem>(
+      `/categories/super-categories/${superCategoryId}`,
+    );
+  },
+
   createSuperCategory: async (
     payload: SuperCategoryFormData,
   ): Promise<SuperCategoryListItem> => {
