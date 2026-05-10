@@ -1120,10 +1120,10 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
       messageOverride: state.useCustomContent && state.messageOverride ? state.messageOverride : null,
       sourceType: "ADMIN" as const,
       targetType: state.targetMode,
-      scheduledAt: state.scheduleType === "scheduled" && state.scheduledAt ? new Date(state.scheduledAt).toISOString() : null,
+      scheduledAt: state.scheduleType === "scheduled" && state.scheduledAt ? state.scheduledAt : null,
       imageUrl: state.imageUrl || null,
-      actionType: null,
-      actionTarget: null,
+      actionType: state.referenceType || null,
+      actionTarget: state.referenceId ? String(state.referenceId) : null,
       createdByAccountId: account?.accountId ?? 0,
       targets,
     };
