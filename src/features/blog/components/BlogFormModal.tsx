@@ -8,7 +8,7 @@ import type Quill from "quill";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { blogApi } from "../services/blog-api";
-import { BlogFormValues, blogFormSchema } from "../types/blog.schema";
+import { BlogFormValues, BlogFormInput, blogFormSchema } from "../types/blog.schema";
 import {
   ApiErrorResponse,
   CreateBlogRequest,
@@ -40,7 +40,7 @@ const BLOG_CATEGORY_OPTIONS = [
   { value: 3, label: "Review sản phẩm" },
 ] as const;
 
-const defaultValues: BlogFormValues = {
+const defaultValues: BlogFormInput = {
   blogCategoryId: 1,
   blogTitle: "",
   blogContent: "",
@@ -150,7 +150,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
     setValue,
     control,
     formState: { errors },
-  } = useForm<BlogFormValues>({
+  } = useForm<BlogFormInput, unknown, BlogFormValues>({
     resolver: zodResolver(blogFormSchema),
     defaultValues,
   });

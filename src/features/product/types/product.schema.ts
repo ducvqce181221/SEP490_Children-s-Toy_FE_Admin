@@ -6,24 +6,15 @@ export const ProductFormSchema = z.object({
     .min(1, "Product name is required")
     .max(255, "Product name cannot exceed 255 characters"),
   categoryId: z
-    .number({
-      required_error: "Category is required",
-      invalid_type_error: "Invalid category",
-    })
+    .number({ message: "Category is required" })
     .min(1, "Category is required"),
   brandId: z.number().nullable().optional(),
   priceRangeId: z.number().nullable().optional(),
   price: z
-    .number({
-      required_error: "Price is required",
-      invalid_type_error: "Price must be a number",
-    })
+    .number({ message: "Price is required" })
     .min(0, "Price cannot be negative"),
   quantity: z
-    .number({
-      required_error: "Quantity is required",
-      invalid_type_error: "Quantity must be a number",
-    })
+    .number({ message: "Quantity is required" })
     .min(0, "Quantity cannot be negative"),
   productStatus: z.string().min(1, "Status is required"),
   launchDate: z.string().nullable().optional(),
