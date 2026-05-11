@@ -16,7 +16,9 @@ interface ProductRowProps {
 export const ProductRow = React.memo(
   ({ product, rowNumber, onEdit, onViewDetails }: ProductRowProps) => {
     const formattedDate = format(new Date(product.createdAt), "dd/MM/yyyy HH:mm");
-    const isInactive = product.status === "Inactive";
+    const isInactive =
+      product.status === "Inactive" ||
+      product.productStatus.toLowerCase() === "inactive";
     const formattedPrice = new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
