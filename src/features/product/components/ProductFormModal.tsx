@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type Quill from "quill";
 import { Modal } from "@/components/ui/modal";
@@ -8,6 +8,8 @@ import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
 import {
+  getDescriptionTextLength,
+  MAX_DESCRIPTION_LENGTH,
   ProductFormData,
   ProductFormSchema,
 } from "../types/product.schema";
@@ -72,14 +74,13 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   };
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
     setValue,
-    watch,
     setError,
     formState: { errors },
-    trigger,
   } = useForm({
     resolver: zodResolver(ProductFormSchema),
     mode: "onSubmit", // Validate all fields on submit
@@ -105,12 +106,19 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     },
   });
 
-  const mainImageUrl = watch("mainImageUrl");
-  const additionalImageUrls = watch("additionalImageUrls") ?? [];
-  const selectedCategoryId = watch("categoryId");
-  const selectedBrandId = watch("brandId");
-  const selectedPrice = watch("price");
-  const selectedPriceRangeId = watch("priceRangeId");
+  const mainImageUrl = useWatch({ control, name: "mainImageUrl" });
+  const additionalImageUrls = useWatch({ control, name: "additionalImageUrls" }) ?? [];
+  const selectedCategoryId = useWatch({ control, name: "categoryId" });
+  const selectedBrandId = useWatch({ control, name: "brandId" });
+  const selectedPrice = useWatch({ control, name: "price" });
+  const selectedPriceRangeId = useWatch({ control, name: "priceRangeId" });
+  const descriptionValue = useWatch({ control, name: "description" });
+  const launchDateValue = useWatch({ control, name: "launchDate" });
+  const materialIdValue = useWatch({ control, name: "materialId" });
+  const ageIdValue = useWatch({ control, name: "ageId" });
+  const sexIdValue = useWatch({ control, name: "sexId" });
+  const originIdValue = useWatch({ control, name: "originId" });
+  const descriptionTextLength = getDescriptionTextLength(descriptionValue);
   const isFormDisabled = isSubmitting || isLoadingOptions || isLoadingDetail || isUploading;
 
   const getMatchedPriceRangeId = useCallback(
@@ -387,17 +395,14 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     
     // Pre-validate image fields for create mode before triggering form validation
     if (mode === "create") {
-      const currentMainImage = watch("mainImageUrl");
-      const currentAdditionalImages = watch("additionalImageUrls") ?? [];
-      
-      if (!currentMainImage || currentMainImage.trim() === "") {
+      if (!mainImageUrl || mainImageUrl.trim() === "") {
         setError("mainImageUrl", {
           type: "manual",
           message: "Main image is required",
         });
       }
 
-      const additionalCount = currentAdditionalImages.length;
+      const additionalCount = additionalImageUrls.length;
       if (additionalCount < 4) {
         setError("additionalImageUrls", {
           type: "manual",
@@ -431,7 +436,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
 
-    const currentImages = watch("additionalImageUrls") ?? [];
+    const currentImages = additionalImageUrls;
     const remainingSlots = 6 - currentImages.length;
     if (remainingSlots <= 0) {
       setError("additionalImageUrls", {
@@ -458,8 +463,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   };
 
   const handleRemoveAdditionalImage = (index: number) => {
-    const currentImages = watch("additionalImageUrls") ?? [];
-    const nextImages = currentImages.filter((_, currentIndex) => currentIndex !== index);
+    const nextImages = additionalImageUrls.filter((_, currentIndex) => currentIndex !== index);
     setValue("additionalImageUrls", nextImages, { shouldValidate: true });
   };
 
@@ -663,7 +667,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               <Label>Launch Date</Label>
               <Input
                 type="date"
-                value={watch("launchDate") ? watch("launchDate")!.slice(0, 10) : ""}
+                value={launchDateValue ? launchDateValue.slice(0, 10) : ""}
                 onChange={(e) =>
                   setValue("launchDate", e.target.value === "" ? null : e.target.value, {
                     shouldValidate: true,
@@ -687,7 +691,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             <div>
               <Label>Material</Label>
               <Select
-                value={watch("materialId") === null || watch("materialId") === undefined ? "" : String(watch("materialId"))}
+                value={materialIdValue === null || materialIdValue === undefined ? "" : String(materialIdValue)}
                 onChange={(e) =>
                   setValue(
                     "materialId",
@@ -706,7 +710,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             <div>
               <Label>Age Range</Label>
               <Select
-                value={watch("ageId") === null || watch("ageId") === undefined ? "" : String(watch("ageId"))}
+                value={ageIdValue === null || ageIdValue === undefined ? "" : String(ageIdValue)}
                 onChange={(e) =>
                   setValue("ageId", e.target.value === "" ? null : Number(e.target.value), {
                     shouldValidate: true,
@@ -723,7 +727,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             <div>
               <Label>Sex</Label>
               <Select
-                value={watch("sexId") === null || watch("sexId") === undefined ? "" : String(watch("sexId"))}
+                value={sexIdValue === null || sexIdValue === undefined ? "" : String(sexIdValue)}
                 onChange={(e) =>
                   setValue("sexId", e.target.value === "" ? null : Number(e.target.value), {
                     shouldValidate: true,
@@ -740,7 +744,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             <div>
               <Label>Origin</Label>
               <Select
-                value={watch("originId") === null || watch("originId") === undefined ? "" : String(watch("originId"))}
+                value={originIdValue === null || originIdValue === undefined ? "" : String(originIdValue)}
                 onChange={(e) =>
                   setValue(
                     "originId",
@@ -782,6 +786,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   ref={editorRef}
                   className="min-h-[140px] bg-white text-sm text-gray-800 dark:bg-gray-900 dark:text-white/90"
                 />
+                <div className="border-t border-gray-200 px-3 py-2 text-right text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                  {descriptionTextLength}/{MAX_DESCRIPTION_LENGTH}
+                </div>
               </div>
               <input type="hidden" {...register("description")} />
               {errors.description && (

@@ -2,6 +2,38 @@ import { z } from "zod";
 
 // Allowed product statuses
 const ALLOWED_STATUSES = ["Active", "Inactive", "OutOfStock", "Discontinued", "ComingSoon"] as const;
+const EMPTY_RICH_TEXT_VALUE = "<p><br></p>";
+const MIN_DESCRIPTION_TEXT_LENGTH = 10;
+export const MAX_DESCRIPTION_LENGTH = 1500;
+const MAX_IMAGE_URL_LENGTH = 500;
+
+const normalizeUrl = (value: string) => value.trim();
+
+export const normalizeDescriptionHtml = (value: unknown): string => {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.length === 0 || trimmed === EMPTY_RICH_TEXT_VALUE) {
+    return "";
+  }
+
+  return trimmed;
+};
+
+export const getDescriptionTextLength = (value: unknown): number => {
+  const normalized = normalizeDescriptionHtml(value);
+  if (normalized.length === 0) {
+    return 0;
+  }
+
+  return normalized.replace(/<[^>]*>/g, "").replace(/\u00a0/g, " ").trim().length;
+};
+
+const getDescriptionStorageLength = (value: unknown): number => {
+  return normalizeDescriptionHtml(value).length;
+};
 
 export const ProductFormSchema = z
   .object({
@@ -51,7 +83,7 @@ export const ProductFormSchema = z
     productStatus: z
       .string()
       .min(1, "Product status is required")
-      .refine((val) => ALLOWED_STATUSES.includes(val as any), {
+      .refine((val) => ALLOWED_STATUSES.includes(val as (typeof ALLOWED_STATUSES)[number]), {
         message: "Product status is invalid",
       }),
     launchDate: z.string().nullable().optional(),
@@ -66,9 +98,8 @@ export const ProductFormSchema = z
       .string()
       .refine(
         (val) => {
-          if (!val || val.trim() === "" || val === "<p><br></p>") return true;
-          const textLength = val.replace(/<[^>]*>/g, "").trim().length;
-          return textLength >= 10;
+          if (!normalizeDescriptionHtml(val)) return true;
+          return getDescriptionTextLength(val) >= MIN_DESCRIPTION_TEXT_LENGTH;
         },
         {
           message: "Description must be at least 10 characters",
@@ -76,9 +107,8 @@ export const ProductFormSchema = z
       )
       .refine(
         (val) => {
-          if (!val || val.trim() === "" || val === "<p><br></p>") return true;
-          const textLength = val.replace(/<[^>]*>/g, "").trim().length;
-          return textLength <= 1500;
+          if (!normalizeDescriptionHtml(val)) return true;
+          return getDescriptionStorageLength(val) <= MAX_DESCRIPTION_LENGTH;
         },
         {
           message: "Description must not exceed 1500 characters",
@@ -88,8 +118,8 @@ export const ProductFormSchema = z
       .optional()
       .or(z.literal(""))
       .transform((val) => {
-        if (!val || val === "" || val === "<p><br></p>") return null;
-        return val;
+        const normalized = normalizeDescriptionHtml(val);
+        return normalized.length === 0 ? null : normalized;
       }),
     materialId: z
       .number()
@@ -128,8 +158,17 @@ export const ProductFormSchema = z
       .refine(
         (val) => {
           if (!val || val.trim() === "") return true; // Allow empty for edit mode
+          return normalizeUrl(val).length <= MAX_IMAGE_URL_LENGTH;
+        },
+        {
+          message: "Main image URL must not exceed 500 characters",
+        }
+      )
+      .refine(
+        (val) => {
+          if (!val || val.trim() === "") return true; // Allow empty for edit mode
           try {
-            new URL(val);
+            new URL(normalizeUrl(val));
             return true;
           } catch {
             return false;
@@ -142,24 +181,43 @@ export const ProductFormSchema = z
       .nullable()
       .optional()
       .or(z.literal(""))
-      .transform((val) => (val === "" ? null : val)),
+      .transform((val) => {
+        if (typeof val !== "string") {
+          return null;
+        }
+
+        const normalized = normalizeUrl(val);
+        return normalized === "" ? null : normalized;
+      }),
     additionalImageUrls: z
       .array(
-        z.string().refine(
-          (val) => {
-            try {
-              new URL(val);
-              return true;
-            } catch {
-              return false;
+        z
+          .string()
+          .refine((val) => normalizeUrl(val).length <= MAX_IMAGE_URL_LENGTH, {
+            message: "Additional image URL must not exceed 500 characters",
+          })
+          .refine(
+            (val) => {
+              try {
+                new URL(normalizeUrl(val));
+                return true;
+              } catch {
+                return false;
+              }
+            },
+            {
+              message: "Additional image URL is not valid",
             }
-          },
-          {
-            message: "Additional image URL is not valid",
-          }
-        )
+          )
       )
-      .default([]),
+      .default([])
+      .transform((urls) => urls.map(normalizeUrl))
+      .refine(
+        (urls) => new Set(urls.map(normalizeUrl)).size === urls.length,
+        {
+          message: "Additional images must be unique",
+        }
+      ),
   })
   .refine(
     (data) => {

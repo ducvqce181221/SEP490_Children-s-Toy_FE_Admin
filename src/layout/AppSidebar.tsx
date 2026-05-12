@@ -30,6 +30,11 @@ const navItems: NavItem[] = [
     name: "Account Management",
     path: "/admin/accounts",
   },
+  {
+    icon: <UserCircleIcon />,
+    name: "Customer Management",
+    path: "/admin/customers",
+  },
     {
     icon: <CalenderIcon />,
     name: "Order Management",
