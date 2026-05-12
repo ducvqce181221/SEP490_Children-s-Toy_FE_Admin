@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function ProductReviewsPage() {
   return (
     <div>
-      <PageBreadcrumb pageTitle="Product Reviews" />
+      <PageBreadcrumb pageTitle="Product Reviews Management" />
       <div className="space-y-6">
         <ReviewTable />
       </div>
