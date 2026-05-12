@@ -9,7 +9,7 @@ import { twMerge } from "tailwind-merge";
 import { promotionFormSchema, type PromotionFormData } from "../types/promotion.schema";
 import type { Promotion } from "../types/promotion";
 import { PROMOTION_TYPE_OPTIONS, PROMOTION_TYPE_CONFIG, PROMOTION_TYPES } from "../types/promotion";
-import { formatUTCtoLocal, formatLocalToUTC } from "@/utils/date-utils";
+import { formatUTCtoLocal, formatLocalToUTC, getIdealFutureTime } from "@/utils/date-utils";
 import type { ProductListItem } from "@/features/product/types/product";
 import { usePromotionMutations } from "../hooks/usePromotionMutations";
 import { ProductCatalogSection } from "./ProductCatalogSection";
@@ -42,6 +42,13 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
 
+  const isGlobalReadOnly = initialData?.status === "Expired" || initialData?.status === "Inactive";
+  const isActive = initialData?.status === "Active";
+  const isGeneralLocked = isGlobalReadOnly || isActive;
+  const isNew = !initialData;
+
+
+
   const { createPromotion, updatePromotion, isSubmitting } = usePromotionMutations(() => {
     router.push("/admin/promotions");
   });
@@ -54,9 +61,10 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
       promotionName: "",
       promotionType: PROMOTION_TYPES.DISCOUNT,
       description: "",
-      startDate: formatUTCtoLocal(new Date().toISOString()),
-      endDate: formatUTCtoLocal(new Date(Date.now() + 86400000).toISOString()),
-      status: "Active",
+      startDate: formatUTCtoLocal(new Date(getIdealFutureTime()).toISOString()),
+      originalStartDate: formatUTCtoLocal(new Date(getIdealFutureTime()).toISOString()),
+      endDate: formatUTCtoLocal(new Date(getIdealFutureTime() + 86400000).toISOString()),
+      status: "Scheduled",
       priority: 0,
       productPromotions: [],
       promotionTimeSlots: [],
@@ -88,6 +96,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
         promotionType: initialData.promotionType,
         description: initialData.description,
         startDate: formatUTCtoLocal(initialData.startDate),
+        originalStartDate: formatUTCtoLocal(initialData.startDate),
         endDate: formatUTCtoLocal(initialData.endDate),
         status: initialData.status,
         priority: initialData.priority,
@@ -104,6 +113,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
         // Map startAt/endAt từ UTC (API) → local (datetime-local input)
         promotionTimeSlots: initialData.promotionTimeSlots?.map((ts) => ({
           startAt: formatUTCtoLocal(ts.startAt),
+          originalStartAt: formatUTCtoLocal(ts.startAt),
           endAt: formatUTCtoLocal(ts.endAt),
           status: ts.status,
           promotionProductSlots: (ts.promotionProductSlots ?? []).map((ps) => ({
@@ -159,12 +169,13 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
       ...data,
       startDate: formatLocalToUTC(data.startDate),
       endDate: formatLocalToUTC(data.endDate),
+      status: isNew ? "Scheduled" : data.status,
       productPromotions: data.productPromotions.map(({ ...rest }) => rest),
       promotionTimeSlots: PROMOTION_TYPE_CONFIG[data.promotionType]?.hasTimeSlots
         ? data.promotionTimeSlots.map((ts) => ({
             startAt: formatLocalToUTC(ts.startAt),   // local → UTC ISO string
             endAt: formatLocalToUTC(ts.endAt),       // local → UTC ISO string
-            status: ts.status,
+            status: ts.isNewSlot ? "Scheduled" : ts.status,
             promotionProductSlots: ts.promotionProductSlots.map(
               ({ productName: _pn, originalPrice: _op, stock: _st, ...rest }) => rest
             ),
@@ -222,6 +233,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     hint={errors.promotionName?.message}
                     placeholder="Enter promotion name..."
                     {...register("promotionName")}
+                    disabled={isGeneralLocked}
                   />
                 </div>
 
@@ -234,6 +246,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     onChange={(e) => setValue("promotionType", e.target.value)}
                     error={!!errors.promotionType}
                     hint={errors.promotionType?.message}
+                    disabled={isGeneralLocked}
                   />
                 </div>
 
@@ -245,6 +258,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     error={!!errors.startDate}
                     hint={errors.startDate?.message}
                     {...register("startDate")}
+                    disabled={isGeneralLocked}
                   />
                 </div>
 
@@ -256,19 +270,16 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     error={!!errors.endDate}
                     hint={errors.endDate?.message}
                     {...register("endDate")}
+                    disabled={isGeneralLocked}
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="status">Status <span className="text-error-500">*</span></Label>
-                  <Select
-                    id="status"
-                    options={PROMOTION_STATUS_OPTIONS}
-                    value={watch("status")}
-                    onChange={(e) => setValue("status", e.target.value)}
-                    error={!!errors.status}
-                    hint={errors.status?.message}
-                  />
+                  <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
+                    <input type="hidden" {...register("status")} />
+                    <span className="font-medium text-gray-900 dark:text-white">{watch("status") || "Scheduled"}</span>
+                  </div>
                 </div>
 
                 <div>
@@ -279,6 +290,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     error={!!errors.priority}
                     hint={errors.priority?.message}
                     {...register("priority")}
+                    disabled={isGeneralLocked}
                   />
                 </div>
 
@@ -288,6 +300,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     id="description"
                     rows={3}
                     {...register("description")}
+                    disabled={isGeneralLocked}
                   />
                 </div>
               </div>
@@ -295,7 +308,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
 
             {PROMOTION_TYPE_CONFIG[watch("promotionType")]?.hasTimeSlots && (
               <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
-                <PromotionTimeSlotsSection form={form} readonly={false} />
+                <PromotionTimeSlotsSection form={form} readonly={isGlobalReadOnly} isNew={isNew} />
               </div>
             )}
 
@@ -324,14 +337,16 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
-                variant="outline" 
-                disabled={isSubmitting}
-                className="border-brand-500 text-brand-500 hover:bg-brand-50"
-              >
-                {isSubmitting ? "Saving..." : "Save & Finish"}
-              </Button>
+              {!isGlobalReadOnly && (
+                <Button 
+                  type="submit" 
+                  variant="outline" 
+                  disabled={isSubmitting}
+                  className="border-brand-500 text-brand-500 hover:bg-brand-50"
+                >
+                  {isSubmitting ? "Saving..." : "Save & Finish"}
+                </Button>
+              )}
               <Button type="button" variant="primary" onClick={handleNextStep}>
                 Next: Select Products
               </Button>
@@ -342,21 +357,23 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
         {currentStep === 2 && (
           <div className="space-y-6">
             {PROMOTION_TYPE_CONFIG[watch("promotionType")]?.hasTimeSlots ? (
-              <PromotionProductSlotsSection form={form} readonly={false} />
+              <PromotionProductSlotsSection form={form} readonly={isGlobalReadOnly} />
             ) : (
               <>
                 <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
-                  <ProductCatalogSection
-                    onConfirm={handleSyncProducts}
-                    selectedProductIds={fields.map((f) => f.productId)}
-                  />
+                  {!isGlobalReadOnly && !isActive && (
+                    <ProductCatalogSection
+                      onConfirm={handleSyncProducts}
+                      selectedProductIds={fields.map((f) => f.productId)}
+                    />
+                  )}
                 </div>
 
                 <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
                   <ProductPromotionTable
                     form={form}
                     fieldArray={fieldArray}
-                    readonly={false}
+                    readonly={isGlobalReadOnly || isActive}
                   />
                 </div>
               </>
@@ -366,14 +383,16 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
               <Button type="button" variant="outline" onClick={handlePrevStep}>
                 Back
               </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={isSubmitting}
-                className={twMerge(isSubmitting && "opacity-50 cursor-not-allowed")}
-              >
-                {isSubmitting ? "Saving..." : "Save Promotion"}
-              </Button>
+              {!isGlobalReadOnly && (
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={isSubmitting}
+                  className={twMerge(isSubmitting && "opacity-50 cursor-not-allowed")}
+                >
+                  {isSubmitting ? "Saving..." : "Save Promotion"}
+                </Button>
+              )}
             </div>
           </div>
         )}

@@ -30,6 +30,11 @@ const navItems: NavItem[] = [
     name: "Account Management",
     path: "/admin/accounts",
   },
+  {
+    icon: <UserCircleIcon />,
+    name: "Customer Management",
+    path: "/admin/customers",
+  },
     {
     icon: <CalenderIcon />,
     name: "Order Management",
@@ -38,7 +43,7 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Refund Management",
-    path: "/admin/refund",
+    path: "/admin/refunds",
   },
   {
     name: "Blog Management",

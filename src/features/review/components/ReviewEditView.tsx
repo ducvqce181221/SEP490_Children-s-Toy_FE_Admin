@@ -84,7 +84,7 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
   return (
     <div className="pb-10">
       <PageBreadcrumb 
-        pageTitle="Manage Review" 
+        pageTitle="Edit Review" 
         breadcrumbs={[
           { label: "Product Reviews", href: "/admin/product-reviews" },
           { label: "Moderation" }

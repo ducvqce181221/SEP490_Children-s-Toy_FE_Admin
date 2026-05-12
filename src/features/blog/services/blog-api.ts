@@ -5,6 +5,7 @@ import {
   BlogReview,
   BlogReviewReply,
   BlogDetail,
+  BlogCategoryItem,
   BlogListItem,
   BlogQueryParams,
   CreateBlogRequest,
@@ -32,6 +33,10 @@ export const blogApi = {
 
   getBlogById: async (blogPostId: number): Promise<BlogDetail> => {
     return axiosClient.get<BlogDetail>(`/blogs/${blogPostId}`);
+  },
+
+  getBlogCategories: async (): Promise<BlogCategoryItem[]> => {
+    return axiosClient.get<BlogCategoryItem[]>("/blogs/categories");
   },
 
   createBlog: async (payload: CreateBlogRequest): Promise<BlogDetail> => {

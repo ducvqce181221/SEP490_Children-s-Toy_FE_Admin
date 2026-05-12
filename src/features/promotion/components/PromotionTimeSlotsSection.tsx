@@ -15,23 +15,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TrashBinIcon } from "@/icons";
-import { formatUTCtoLocal, formatLocalToUTC } from "@/utils/date-utils";
+import { formatUTCtoLocal, formatLocalToUTC, getIdealFutureTime } from "@/utils/date-utils";
 
 interface PromotionTimeSlotsSectionProps {
   form: UseFormReturn<PromotionFormData>;
   readonly?: boolean;
+  isNew?: boolean;
 }
 
-const STATUS_OPTIONS = [
-  { value: "Active", label: "Active" },
-  { value: "Inactive", label: "Inactive" },
-  { value: "Scheduled", label: "Scheduled" },
-  { value: "Expired", label: "Expired" },
-];
+
 
 export function PromotionTimeSlotsSection({
   form,
   readonly = false,
+  isNew = false,
 }: PromotionTimeSlotsSectionProps) {
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -39,14 +36,16 @@ export function PromotionTimeSlotsSection({
   });
 
   const handleAddSlot = () => {
-    // Tạo slot mặc định: bắt đầu ngay bây giờ, kết thúc sau 2 giờ — hiển thị theo local
-    const nowUtc = new Date().toISOString();
-    const plusTwoHrUtc = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
+    // Tạo slot mặc định: bắt đầu sau 10 phút, kết thúc sau 2 giờ 10 phút — hiển thị theo local
+    const startUtc = new Date(getIdealFutureTime()).toISOString();
+    const plusTwoHrUtc = new Date(getIdealFutureTime() + 2 * 3600 * 1000).toISOString();
 
     append({
-      startAt: formatUTCtoLocal(nowUtc),
+      startAt: formatUTCtoLocal(startUtc),
+      originalStartAt: formatUTCtoLocal(startUtc),
       endAt: formatUTCtoLocal(plusTwoHrUtc),
       status: "Scheduled",
+      isNewSlot: true,
       promotionProductSlots: [],
     });
   };
@@ -100,7 +99,13 @@ export function PromotionTimeSlotsSection({
                 </TableCell>
               </TableRow>
             ) : (
-              fields.map((field, index) => (
+              fields.map((field, index) => {
+                const isSlotActive = field.status === "Active";
+                const isTimeLocked = readonly || field.status !== "Scheduled";
+                
+
+
+                return (
                 <TableRow key={field.id}>
                   <TableCell className="px-4 py-3 text-sm text-gray-500">
                     {index + 1}
@@ -108,7 +113,7 @@ export function PromotionTimeSlotsSection({
 
                   {/* startAt */}
                   <TableCell className="px-4 py-3">
-                    {readonly ? (
+                    {isTimeLocked ? (
                       <span className="text-sm">
                         {/* Hiển thị local từ giá trị datetime-local đã lưu */}
                         {field.startAt ? field.startAt.replace("T", " ").substring(0, 16) : "—"}
@@ -126,7 +131,7 @@ export function PromotionTimeSlotsSection({
 
                   {/* endAt */}
                   <TableCell className="px-4 py-3">
-                    {readonly ? (
+                    {isTimeLocked ? (
                       <span className="text-sm">
                         {field.endAt ? field.endAt.replace("T", " ").substring(0, 16) : "—"}
                       </span>
@@ -143,32 +148,28 @@ export function PromotionTimeSlotsSection({
 
                   {/* status */}
                   <TableCell className="px-4 py-3">
-                    {readonly ? (
-                      <span className="text-sm">{field.status}</span>
-                    ) : (
-                      <Select
-                        options={STATUS_OPTIONS}
-                        {...form.register(`promotionTimeSlots.${index}.status`)}
-                        error={!!form.formState.errors.promotionTimeSlots?.[index]?.status}
-                        hint={form.formState.errors.promotionTimeSlots?.[index]?.status?.message}
-                      />
-                    )}
+                    <input type="hidden" {...form.register(`promotionTimeSlots.${index}.status`)} />
+                    <span className="text-sm px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded font-medium text-gray-900 dark:text-white">
+                      {field.status || "Scheduled"}
+                    </span>
                   </TableCell>
 
                   {!readonly && (
                     <TableCell className="px-4 py-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => remove(index)}
-                        className="text-gray-400 hover:text-error-500 transition-colors"
-                        title="Delete slot"
-                      >
-                        <TrashBinIcon className="w-5 h-5" />
-                      </button>
+                      {!isTimeLocked && (
+                        <button
+                          type="button"
+                          onClick={() => remove(index)}
+                          className="text-gray-400 hover:text-error-500 transition-colors"
+                          title="Delete slot"
+                        >
+                          <TrashBinIcon className="w-5 h-5" />
+                        </button>
+                      )}
                     </TableCell>
                   )}
                 </TableRow>
-              ))
+              )})
             )}
           </TableBody>
         </Table>
