@@ -116,6 +116,9 @@ export function PromotionProductSlotsSection({
     };
   });
 
+  const currentSlotStatus = timeSlots[currentSlotIndex]?.status;
+  const isSlotReadOnly = readonly || currentSlotStatus === "Active" || currentSlotStatus === "Expired" || currentSlotStatus === "Inactive";
+
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-white/[0.02] p-4 rounded-xl border border-gray-200 dark:border-white/[0.05]">
@@ -135,7 +138,7 @@ export function PromotionProductSlotsSection({
         key={currentSlotIndex}
         form={form}
         slotIndex={currentSlotIndex}
-        readonly={readonly}
+        readonly={isSlotReadOnly}
       />
     </div>
   );
