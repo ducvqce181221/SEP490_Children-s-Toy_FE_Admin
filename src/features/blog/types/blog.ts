@@ -39,6 +39,11 @@ export interface BlogDetail extends BlogListItem {
   reason: string | null;
 }
 
+export interface BlogCategoryItem {
+  blogCategoryId: number;
+  blogCategoryName: string;
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   pageNumber: number;

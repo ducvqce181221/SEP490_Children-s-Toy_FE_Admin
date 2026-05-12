@@ -11,6 +11,7 @@ import { blogApi } from "../services/blog-api";
 import { BlogFormValues, BlogFormInput, blogFormSchema } from "../types/blog.schema";
 import {
   ApiErrorResponse,
+  BlogCategoryItem,
   CreateBlogRequest,
   CreateOrUpdateBlogResult,
   UpdateBlogRequest,
@@ -34,14 +35,8 @@ interface BlogFormModalProps {
 const inputClassName =
   "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
 
-const BLOG_CATEGORY_OPTIONS = [
-  { value: 1, label: "Tin tức & Khuyến mãi" },
-  { value: 2, label: "Kiến thức nuôi dạy trẻ" },
-  { value: 3, label: "Review sản phẩm" },
-] as const;
-
 const defaultValues: BlogFormInput = {
-  blogCategoryId: 1,
+  blogCategoryId: 0,
   blogTitle: "",
   blogContent: "",
   blogThumbnail: "",
@@ -124,6 +119,8 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
   isHidingBlog = false,
 }) => {
   const [formError, setFormError] = useState<string | null>(null);
+  const [blogCategories, setBlogCategories] = useState<BlogCategoryItem[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [isHideConfirmOpen, setIsHideConfirmOpen] = useState(false);
@@ -225,6 +222,43 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
       resetQuillEditor();
     }
   }, [isOpen, resetQuillEditor]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    let isCancelled = false;
+    const fetchBlogCategories = async () => {
+      setIsLoadingCategories(true);
+      try {
+        const categories = await blogApi.getBlogCategories();
+        if (isCancelled) {
+          return;
+        }
+
+        setBlogCategories(categories);
+        if (mode === "create" && categories.length > 0) {
+          setValue("blogCategoryId", categories[0].blogCategoryId, { shouldValidate: true });
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          const axiosError = error as AxiosError<ApiErrorResponse>;
+          setFormError(axiosError.response?.data?.message ?? "Unable to load blog categories.");
+          setBlogCategories([]);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingCategories(false);
+        }
+      }
+    };
+
+    void fetchBlogCategories();
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, mode, setValue]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -481,14 +515,17 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
             <select
               className={inputClassName}
               {...register("blogCategoryId")}
-              disabled={isEditLoading || isSubmitting}
+              disabled={isEditLoading || isSubmitting || isLoadingCategories || blogCategories.length === 0}
             >
-              {BLOG_CATEGORY_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              {blogCategories.map((option) => (
+                <option key={option.blogCategoryId} value={option.blogCategoryId}>
+                  {option.blogCategoryName}
                 </option>
               ))}
             </select>
+            {isLoadingCategories && (
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Loading categories...</p>
+            )}
             {errors.blogCategoryId?.message && (
               <p className="mt-1 text-sm text-error-600">{errors.blogCategoryId.message}</p>
             )}
