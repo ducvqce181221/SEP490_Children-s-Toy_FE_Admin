@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getMinimumFutureTime } from "@/utils/date-utils";
 
 // ─── productPromotionSchema — dùng cho DISCOUNT ───────────────────────────────
 export const productPromotionSchema = z.object({
@@ -89,6 +90,8 @@ export const promotionTimeSlotSchema = z.object({
   /** Giá trị từ <input type="datetime-local">, format: "YYYY-MM-DDTHH:mm" */
   endAt: z.string().min(1, "End date/time is required"),
   status: z.string().min(1, "Status is required"),
+  originalStartAt: z.string().optional(),
+  isNewSlot: z.boolean().optional(),
   promotionProductSlots: z.array(promotionProductSlotSchema).default([]),
 }).refine(data => {
   if (!data.startAt || !data.endAt) return true;
@@ -107,6 +110,7 @@ export const promotionFormSchema = z
     startDate: z.string().min(1, "Start date is required"),
     endDate: z.string().min(1, "End date is required"),
     status: z.string().min(1, "Status is required"),
+    originalStartDate: z.string().optional(),
     priority: z.preprocess((v) => Number(v), z.number().min(0, "Priority must be at least 0")),
     /** Sản phẩm DISCOUNT (không phân theo slot) */
     productPromotions: z.array(productPromotionSchema).default([]),
@@ -124,7 +128,105 @@ export const promotionFormSchema = z
       message: "End date must be after start date",
       path: ["endDate"],
     }
-  );
+  )
+  .superRefine((data, ctx) => {
+    // Thời điểm bắt buộc (áp dụng +9 phút thay vì +10 để bù trừ cho phần giây bị cắt của input form)
+    const minimumFutureTime = getMinimumFutureTime();
+    
+    // 1. StartDate past validation
+    const currentStatus = data.status || "Scheduled";
+    if (new Date(data.startDate).getTime() < minimumFutureTime && currentStatus === "Scheduled") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Start date must be at least 10 minutes from now",
+        path: ["startDate"],
+      });
+    }
+
+    // 2. Status must be Scheduled when before StartDate
+    if (new Date(data.startDate).getTime() > Date.now() && currentStatus !== "Scheduled") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Status must be Scheduled before start date",
+        path: ["status"],
+      });
+    }
+
+    if (data.promotionType !== "FLASH_SALE" || !data.startDate || !data.endDate) return;
+    const promStart = new Date(data.startDate).getTime();
+    const promEnd = new Date(data.endDate).getTime();
+    
+    data.promotionTimeSlots.forEach((slot, index) => {
+      const slotStart = new Date(slot.startAt).getTime();
+      const slotEnd = new Date(slot.endAt).getTime();
+      
+      if (slotStart < promStart || slotStart > promEnd) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Start time must be within promotion dates",
+          path: ["promotionTimeSlots", index, "startAt"],
+        });
+      }
+      
+      if (slotEnd < promStart || slotEnd > promEnd) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "End time must be within promotion dates",
+          path: ["promotionTimeSlots", index, "endAt"],
+        });
+      }
+
+      // 3. TimeSlot past validation
+      if (slotStart < minimumFutureTime && slot.status === "Scheduled") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Start time must be at least 10 minutes from now",
+          path: ["promotionTimeSlots", index, "startAt"],
+        });
+      }
+
+      // 4. TimeSlot Status must be Scheduled when before StartAt
+      if (slotStart > Date.now() && slot.status !== "Scheduled") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Status must be Scheduled before start time",
+          path: ["promotionTimeSlots", index, "status"],
+        });
+      }
+
+      // 5. If Promotion Scheduled -> TimeSlots Scheduled
+      if (currentStatus === "Scheduled" && slot.status !== "Scheduled") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Must be Scheduled when promotion is Scheduled",
+          path: ["promotionTimeSlots", index, "status"],
+        });
+      }
+    });
+
+    // 6. Check for overlapping slots
+    for (let i = 0; i < data.promotionTimeSlots.length; i++) {
+      for (let j = i + 1; j < data.promotionTimeSlots.length; j++) {
+        const slotA = data.promotionTimeSlots[i];
+        const slotB = data.promotionTimeSlots[j];
+        
+
+
+        const startA = new Date(slotA.startAt).getTime();
+        const endA = new Date(slotA.endAt).getTime();
+        const startB = new Date(slotB.startAt).getTime();
+        const endB = new Date(slotB.endAt).getTime();
+
+        if (startA < endB && startB < endA) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Time slots cannot overlap with each other",
+            path: ["promotionTimeSlots", j, "startAt"],
+          });
+        }
+      }
+    }
+  });
 
 export type PromotionProductSlotFormData = z.infer<typeof promotionProductSlotSchema>;
 export type PromotionFormData = z.infer<typeof promotionFormSchema>;

@@ -46,6 +46,7 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
       promotionType: "Discount",
       description: "",
       startDate: formatUTCtoLocal(new Date().toISOString()),
+      originalStartDate: formatUTCtoLocal(new Date().toISOString()),
       endDate: formatUTCtoLocal(new Date(Date.now() + 86400000).toISOString()),
       status: "Active",
       priority: 0,
@@ -75,6 +76,7 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
         promotionType: initialData.promotionType,
         description: initialData.description,
         startDate: formatUTCtoLocal(initialData.startDate),
+        originalStartDate: formatUTCtoLocal(initialData.startDate),
         endDate: formatUTCtoLocal(initialData.endDate),
         status: initialData.status,
         priority: initialData.priority,
@@ -91,6 +93,7 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
         // Map startAt/endAt từ UTC (API) → local (datetime-local input)
         promotionTimeSlots: initialData.promotionTimeSlots?.map((ts) => ({
           startAt: formatUTCtoLocal(ts.startAt),
+          originalStartAt: formatUTCtoLocal(ts.startAt),
           endAt: formatUTCtoLocal(ts.endAt),
           status: ts.status,
           promotionProductSlots: (ts.promotionProductSlots ?? []).map((ps) => ({

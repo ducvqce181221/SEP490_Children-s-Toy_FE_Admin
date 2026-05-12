@@ -41,3 +41,21 @@ export const formatDisplayDate = (dateString: string | null | undefined, fallbac
   const date = parseISO(ensureUTC(dateString));
   return isValid(date) ? format(date, "dd/MM/yyyy HH:mm") : fallback;
 };
+
+/**
+ * Trả về thời gian tương lai tối thiểu cho phép (hiện tại + 9 phút) để bù trừ
+ * khi input datetime-local bị cắt mất phần giây.
+ * Dùng cho validation form.
+ */
+export const getMinimumFutureTime = (): number => {
+  return Date.now() + 9 * 60000;
+};
+
+/**
+ * Trả về thời gian lý tưởng để tự động điền vào form (hiện tại + 10 phút).
+ * Dùng cho defaultValues.
+ */
+export const getIdealFutureTime = (): number => {
+  return Date.now() + 10 * 60000;
+};
+

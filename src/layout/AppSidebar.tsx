@@ -43,7 +43,7 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Refund Management",
-    path: "/admin/refund",
+    path: "/admin/refunds",
   },
   {
     name: "Blog Management",
