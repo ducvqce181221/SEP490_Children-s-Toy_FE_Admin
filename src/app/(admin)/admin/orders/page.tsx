@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function OrdersPage() {
   return (
     <div>
-      <PageBreadcrumb pageTitle="Quản lý Đơn hàng" />
+      <PageBreadcrumb pageTitle="Order Management" />
       <div className="space-y-6">
         <OrderTable />
       </div>

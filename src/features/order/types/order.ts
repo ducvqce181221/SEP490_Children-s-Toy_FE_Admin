@@ -25,14 +25,14 @@ export const ORDER_STATUS_ID = {
 } as const;
 
 export const ORDER_STATUS_LABEL: Record<number, string> = {
-  1: "Chờ xác nhận",
-  2: "Đã xác nhận",
-  3: "Đang chuẩn bị",
-  4: "Đã giao vận",
-  5: "Đang giao",
-  6: "Đã giao",
-  7: "Hoàn thành",
-  8: "Đã hủy",
+  1: "Pending",
+  2: "Confirmed",
+  3: "Processing",
+  4: "Shipped",
+  5: "Delivering",
+  6: "Delivered",
+  7: "Completed",
+  8: "Cancelled",
 };
 
 export const PAYMENT_STATUS = {
@@ -43,10 +43,10 @@ export const PAYMENT_STATUS = {
 } as const;
 
 export const PAYMENT_STATUS_LABEL: Record<string, string> = {
-  PENDING: "Chưa thanh toán",
-  PAID: "Đã thanh toán",
-  FAILED: "Thất bại",
-  REFUNDED: "Đã hoàn tiền",
+  PENDING: "Pending",
+  PAID: "Paid",
+  FAILED: "Failed",
+  REFUNDED: "Refunded",
 };
 
 export const ROLE_NAME = {
@@ -64,18 +64,18 @@ export const ROLE_DEFAULT_STATUS_IDS: Record<string, number[]> = {
 
 /** GHN provider status → label tiếng Việt */
 export const SHIPPING_STATUS_LABEL: Record<string, string> = {
-  ready_to_pick: "Chờ lấy hàng",
-  picking: "Đang lấy hàng",
-  picked: "Đã lấy hàng",
-  delivering: "Đang giao",
-  money_collect_delivering: "Giao + thu tiền",
-  delivered: "Đã giao",
-  delivery_fail: "Giao thất bại",
-  waiting_to_return: "Chờ hoàn",
-  return: "Đang hoàn",
-  returning: "Đang hoàn",
-  returned: "Đã hoàn",
-  cancel: "Hủy vận đơn",
+  ready_to_pick: "Ready to Pick",
+  picking: "Picking",
+  picked: "Picked",
+  delivering: "Delivering",
+  money_collect_delivering: "Delivering + COD",
+  delivered: "Delivered",
+  delivery_fail: "Delivery Failed",
+  waiting_to_return: "Waiting to Return",
+  return: "Return",
+  returning: "Returning",
+  returned: "Returned",
+  cancel: "Cancelled",
 };
 
 // ─── List ────────────────────────────────────────────────────────────────────

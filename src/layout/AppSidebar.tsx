@@ -74,7 +74,6 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Campaigns", path: "/admin/campaigns" },
       { name: "Templates", path: "/admin/campaigns/templates" },
-      { name: "Inbox", path: "/admin/notifications" },
     ],
   },
   {
@@ -92,6 +91,11 @@ const othersItems: NavItem[] = [
     icon: <GridIcon />,
     name: "Dashboard",
     subItems: [{ name: "Ecommerce", path: "/admin", pro: false }],
+  },
+  {
+    icon: <CalenderIcon />,
+    name: "Inbox",
+    path: "/admin/notifications",
   },
   {
     icon: <UserCircleIcon />,

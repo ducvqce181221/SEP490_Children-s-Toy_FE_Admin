@@ -13,6 +13,7 @@ import {
 interface OrderToolbarProps {
   keyword: string;
   onKeywordChange: (value: string) => void;
+  onSearchSubmit: () => void;
   statusId: number | "";
   onStatusChange: (value: number | "") => void;
   assignedToMe: boolean;
@@ -56,6 +57,7 @@ function getRoleBadge(roleName: string) {
 const OrderToolbar: React.FC<OrderToolbarProps> = ({
   keyword,
   onKeywordChange,
+  onSearchSubmit,
   statusId,
   onStatusChange,
   assignedToMe,
@@ -101,18 +103,18 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
 
   // Tên của preset mặc định theo role (hiển thị trong option "—")
   const defaultLabel = defaultStatusIds.length > 0
-    ? `Mặc định (${defaultStatusIds.map((id) => ORDER_STATUS_LABEL[id]).join(", ")})`
-    : "Tất cả trạng thái";
+    ? `Default (${defaultStatusIds.map((id) => ORDER_STATUS_LABEL[id]).join(", ")})`
+    : "All Statuses";
 
   const statusOptions = isAdmin
     ? [
-        { value: "", label: "Mặc định (Tất cả)" },
-        ...ALL_STATUS_OPTIONS,
-      ]
+      { value: "", label: "Default (All)" },
+      ...ALL_STATUS_OPTIONS,
+    ]
     : [
-        { value: "", label: defaultLabel },
-        ...ALL_STATUS_OPTIONS,
-      ];
+      { value: "", label: defaultLabel },
+      ...ALL_STATUS_OPTIONS,
+    ];
 
   return (
     <div className="px-5 py-5 sm:px-6">
@@ -120,7 +122,7 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
         <div>
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-              Quản lý Đơn hàng
+              Order Management
             </h3>
             {roleBadge && (
               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${roleBadge.className}`}>
@@ -129,15 +131,15 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
             )}
             {typeof totalCount === "number" && (
               <span className="text-xs text-gray-400 dark:text-gray-500">
-                {totalCount.toLocaleString("vi-VN")} đơn
+                {totalCount.toLocaleString("en-US")} orders
               </span>
             )}
           </div>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {roleName === ROLE_NAME.STAFF && "Xem và xác nhận đơn đang chờ xử lý."}
-            {roleName === ROLE_NAME.MERCHANDISE && "Chuẩn bị và tạo vận đơn cho các đơn đã xác nhận."}
-            {roleName === ROLE_NAME.ADMIN && "Toàn quyền xem, phân công và thao tác trên mọi đơn hàng."}
-            {!roleName && "Theo dõi, xử lý và cập nhật trạng thái đơn hàng."}
+            {roleName === ROLE_NAME.STAFF && "View and confirm pending orders."}
+            {roleName === ROLE_NAME.MERCHANDISE && "Prepare and create waybills for confirmed orders."}
+            {roleName === ROLE_NAME.ADMIN && "Full access to view, assign, and manage all orders."}
+            {!roleName && "Track, process, and update order statuses."}
           </p>
         </div>
 
@@ -150,7 +152,7 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
             onChange={(e) => onAssignedToMeChange(e.target.checked)}
           />
           <span className={assignedToMe ? "font-medium text-brand-600 dark:text-brand-400" : ""}>
-            Đơn của tôi
+            My Orders
           </span>
         </label>
       </div>
@@ -159,12 +161,17 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
         {/* Search */}
         <div className="lg:col-span-4">
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Tìm kiếm
+            Search
           </label>
           <SearchInput
             value={keyword}
             onChange={onKeywordChange}
-            placeholder="Mã ĐH, tên KH, số điện thoại..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                onSearchSubmit();
+              }
+            }}
+            placeholder="Order ID, Customer, Phone...(Press Enter)"
           />
         </div>
 
@@ -177,7 +184,7 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
                 htmlFor="order-status"
                 className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
-                Trạng thái
+                Status
               </label>
               <select
                 id="order-status"
@@ -199,7 +206,7 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
             <div className="flex flex-col">
               <DatePicker
                 id="from-date"
-                label="Từ ngày"
+                label="From Date"
                 placeholder="YYYY-MM-DD"
                 defaultDate={fromDate || undefined}
                 onChange={handleFromDateChange}
@@ -210,7 +217,7 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
             <div className="flex flex-col">
               <DatePicker
                 id="to-date"
-                label="Đến ngày"
+                label="To Date"
                 placeholder="YYYY-MM-DD"
                 defaultDate={toDate || undefined}
                 onChange={handleToDateChange}

@@ -129,7 +129,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
       setOrder(res);
     } catch (err) {
       const ae = err as AxiosError<ApiErrorResponse>;
-      setError(ae.response?.data?.message ?? "Không thể tải chi tiết đơn hàng.");
+      setError(ae.response?.data?.message ?? "Could not load order details.");
     } finally {
       setIsLoading(false);
     }
@@ -239,15 +239,15 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   const hasActions = canConfirm || canProcess || canShip || canCancel || canAssign;
 
   const tabs: { key: TabKey; label: string; show: boolean }[] = [
-    { key: "overview", label: "Tổng quan", show: true },
-    { key: "history", label: `Lịch sử đơn (${order?.statusHistory?.length ?? 0})`, show: true },
-    { key: "shipping-history", label: `Lịch sử vận chuyển (${order?.shippingHistory?.length ?? 0})`, show: hasShippingHistory },
+    { key: "overview", label: "Overview", show: true },
+    { key: "history", label: `Order History (${order?.statusHistory?.length ?? 0})`, show: true },
+    { key: "shipping-history", label: `Shipping History (${order?.shippingHistory?.length ?? 0})`, show: hasShippingHistory },
   ];
 
   if (isLoading && !order) {
     return (
       <div className="flex h-48 items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-        Đang tải...
+        Loading...
       </div>
     );
   }
@@ -275,18 +275,18 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             <PaymentBadge status={order.paymentStatus} />
           </div>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Phụ trách: <span className="font-medium text-gray-700 dark:text-gray-300">{order.assignedToStaffName ?? "Chưa gán"}</span>
-            {" · "}Đặt lúc {fmtDt(order.orderDate)}
+            Assigned to: <span className="font-medium text-gray-700 dark:text-gray-300">{order.assignedToStaffName ?? "Unassigned"}</span>
+            {" · "}Placed at {fmtDt(order.orderDate)}
           </p>
         </div>
         {order.statusName === ORDER_STATUS.CANCELLED && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800/50 dark:bg-red-900/20">
             <p className="text-sm font-medium text-red-700 dark:text-red-300">
-              Hủy bởi: {order.cancelledByName ?? "—"} lúc {fmtDt(order.cancelledAt)}
+              Cancelled by: {order.cancelledByName ?? "—"} at {fmtDt(order.cancelledAt)}
             </p>
             {order.cancelReason && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                Lý do: {order.cancelReason}
+                Reason: {order.cancelReason}
               </p>
             )}
           </div>
@@ -317,35 +317,35 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
         {activeTab === "overview" && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <Section title="Giao hàng">
-                <InfoRow label="Người nhận" value={order.shippingName} />
-                <InfoRow label="Số điện thoại" value={order.shippingPhone} />
+              <Section title="Shipping Info">
+                <InfoRow label="Recipient" value={order.shippingName} />
+                <InfoRow label="Phone Number" value={order.shippingPhone} />
                 <InfoRow
-                  label="Địa chỉ"
+                  label="Address"
                   value={`${order.shippingAddress}, ${order.shippingWardName}, ${order.shippingDistrictName}, ${order.shippingProvinceName}`}
                 />
               </Section>
 
-              <Section title="Thanh toán">
-                <InfoRow label="Phương thức" value={<span className="uppercase">{order.paymentMethod}</span>} />
+              <Section title="Payment Info">
+                <InfoRow label="Method" value={<span className="uppercase">{order.paymentMethod}</span>} />
                 <InfoRow
-                  label="Trạng thái"
+                  label="Status"
                   value={<PaymentBadge status={order.paymentStatus} />}
                 />
                 <InfoRow
-                  label="Thanh toán lúc"
+                  label="Paid at"
                   value={order.paymentStatus === PAYMENT_STATUS.PAID ? fmtDt(order.paidAt) : "—"}
                 />
               </Section>
             </div>
 
-            <Section title="Tiến trình đơn hàng">
+            <Section title="Order Timeline">
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {[
-                  { label: "Đặt hàng", value: fmtDt(order.orderDate) },
-                  { label: "Xác nhận", value: fmtDt(order.confirmedAt) },
-                  { label: "Giao vận", value: fmtDt(order.shippedAt) },
-                  { label: "Hoàn thành", value: fmtDt(order.completedAt ?? order.deliveredAt) },
+                  { label: "Placed", value: fmtDt(order.orderDate) },
+                  { label: "Confirmed", value: fmtDt(order.confirmedAt) },
+                  { label: "Shipped", value: fmtDt(order.shippedAt) },
+                  { label: "Completed", value: fmtDt(order.completedAt ?? order.deliveredAt) },
                 ].map(({ label, value }) => (
                   <div key={label} className="rounded-xl border border-gray-100 bg-white p-4 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900/50">
                     <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
@@ -359,13 +359,13 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
               <Section title="Thông tin vận chuyển">
                 <div className="grid grid-cols-1 gap-1 md:grid-cols-2">
                   <div>
-                    <InfoRow label="Đơn vị" value={order.shipping.provider} />
-                    <InfoRow label="Mã vận đơn" value={order.shipping.providerOrderCode ?? "—"} />
+                    <InfoRow label="Carrier" value={order.shipping.provider} />
+                    <InfoRow label="Tracking No." value={order.shipping.providerOrderCode ?? "—"} />
                     <InfoRow label="Tracking" value={order.shipping.trackingNumber ?? "—"} />
                   </div>
                   <div>
                     <InfoRow
-                      label="Trạng thái"
+                      label="Status"
                       value={
                         <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs dark:bg-gray-800">
                           {SHIPPING_STATUS_LABEL[order.shipping.status?.toLowerCase() ?? ""] ?? order.shipping.status ?? "—"}
@@ -373,7 +373,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                       }
                     />
                     <InfoRow
-                      label="Phí vận chuyển"
+                      label="Shipping Fee"
                       value={
                         order.shipping.shippingFee !== null ? (
                           <span className="font-semibold text-brand-600 dark:text-brand-400">
@@ -382,27 +382,27 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                         ) : "—"
                       }
                     />
-                    <InfoRow label="Dự kiến giao" value={fmtDt(order.shipping.estimatedDelivery)} />
+                    <InfoRow label="Est. Delivery" value={fmtDt(order.shipping.estimatedDelivery)} />
                   </div>
                 </div>
                 {order.shipping.lastErrorMessage && (
                   <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300">
-                    Lỗi provider: {order.shipping.lastErrorMessage}
+                    Provider Error: {order.shipping.lastErrorMessage}
                   </div>
                 )}
               </Section>
             )}
 
-            <Section title="Sản phẩm trong đơn">
+            <Section title="Order Items">
               <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
                 <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
                   <thead className="bg-gray-50 dark:bg-gray-900">
                     <tr>
-                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Sản phẩm</th>
-                      <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Đơn giá</th>
-                      <th className="px-5 py-3.5 text-center text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">SL</th>
-                      <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Giảm giá</th>
-                      <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Thành tiền</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Product</th>
+                      <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Unit Price</th>
+                      <th className="px-5 py-3.5 text-center text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Qty</th>
+                      <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Discount</th>
+                      <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white dark:divide-gray-800/50 dark:bg-transparent">
@@ -436,27 +436,27 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
 
               <div className="mt-6 flex flex-col items-end gap-2 text-sm">
                 <div className="flex w-80 justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Tạm tính</span>
+                  <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
                   <span className="font-medium text-gray-800 dark:text-white/90">{fmtCurrency(order.subTotal)}</span>
                 </div>
                 {order.voucherDiscountAmount > 0 && (
                   <div className="flex w-80 justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Giảm voucher</span>
+                    <span className="text-gray-500 dark:text-gray-400">Voucher Discount</span>
                     <span className="font-medium text-red-500 dark:text-red-400">-{fmtCurrency(order.voucherDiscountAmount)}</span>
                   </div>
                 )}
                 <div className="flex w-80 justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Phí vận chuyển dự kiến</span>
+                  <span className="text-gray-500 dark:text-gray-400">Est. Shipping Fee</span>
                   <span className="font-medium text-gray-800 dark:text-white/90">{fmtCurrency(order.estimatedShippingFee)}</span>
                 </div>
                 {order.actualShippingFee !== null && (
                   <div className="flex w-80 justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Phí vận chuyển thực tế</span>
+                    <span className="text-gray-500 dark:text-gray-400">Actual Shipping Fee</span>
                     <span className="font-semibold text-brand-600 dark:text-brand-400">{fmtCurrency(order.actualShippingFee)}</span>
                   </div>
                 )}
                 <div className="mt-2 flex w-80 justify-between rounded-xl bg-gray-50 px-4 py-3 dark:bg-gray-800/50">
-                  <span className="font-semibold text-gray-800 dark:text-white/90">Tổng cộng</span>
+                  <span className="font-semibold text-gray-800 dark:text-white/90">Total Amount</span>
                   <span className="text-lg font-bold text-brand-600 dark:text-brand-400">{fmtCurrency(order.totalAmount)}</span>
                 </div>
               </div>
@@ -468,7 +468,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
         {activeTab === "history" && (
           <div className="p-2">
             {order.statusHistory.length === 0 ? (
-              <p className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">Chưa có lịch sử trạng thái.</p>
+              <p className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">No status history yet.</p>
             ) : (
               <div className="relative pl-8">
                 {order.statusHistory.map((h, idx) => {
@@ -494,7 +494,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                           <span className="text-sm text-gray-400 dark:text-gray-500">{fmtDt(h.createdAt)}</span>
                         </div>
                         <p className={`mt-1 text-sm ${isSystem ? "italic text-gray-400 dark:text-gray-500" : "text-gray-500 dark:text-gray-400"}`}>
-                          Bởi: {isSystem ? "⚙ Hệ thống (auto)" : h.changedByName}
+                          By: {isSystem ? "⚙ System (auto)" : h.changedByName}
                         </p>
                         {h.note && (
                           <p className="mt-3 border-l-2 border-gray-200 pl-3 text-sm italic text-gray-600 dark:border-gray-700 dark:text-gray-300">
@@ -514,16 +514,16 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
         {activeTab === "shipping-history" && (
           <div>
             {!order.shippingHistory || order.shippingHistory.length === 0 ? (
-              <p className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">Chưa có cập nhật từ đơn vị vận chuyển.</p>
+              <p className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">No updates from carrier yet.</p>
             ) : (
               <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
                 <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
                   <thead className="bg-gray-50 dark:bg-gray-900">
                     <tr>
-                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Từ</th>
-                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Sang</th>
-                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Nguồn</th>
-                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Thời gian</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">From</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">To</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Source</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Time</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
@@ -557,7 +557,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-gray-200 pt-6 dark:border-gray-800">
         <div className="flex flex-wrap gap-3">
           <Button variant="outline" onClick={() => router.push("/admin/orders")}>
-            Quay lại
+            Back
           </Button>
           {canCancel && (
             <Button
@@ -565,12 +565,12 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
               onClick={() => setIsCancelModalOpen(true)}
               className="!border-error-400 !text-error-500 hover:!bg-error-50 dark:hover:!bg-error-900/20"
             >
-              Hủy đơn
+              Cancel Order
             </Button>
           )}
           {canAssign && (
             <Button variant="outline" onClick={() => setIsAssignModalOpen(true)}>
-              Phân công lại
+              Reassign
             </Button>
           )}
         </div>
@@ -578,22 +578,22 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
         <div className="flex flex-wrap gap-3">
           {!hasActions && !isLoading && (
             <span className="self-center text-sm text-gray-400 dark:text-gray-500 mr-2">
-              Không có thao tác khả dụng
+              No actions available
             </span>
           )}
           {canConfirm && (
             <Button variant="primary" onClick={() => setIsConfirmModalOpen(true)}>
-              Xác nhận đơn
+              Confirm Order
             </Button>
           )}
           {canProcess && (
             <Button variant="primary" onClick={() => setIsProcessModalOpen(true)}>
-              Bắt đầu chuẩn bị
+              Start Processing
             </Button>
           )}
           {canShip && (
             <Button variant="primary" onClick={() => setIsShipModalOpen(true)}>
-              Tạo vận đơn
+              Create Waybill
             </Button>
           )}
         </div>

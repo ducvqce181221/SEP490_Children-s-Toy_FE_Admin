@@ -82,6 +82,7 @@ export interface CampaignListItem {
 export interface NotificationTemplate {
   templateId: number;
   templateCode: string;
+  usageScope: string;
   titleTemplate: string;
   messageTemplate: string;
   isActive: boolean;

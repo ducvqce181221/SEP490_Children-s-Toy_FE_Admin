@@ -13,8 +13,8 @@ import toast from "react-hot-toast";
 import { z } from "zod";
 
 const loginSchema = z.object({
-  email: z.string().min(1, "Email là bắt buộc").email("Email không hợp lệ"),
-  password: z.string().min(1, "Mật khẩu là bắt buộc"),
+  email: z.string().min(1, "Email is required").email("Invalid email"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -46,7 +46,7 @@ export default function SignInForm() {
       }
 
       setAuth(response.account, response.accessToken);
-      toast.success(`Chào mừng, ${response.account.accountName}!`);
+      toast.success(`Welcome, ${response.account.accountName}!`);
       router.push("/admin");
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
@@ -69,10 +69,10 @@ export default function SignInForm() {
         <div>
           <div className="mb-8">
             <h1 className="mb-2 font-bold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
-              Đăng nhập
+              Sign In
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Nhập thông tin đăng nhập để truy cập hệ thống quản trị.
+              Enter your credentials to access the admin system.
             </p>
           </div>
 
@@ -95,13 +95,13 @@ export default function SignInForm() {
 
               <div>
                 <Label htmlFor="password">
-                  Mật khẩu <span className="text-error-500">*</span>
+                  Password <span className="text-error-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Nhập mật khẩu"
+                    placeholder="Enter password"
                     {...register("password")}
                   />
                   <span
@@ -126,7 +126,7 @@ export default function SignInForm() {
                 size="sm"
                 disabled={isLoading}
               >
-                {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+                {isLoading ? "Signing in..." : "Sign In"}
               </Button>
 
             </div>

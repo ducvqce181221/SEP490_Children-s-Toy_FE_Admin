@@ -10,7 +10,7 @@ export const useReviewMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await reviewApi.updateStatus(id, data);
-      toast.success("Cập nhật trạng thái thành công");
+      toast.success("Status updated successfully");
       onSuccess?.();
     } catch (err: unknown) {
       // Axios interceptor đã xử lý toast error global, ở đây chỉ catch để không crash app
@@ -25,7 +25,7 @@ export const useReviewMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await reviewApi.createReply(id, data);
-      toast.success("Phản hồi đã được đăng");
+      toast.success("Reply posted successfully");
       onSuccess?.();
     } catch (err: unknown) {
       console.error("Create Reply Error", err);
@@ -38,7 +38,7 @@ export const useReviewMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await reviewApi.updateReply(id, replyProductId, data);
-      toast.success("Cập nhật phản hồi thành công");
+      toast.success("Reply updated successfully");
       onSuccess?.();
     } catch (err: unknown) {
       console.error("Update Reply Error", err);
@@ -48,12 +48,12 @@ export const useReviewMutations = (onSuccess?: () => void) => {
   };
 
   const deleteReply = async (id: number, replyProductId: number) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa phản hồi này?")) return;
+    if (!confirm("Are you sure you want to delete this reply?")) return;
     
     setIsSubmitting(true);
     try {
       await reviewApi.deleteReply(id, replyProductId);
-      toast.success("Xóa phản hồi thành công");
+      toast.success("Reply deleted successfully");
       onSuccess?.();
     } catch (err: unknown) {
       console.error("Delete Reply Error", err);

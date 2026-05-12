@@ -61,7 +61,7 @@ export const useSuperCategories = () => {
           const axiosError = error as AxiosError<ApiErrorResponse>;
           setError(
             axiosError.response?.data?.message ??
-              "Không thể tải danh sách danh mục lớn. Vui lòng thử lại.",
+              "Could not load super categories. Please try again.",
           );
         }
       } finally {

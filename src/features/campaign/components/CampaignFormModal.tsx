@@ -15,6 +15,7 @@ import { templateApi } from "@/features/template/services/template-api";
 import { Template } from "@/features/template/types/template";
 import { Campaign, ReferenceTypeInfo } from "../types/campaign";
 import { useAuthContext } from "@/context/AuthContext";
+import { formatLocalToUTC, formatUTCtoLocal, formatDisplayDate } from "@/utils/date-utils";
 
 export type CampaignModalMode = "create" | "edit" | "detail";
 
@@ -153,7 +154,7 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
               const now = new Date();
               // Nếu scheduledAt đã qua → đây là "gửi ngay", để trống field
               if (scheduled <= now) return "";
-              return scheduled.toISOString().slice(0, 16);
+              return formatUTCtoLocal(data.scheduledAt);
             })(),
             eventKey: data.eventKey || "",
             imageUrl: data.imageUrl || "",
@@ -185,7 +186,7 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
     if (isReadOnly) return;
     const payload: CampaignFormData = {
       ...data,
-      scheduledAt: data.scheduledAt || null,
+      scheduledAt: formatLocalToUTC(data.scheduledAt) || null,
       templateCode: data.templateCode || null,
       referenceType: data.referenceType || null,
       referenceId: data.referenceId || null,
@@ -626,9 +627,9 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
               )}
 
               <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
-                <span>Created: <strong className="text-gray-700 dark:text-gray-300">{new Date(fullCampaign.createdAt).toLocaleString("en-US")}</strong></span>
+                <span>Created: <strong className="text-gray-700 dark:text-gray-300">{formatDisplayDate(fullCampaign.createdAt)}</strong></span>
                 {fullCampaign.updatedAt && (
-                  <span>Updated: <strong className="text-gray-700 dark:text-gray-300">{new Date(fullCampaign.updatedAt).toLocaleString("en-US")}</strong></span>
+                  <span>Updated: <strong className="text-gray-700 dark:text-gray-300">{formatDisplayDate(fullCampaign.updatedAt)}</strong></span>
                 )}
               </div>
             </>

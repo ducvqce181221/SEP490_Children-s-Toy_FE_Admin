@@ -30,8 +30,8 @@ export default function AuthLayout({
                   ToyStore Admin
                 </h1>
                 <p className="text-white/80 text-sm leading-relaxed mb-6">
-                  Hệ thống quản trị cửa hàng đồ chơi trẻ em.
-                  Quản lý sản phẩm, đơn hàng và khách hàng một cách hiệu quả.
+                  Children&apos;s toy store administrative system.
+                  Efficiently manage products, orders, and customers.
                 </p>
               </div>
             </div>

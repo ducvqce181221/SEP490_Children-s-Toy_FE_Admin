@@ -12,8 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Pagination from "@/components/common/Pagination";
-import { campaignApi } from "../services/campaign-api";
-import { Campaign, CampaignDelivery, PaginatedDeliveries } from "../types/campaign";
+import { campaignApi, audienceApi } from "../services/campaign-api";
+import { Campaign, CampaignDelivery, PaginatedDeliveries, RoleItem } from "../types/campaign";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -409,9 +409,14 @@ interface CampaignDetailPageProps {
 export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaignId }) => {
   const router = useRouter();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [roles, setRoles] = useState<RoleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  useEffect(() => {
+    audienceApi.getRoles().then(setRoles).catch(() => { });
+  }, []);
 
   useEffect(() => {
     setIsLoading(true);
@@ -472,6 +477,14 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
 
   const isEditable = campaign.status === "Draft" || campaign.status === "Scheduled";
   const refTypeInfo = campaign.referenceType ? REFERENCE_TYPE_LABELS[campaign.referenceType] : null;
+
+  const getTargetValueDisplay = (target: { targetType: string; targetValue: string }) => {
+    if (target.targetType === "ROLE_ID") {
+      const role = roles.find((r) => String(r.roleId) === target.targetValue);
+      return role ? role.roleName : `Role ID: ${target.targetValue}`;
+    }
+    return target.targetValue;
+  };
 
   return (
     <div className="space-y-6">
@@ -553,6 +566,11 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
               <InfoRow label="Send to">
                 <span className="text-sm text-gray-800 dark:text-white/90">
                   {TARGET_TYPE_VI[campaign.targetType] ?? campaign.targetType}
+                  {campaign.targetType === "ROLE" && campaign.targets[0] && (
+                    <span className="ml-1 text-gray-500 font-normal">
+                      ({getTargetValueDisplay(campaign.targets[0])})
+                    </span>
+                  )}
                 </span>
               </InfoRow>
               <InfoRow label="Schedule">
@@ -703,9 +721,9 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
                 {campaign.targets.map((t) => (
                   <span
                     key={t.campaignTargetId}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-brand-50 dark:bg-brand-500/10 text-sm font-medium text-brand-700 dark:text-brand-300 border border-brand-100 dark:border-brand-500/20"
                   >
-                    {t.targetValue}
+                    {getTargetValueDisplay(t)}
                   </span>
                 ))}
               </div>

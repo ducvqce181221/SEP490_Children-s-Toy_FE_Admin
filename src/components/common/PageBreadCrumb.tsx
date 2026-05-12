@@ -49,7 +49,7 @@ const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle, breadcrumbs }) =
           <li>
             <Link
               className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              href="/admin/dashboard"
+              href="/admin"
             >
               Home
               {chevron}

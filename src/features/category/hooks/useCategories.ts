@@ -61,7 +61,7 @@ export const useCategories = () => {
           const axiosError = error as AxiosError<ApiErrorResponse>;
           setError(
             axiosError.response?.data?.message ??
-              "Không thể tải danh sách danh mục. Vui lòng thử lại.",
+              "Could not load categories. Please try again.",
           );
         }
       } finally {

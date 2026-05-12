@@ -18,6 +18,7 @@ import SearchInput from "@/components/common/SearchInput";
 import { campaignApi, PaginatedCampaigns } from "../services/campaign-api";
 import { CampaignListItem } from "../types/campaign";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
+import { formatDisplayDate } from "@/utils/date-utils";
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -136,13 +137,19 @@ const TARGET_TYPE_LABELS: Record<string, string> = {
 };
 
 const STATUS_TABS = [
-  { id: "", label: "All" },
+  { id: "", label: "All Status" },
   { id: "Draft", label: "Draft" },
   { id: "Scheduled", label: "Scheduled" },
   { id: "Sending", label: "Sending" },
   { id: "Sent", label: "Sent" },
   { id: "Cancelled", label: "Cancelled" },
   { id: "Failed", label: "Failed" },
+];
+
+const SOURCE_TABS = [
+  { id: "", label: "All Sources" },
+  { id: "ADMIN", label: "Admin" },
+  { id: "SYSTEM", label: "System" },
 ];
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -182,6 +189,20 @@ const ReferenceBadge: React.FC<{ referenceType?: string | null }> = ({ reference
       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium ${cfg.bg} ${cfg.text}`}
     >
       {cfg.icon} {cfg.label}
+    </span>
+  );
+};
+
+const SourceBadge: React.FC<{ source: string }> = ({ source }) => {
+  const isSystem = source === "SYSTEM";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${isSystem
+        ? "bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20"
+        : "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20"
+        }`}
+    >
+      {isSystem ? "System" : "Admin"}
     </span>
   );
 };
@@ -362,6 +383,9 @@ export const CampaignListPage: React.FC = () => {
                   Reference Type
                 </TableCell>
                 <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                  Source
+                </TableCell>
+                <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                   Target Audience
                 </TableCell>
                 <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
@@ -388,7 +412,7 @@ export const CampaignListPage: React.FC = () => {
                 ))
               ) : items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7}>
+                  <TableCell colSpan={8}>
                     <EmptyState
                       hasFilter={hasFilter}
                       onClear={() => {
@@ -420,13 +444,18 @@ export const CampaignListPage: React.FC = () => {
                         {campaign.campaignName}
                       </Link>
                       <span className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 block">
-                        {new Date(campaign.createdAt).toLocaleDateString("en-US")}
+                        {formatDisplayDate(campaign.createdAt)}
                       </span>
                     </TableCell>
 
                     {/* Reference Type */}
                     <TableCell className="px-5 py-4">
                       <ReferenceBadge referenceType={campaign.referenceType} />
+                    </TableCell>
+
+                    {/* Source */}
+                    <TableCell className="px-5 py-4">
+                      <SourceBadge source={campaign.sourceType} />
                     </TableCell>
 
                     {/* Target */}
@@ -443,19 +472,7 @@ export const CampaignListPage: React.FC = () => {
 
                     {/* Schedule */}
                     <TableCell className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">
-                      {campaign.scheduledAt ? (
-                        <span>
-                          {new Date(campaign.scheduledAt).toLocaleDateString("en-US", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      ) : (
-                        <span className="text-gray-300 dark:text-gray-600">—</span>
-                      )}
+                      {formatDisplayDate(campaign.scheduledAt)}
                     </TableCell>
 
                     {/* Actions */}

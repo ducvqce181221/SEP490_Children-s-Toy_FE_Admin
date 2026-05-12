@@ -31,6 +31,7 @@ export default function OrderTable() {
     roleName,
     defaultStatusIds,
     handleKeywordChange,
+    handleSearchSubmit,
     handleStatusChange,
     handleAssignedToMeChange,
     handleFromDateChange,
@@ -44,13 +45,13 @@ export default function OrderTable() {
 
   const pageRangeText = useMemo(() => {
     if (totalCount === 0) {
-      return "Không có dữ liệu";
+      return "No data";
     }
 
     const start = (pageNumber - 1) * pageSize + 1;
     const end = Math.min(pageNumber * pageSize, totalCount);
 
-    return `Hiển thị ${start} - ${end} / ${totalCount} đơn hàng`;
+    return `Showing ${start} - ${end} / ${totalCount} orders`;
   }, [pageNumber, pageSize, totalCount]);
 
   // ── Detail handlers
@@ -63,6 +64,7 @@ export default function OrderTable() {
       <OrderToolbar
         keyword={keyword}
         onKeywordChange={handleKeywordChange}
+        onSearchSubmit={handleSearchSubmit}
         statusId={statusId}
         onStatusChange={handleStatusChange}
         assignedToMe={assignedToMe}
@@ -93,22 +95,22 @@ export default function OrderTable() {
                 #
               </TableCell>
               <TableCell isHeader className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:px-6">
-                Đơn hàng / Trạng thái
+                Order / Status
               </TableCell>
               <TableCell isHeader className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Khách hàng
+                Customer
               </TableCell>
               <TableCell isHeader className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Tổng tiền
+                Total
               </TableCell>
               <TableCell isHeader className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Phụ trách
+                Assigned
               </TableCell>
               <TableCell isHeader className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Thời gian
+                Date
               </TableCell>
               <TableCell isHeader className="px-5 py-3 text-center text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Thao tác
+                Actions
               </TableCell>
             </TableRow>
           </TableHeader>
@@ -116,13 +118,13 @@ export default function OrderTable() {
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={7} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-                  Đang tải dữ liệu...
+                  Loading data...
                 </TableCell>
               </TableRow>
             ) : orders.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-                  Không tìm thấy đơn hàng nào.
+                  No orders found.
                 </TableCell>
               </TableRow>
             ) : (
@@ -145,7 +147,7 @@ export default function OrderTable() {
         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
           <span>{pageRangeText}</span>
           <label htmlFor="order-page-size" className="font-medium">
-            Số dòng
+            Rows
           </label>
           <select
             id="order-page-size"

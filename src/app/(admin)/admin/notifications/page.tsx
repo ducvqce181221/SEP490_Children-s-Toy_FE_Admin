@@ -7,9 +7,46 @@ import type { NotificationListItem } from "@/features/notifications/types/notifi
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { 
+  BellIcon, 
+  CheckCircleIcon, 
+  TrashBinIcon, 
+  EnvelopeIcon, 
+  BoxCubeIcon, 
+  DollarLineIcon,
+  InfoIcon,
+  ChevronLeftIcon,
+  ChevronDownIcon
+} from "@/icons";
+import EmptyState from "@/components/common/EmptyState";
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString("vi-VN");
+  if (!iso) return "";
+  
+  // Try parsing as UTC first
+  let d = new Date(iso.includes("Z") || iso.includes("+") ? iso : iso + "Z");
+  const now = new Date();
+
+  // If parsing failed or result is suspiciously in the future, 
+  // it might be a local time string. Try parsing without Z.
+  if (isNaN(d.getTime()) || d.getTime() > now.getTime() + 60000) {
+    d = new Date(iso);
+  }
+
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getNotificationIcon(type: string) {
+  const lowerType = type.toLowerCase();
+  if (lowerType.includes("order")) return <BoxCubeIcon className="w-5 h-5 text-blue-500 fill-current" />;
+  if (lowerType.includes("promo") || lowerType.includes("voucher")) return <DollarLineIcon className="w-5 h-5 text-orange-500 fill-current" />;
+  if (lowerType.includes("system")) return <InfoIcon className="w-5 h-5 text-purple-500 fill-current" />;
+  return <BellIcon className="w-5 h-5 text-gray-500 fill-current" />;
 }
 
 type Tab = "unread" | "all";
@@ -94,163 +131,154 @@ export default function AdminNotificationsPage() {
   }
 
   return (
-    <>
-      <PageBreadcrumb pageTitle="Hộp thông báo" />
+    <div className="max-w-4xl mx-auto pb-10">
+      <PageBreadcrumb pageTitle="Notification Center" />
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            Chưa đọc:
-          </span>
-          <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-sm font-semibold text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">
-            {unreadCount}
-          </span>
+      {/* Header Stats & Actions */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Inbox</h1>
+          <p className="mt-1 text-gray-500 dark:text-gray-400">
+            You have <span className="font-semibold text-orange-600">{unreadCount}</span> unread messages
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-lg border border-gray-200 p-0.5 dark:border-gray-700">
+        
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => void markAllRead()}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700 transition-all shadow-sm"
+          >
+            <CheckCircleIcon className="w-4 h-4 fill-current" />
+            Mark all as read
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 p-1 mb-6 bg-gray-100 dark:bg-gray-800/50 rounded-xl w-fit">
+        <button
+          onClick={() => { setPage(1); setTab("unread"); }}
+          className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${
+            tab === "unread"
+              ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          }`}
+        >
+          Unread
+        </button>
+        <button
+          onClick={() => { setPage(1); setTab("all"); }}
+          className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${
+            tab === "all"
+              ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          }`}
+        >
+          All Messages
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="space-y-4">
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          <EmptyState 
+            message="All caught up!"
+            description={tab === "unread" ? "You have no unread notifications at the moment." : "Your notification inbox is empty."}
+          />
+        ) : (
+          <div className="grid gap-3">
+            {items.map((item) => (
+              <div
+                key={item.deliveryId}
+                onClick={() => void handleRowClick(item)}
+                className={`group relative flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${
+                  item.status === "Unread"
+                    ? "bg-white border-orange-100 shadow-sm hover:shadow-md dark:bg-gray-900/50 dark:border-orange-900/20"
+                    : "bg-gray-50/50 border-gray-100 hover:bg-white hover:border-gray-200 dark:bg-transparent dark:border-gray-800 dark:hover:bg-gray-800/30"
+                }`}
+              >
+                {/* Status Dot */}
+                {item.status === "Unread" && (
+                  <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                )}
+
+                {/* Icon Wrapper */}
+                <div className={`p-3 rounded-xl shrink-0 ${
+                  item.status === "Unread" ? "bg-orange-50 dark:bg-orange-900/10" : "bg-gray-100 dark:bg-gray-800"
+                }`}>
+                  {getNotificationIcon(item.notificationType)}
+                </div>
+
+                {/* Text Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <h3 className={`font-semibold truncate ${
+                      item.status === "Unread" ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"
+                    }`}>
+                      {item.title}
+                    </h3>
+                    <span className="text-xs text-gray-400 whitespace-nowrap shrink-0">
+                      {formatTime(item.createdAt)}
+                    </span>
+                  </div>
+                  <p className={`text-sm line-clamp-2 leading-relaxed ${
+                    item.status === "Unread" ? "text-gray-700 dark:text-gray-300" : "text-gray-500 dark:text-gray-500"
+                  }`}>
+                    {item.message}
+                  </p>
+                  
+                  <div className="mt-3 flex items-center gap-4">
+                    <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${
+                      item.status === "Unread" 
+                        ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" 
+                        : "bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-500"
+                    }`}>
+                      {item.notificationType}
+                    </span>
+                    
+                    {item.actionTarget && (
+                      <span className="text-xs font-medium text-orange-600 dark:text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                        View Details →
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && total > pageSize && (
+          <div className="mt-10 flex items-center justify-center gap-8">
             <button
-              type="button"
-              className={`rounded-md px-3 py-1.5 text-sm ${
-                tab === "unread"
-                  ? "bg-gray-900 text-white dark:bg-brand-500"
-                  : "text-gray-600 dark:text-gray-400"
-              }`}
-              onClick={() => {
-                setPage(1);
-                setTab("unread");
-              }}
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 transition-colors"
             >
-              Chưa đọc
+              <ChevronLeftIcon className="w-6 h-6 fill-current rotate-0" />
             </button>
+            
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Page <span className="text-gray-900 dark:text-white font-bold">{page}</span> of {Math.ceil(total / pageSize)}
+            </span>
+
             <button
-              type="button"
-              className={`rounded-md px-3 py-1.5 text-sm ${
-                tab === "all"
-                  ? "bg-gray-900 text-white dark:bg-brand-500"
-                  : "text-gray-600 dark:text-gray-400"
-              }`}
-              onClick={() => {
-                setPage(1);
-                setTab("all");
-              }}
+              disabled={page >= Math.ceil(total / pageSize)}
+              onClick={() => setPage((p) => p + 1)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 transition-colors"
             >
-              Tất cả
+              <ChevronLeftIcon className="w-6 h-6 fill-current rotate-180" />
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => void markAllRead()}
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
-          >
-            Đọc tất cả
-          </button>
-          <Link
-            href="/notifications"
-            className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-900/30"
-          >
-            Giao diện khách
-          </Link>
-        </div>
+        )}
       </div>
-
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50">
-              <tr>
-                <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-300">
-                  Trạng thái
-                </th>
-                <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-300">
-                  Loại
-                </th>
-                <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-300">
-                  Tiêu đề
-                </th>
-                <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-300">
-                  Nội dung
-                </th>
-                <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-300">
-                  Thời gian
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                    Đang tải…
-                  </td>
-                </tr>
-              )}
-              {!loading && (!items || items.length === 0) && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                    Không có thông báo.
-                  </td>
-                </tr>
-              )}
-              {!loading &&
-                items?.map((item) => (
-                  <tr
-                    key={item.deliveryId}
-                    className={`cursor-pointer border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.04] ${
-                      item.status === "Unread" ? "bg-brand-50/30 dark:bg-brand-500/5" : ""
-                    }`}
-                    onClick={() => void handleRowClick(item)}
-                  >
-                    <td className="px-4 py-3">
-                      {item.status === "Unread" ? (
-                        <span className="inline-flex items-center gap-1 text-orange-600">
-                          <span className="h-2 w-2 rounded-full bg-orange-500" />
-                          Mới
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">Đã đọc</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                      {item.notificationType}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                      {item.title}
-                    </td>
-                    <td className="max-w-md truncate px-4 py-3 text-gray-600 dark:text-gray-400">
-                      {item.message}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-gray-500">
-                      {formatTime(item.createdAt)}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {!loading && total > pageSize && (
-        <div className="mt-4 flex justify-center gap-2">
-          <button
-            type="button"
-            disabled={page <= 1}
-            className="rounded-lg border px-3 py-1 text-sm disabled:opacity-40"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            Trước
-          </button>
-          <span className="self-center text-sm text-gray-500">
-            {page} / {Math.ceil(total / pageSize)}
-          </span>
-          <button
-            type="button"
-            disabled={page >= Math.ceil(total / pageSize)}
-            className="rounded-lg border px-3 py-1 text-sm disabled:opacity-40"
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Sau
-          </button>
-        </div>
-      )}
-    </>
+    </div>
   );
 }

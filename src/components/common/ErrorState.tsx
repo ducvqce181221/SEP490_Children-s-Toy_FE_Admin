@@ -6,7 +6,7 @@ interface ErrorStateProps {
 }
 
 const ErrorState: React.FC<ErrorStateProps> = ({
-  message = "Đã có lỗi xảy ra khi tải dữ liệu",
+  message = "An error occurred while loading data",
   onRetry,
 }) => {
   return (
@@ -28,7 +28,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
         </svg>
       </div>
       <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-2">
-        Rất tiếc!
+        Oops!
       </h3>
       <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto mb-6">
         {message}
@@ -52,7 +52,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
             />
           </svg>
-          Thử lại
+          Retry
         </button>
       )}
     </div>
