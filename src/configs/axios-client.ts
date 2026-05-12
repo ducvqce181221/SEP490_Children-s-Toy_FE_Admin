@@ -17,9 +17,9 @@ const LOGIN_PATHS = ["/login", "/admin/login"] as const;
 const SILENT_STATUSES = new Set([400, 401]);
 
 const HTTP_ERROR_MESSAGES: Record<number, string> = {
-  403: "Bạn không có quyền thực hiện thao tác này.",
-  404: "Không tìm thấy dữ liệu.",
-  500: "Lỗi server. Vui lòng thử lại sau.",
+  403: "You do not have permission to perform this action.",
+  404: "Data not found.",
+  500: "Server error. Please try again later.",
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -142,14 +142,14 @@ axiosClient.interceptors.response.use(
     }
 
     if (!error.response) {
-      toast.error("Mất kết nối. Vui lòng kiểm tra mạng và thử lại.");
+      toast.error("Connection lost. Please check your network and try again.");
       return Promise.reject(error);
     }
 
     const status = error.response.status;
 
     if (!SILENT_STATUSES.has(status)) {
-      toast.error(HTTP_ERROR_MESSAGES[status] ?? `Đã xảy ra lỗi (${status}).`);
+      toast.error(HTTP_ERROR_MESSAGES[status] ?? `An error occurred (${status}).`);
     }
 
     if (status === 401 && !error.config?.url?.includes("/auth/login")) {

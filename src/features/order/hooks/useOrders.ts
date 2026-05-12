@@ -13,7 +13,6 @@ import {
 
 const DEFAULT_PAGE_NUMBER = 1;
 const DEFAULT_PAGE_SIZE = 10;
-const SEARCH_DEBOUNCE_MS = 350;
 
 export const useOrders = () => {
   const { account } = useAuthContext();
@@ -32,7 +31,7 @@ export const useOrders = () => {
 
   // ── Filter state ────────────────────────────────────────────────────────
   const [keyword, setKeyword] = useState("");
-  const [debouncedKeyword, setDebouncedKeyword] = useState("");
+  const [searchKeyword, setSearchKeyword] = useState("");
   // "" = dùng default theo role; số = filter cụ thể; 0 = Admin xem tất cả
   const [statusId, setStatusId] = useState<number | "">("");
   const [assignedToMe, setAssignedToMe] = useState(false);
@@ -46,13 +45,10 @@ export const useOrders = () => {
   // ── Reload trigger ──────────────────────────────────────────────────────
   const [reloadToken, setReloadToken] = useState(0);
 
-  // ── Debounce keyword ────────────────────────────────────────────────────
-  useEffect(() => {
-    const id = setTimeout(() => {
-      setDebouncedKeyword(keyword.trim());
-      setPageNumber(DEFAULT_PAGE_NUMBER);
-    }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(id);
+  // Manual search submission
+  const handleSearchSubmit = useCallback(() => {
+    setSearchKeyword(keyword.trim());
+    setPageNumber(DEFAULT_PAGE_NUMBER);
   }, [keyword]);
 
   // ── Fetch orders ─────────────────────────────────────────────────────────
@@ -72,7 +68,7 @@ export const useOrders = () => {
         ...(statusId !== "" && statusId !== 0 && { statusId }),
         ...(statusId === "" && defaultStatusIds.length > 0 && { statusIds: defaultStatusIds }),
         ...(assignedToMe && { assignedToMe }),
-        ...(debouncedKeyword && { keyword: debouncedKeyword }),
+        ...(searchKeyword && { keyword: searchKeyword }),
         ...(fromDate && { fromDate }),
         ...(toDate && { toDate }),
       };
@@ -85,7 +81,7 @@ export const useOrders = () => {
           const axiosError = err as AxiosError<ApiErrorResponse>;
           setError(
             axiosError.response?.data?.message ??
-              "Không thể tải danh sách đơn hàng. Vui lòng thử lại.",
+              "Could not load orders. Please try again.",
           );
         }
       } finally {
@@ -102,7 +98,7 @@ export const useOrders = () => {
     pageSize,
     statusId,
     assignedToMe,
-    debouncedKeyword,
+    searchKeyword,
     fromDate,
     toDate,
     reloadToken,
@@ -160,6 +156,7 @@ export const useOrders = () => {
     roleName,
     defaultStatusIds,
     handleKeywordChange,
+    handleSearchSubmit,
     handleStatusChange,
     handleAssignedToMeChange,
     handleFromDateChange,

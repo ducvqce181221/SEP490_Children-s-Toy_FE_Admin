@@ -4,8 +4,8 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import OrderDetailPage from "@/features/order/components/OrderDetailPage";
 
 export const metadata: Metadata = {
-  title: "Chi tiết Đơn hàng | Toy Store Admin",
-  description: "Quản lý chi tiết đơn hàng, xử lý vận chuyển và trạng thái.",
+  title: "Order Details | Toy Store Admin",
+  description: "Manage order details, shipping, and status.",
 };
 
 interface Props {
@@ -19,7 +19,7 @@ export default async function OrderDetailRoute({ params }: Props) {
   if (isNaN(orderId)) {
     return (
       <div className="flex items-center justify-center py-24">
-        <p className="text-gray-500">Mã đơn hàng không hợp lệ</p>
+        <p className="text-gray-500">Invalid Order ID</p>
       </div>
     );
   }
@@ -27,8 +27,8 @@ export default async function OrderDetailRoute({ params }: Props) {
   return (
     <div>
       <PageBreadcrumb
-        pageTitle="Chi tiết Đơn hàng"
-        breadcrumbs={[{ label: "Đơn hàng", href: "/admin/orders" }]}
+        pageTitle="Order Details"
+        breadcrumbs={[{ label: "Orders", href: "/admin/orders" }]}
       />
       <OrderDetailPage orderId={orderId} />
     </div>

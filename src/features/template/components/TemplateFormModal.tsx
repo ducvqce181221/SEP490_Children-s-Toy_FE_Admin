@@ -31,15 +31,15 @@ const defaultValues: TemplateFormData = {
 
 const PLACEHOLDER_GROUPS = [
   {
-    title: "Thông tin khách hàng",
+    title: "Customer Information",
     items: ["{{CustomerName}}", "{{StoreName}}"],
   },
   {
-    title: "Thông tin đơn hàng",
+    title: "Order Information",
     items: ["{{OrderCode}}", "{{ProductName}}"],
   },
   {
-    title: "Thông tin Voucher",
+    title: "Voucher Information",
     items: ["{{DiscountValue}}", "{{ExpiryDate}}"],
   },
 ];
@@ -170,7 +170,7 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
             </p>
             {isSystemTemplate && (
               <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-                Template SYSTEM chỉ để xem, không được chỉnh sửa.
+                SYSTEM templates are view-only and cannot be edited.
               </p>
             )}
           </div>

@@ -41,11 +41,11 @@ export const useOrderMutations = (onSuccess?: () => void) => {
     try {
       await orderApi.confirmOrder(orderId, body);
       onSuccess?.();
-      return { success: true, message: "Đơn hàng đã được xác nhận thành công." };
+      return { success: true, message: "Order confirmed successfully." };
     } catch (err) {
       return {
         success: false,
-        message: extractErrorMessage(err, "Không thể xác nhận đơn hàng. Vui lòng thử lại."),
+        message: extractErrorMessage(err, "Could not confirm order. Please try again."),
       };
     } finally {
       setConfirmingId(null);
@@ -61,11 +61,11 @@ export const useOrderMutations = (onSuccess?: () => void) => {
     try {
       await orderApi.processOrder(orderId, body);
       onSuccess?.();
-      return { success: true, message: "Đơn hàng đã chuyển sang trạng thái Đang xử lý." };
+      return { success: true, message: "Order status updated to Processing." };
     } catch (err) {
       return {
         success: false,
-        message: extractErrorMessage(err, "Không thể xử lý đơn hàng. Vui lòng thử lại."),
+        message: extractErrorMessage(err, "Could not process order. Please try again."),
       };
     } finally {
       setProcessingId(null);
@@ -83,13 +83,13 @@ export const useOrderMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return {
         success: true,
-        message: `Đã tạo đơn vận chuyển. Mã tracking: ${data.trackingNumber ?? "N/A"}`,
+        message: `Shipping waybill created. Tracking No: ${data.trackingNumber ?? "N/A"}`,
         data,
       };
     } catch (err) {
       return {
         success: false,
-        message: extractErrorMessage(err, "Không thể tạo đơn vận chuyển. Vui lòng thử lại."),
+        message: extractErrorMessage(err, "Could not create shipping waybill. Please try again."),
       };
     } finally {
       setShippingId(null);
@@ -105,11 +105,11 @@ export const useOrderMutations = (onSuccess?: () => void) => {
     try {
       await orderApi.cancelOrder(orderId, body);
       onSuccess?.();
-      return { success: true, message: "Đơn hàng đã được hủy thành công." };
+      return { success: true, message: "Order cancelled successfully." };
     } catch (err) {
       return {
         success: false,
-        message: extractErrorMessage(err, "Không thể hủy đơn hàng. Vui lòng thử lại."),
+        message: extractErrorMessage(err, "Could not cancel order. Please try again."),
       };
     } finally {
       setCancellingId(null);
@@ -125,11 +125,11 @@ export const useOrderMutations = (onSuccess?: () => void) => {
     try {
       await orderApi.assignOrder(orderId, body);
       onSuccess?.();
-      return { success: true, message: "Đơn hàng đã được phân công lại thành công." };
+      return { success: true, message: "Order reassigned successfully." };
     } catch (err) {
       return {
         success: false,
-        message: extractErrorMessage(err, "Không thể phân công đơn hàng. Vui lòng thử lại."),
+        message: extractErrorMessage(err, "Could not reassign order. Please try again."),
       };
     } finally {
       setAssigningId(null);

@@ -45,30 +45,30 @@ export const OrderConfirmModal: React.FC<ConfirmModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
       <div className="mb-5">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Xác nhận đơn hàng</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Confirm Order</h2>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Đơn sẽ chuyển sang <strong>Đã xác nhận</strong> và bạn sẽ được gán là người phụ trách.
+          The order will be moved to <strong>Confirmed</strong> and you will be assigned as the person in charge.
         </p>
       </div>
 
       <div className="mb-6">
-        <Label htmlFor="confirm-note">Ghi chú (không bắt buộc)</Label>
+        <Label htmlFor="confirm-note">Note (Optional)</Label>
         <textarea
           id="confirm-note"
           className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Nhập ghi chú (nếu có)..."
+          placeholder="Enter note (if any)..."
         />
       </div>
 
       <div className="flex items-center justify-end gap-3">
         <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-          Đóng
+          Close
         </Button>
         <Button variant="primary" onClick={() => onConfirm(note)} disabled={isSubmitting}>
-          {isSubmitting ? "Đang xử lý..." : "Xác nhận đơn"}
+          {isSubmitting ? "Processing..." : "Confirm Order"}
         </Button>
       </div>
     </Modal>
@@ -95,30 +95,30 @@ export const OrderProcessModal: React.FC<ProcessModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
       <div className="mb-5">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Bắt đầu chuẩn bị hàng</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Start Preparation</h2>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Đơn sẽ chuyển sang <strong>Đang chuẩn bị</strong> và bạn sẽ được gán là người phụ trách.
+          The order will be moved to <strong>Processing</strong> and you will be assigned as the person in charge.
         </p>
       </div>
 
       <div className="mb-6">
-        <Label htmlFor="process-note">Ghi chú (không bắt buộc)</Label>
+        <Label htmlFor="process-note">Note (Optional)</Label>
         <textarea
           id="process-note"
           className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Nhập ghi chú (nếu có)..."
+          placeholder="Enter note (if any)..."
         />
       </div>
 
       <div className="flex items-center justify-end gap-3">
         <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-          Đóng
+          Close
         </Button>
         <Button variant="primary" onClick={() => onProcess(note)} disabled={isSubmitting}>
-          {isSubmitting ? "Đang xử lý..." : "Bắt đầu chuẩn bị"}
+          {isSubmitting ? "Processing..." : "Start Preparation"}
         </Button>
       </div>
     </Modal>
@@ -155,22 +155,22 @@ export const OrderShipModal: React.FC<ShipModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
       <div className="mb-5">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Tạo vận đơn</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Create Waybill</h2>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Đơn sẽ chuyển sang <strong>Đã giao vận</strong>. Nếu API vận chuyển lỗi, toàn bộ thao tác sẽ được hoàn tác (rollback).
+          The order will be moved to <strong>Shipped</strong>. If the shipping API fails, the entire action will be rolled back.
         </p>
       </div>
 
       <form onSubmit={handleSubmit((data) => onShip(data))} className="space-y-4">
         <div>
-          <Label htmlFor="provider">Đơn vị vận chuyển</Label>
+          <Label htmlFor="provider">Carrier</Label>
           <select
             id="provider"
             {...register("provider")}
             className="mt-2 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
           >
             <option value="GHN">Giao Hàng Nhanh (GHN)</option>
-            {/* Nếu có thêm GHTK thì thêm vào đây */}
+            {/* Add more carriers if needed */}
           </select>
           {errors.provider && (
             <p className="mt-1 text-sm text-error-500">{errors.provider.message}</p>
@@ -178,32 +178,32 @@ export const OrderShipModal: React.FC<ShipModalProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="serviceType">Gói cước (Service Type) - Không bắt buộc</Label>
+          <Label htmlFor="serviceType">Service Type (Optional)</Label>
           <Input
             id="serviceType"
             {...register("serviceType")}
-            placeholder="Mã gói cước (nếu để trống sẽ dùng mặc định)"
+            placeholder="Service code (leave empty for default)"
             className="mt-2"
           />
         </div>
 
         <div>
-          <Label htmlFor="ship-note">Ghi chú (không bắt buộc)</Label>
+          <Label htmlFor="ship-note">Note (Optional)</Label>
           <textarea
             id="ship-note"
             {...register("note")}
             className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
             rows={3}
-            placeholder="Ví dụ: Cho xem hàng, không thử..."
+            placeholder="Example: Inspectable, no try-on..."
           />
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-3">
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Hủy
+            Cancel
           </Button>
           <Button type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? "Đang tạo đơn..." : "Tạo đơn Ship"}
+            {isSubmitting ? "Creating..." : "Create Waybill"}
           </Button>
         </div>
       </form>
@@ -239,16 +239,16 @@ export const OrderCancelModal: React.FC<CancelModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
       <div className="mb-5">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
-          Hủy đơn hàng
+          Cancel Order
         </h2>
         <p className="mt-2 text-sm text-error-500 dark:text-error-400">
-          Bạn có chắc chắn muốn hủy đơn hàng này? Hành động này không thể hoàn tác.
+          Are you sure you want to cancel this order? This action cannot be undone.
         </p>
       </div>
 
       <form onSubmit={handleSubmit((data) => onCancel(data))}>
         <div className="mb-6">
-          <Label htmlFor="cancel-reason">Lý do hủy (bắt buộc)</Label>
+          <Label htmlFor="cancel-reason">Reason for Cancellation (Required)</Label>
           <textarea
             id="cancel-reason"
             {...register("reason")}
@@ -256,7 +256,7 @@ export const OrderCancelModal: React.FC<CancelModalProps> = ({
               errors.reason ? "border-error-500" : "border-gray-300 dark:border-gray-700"
             } bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90`}
             rows={3}
-            placeholder="Nhập lý do hủy đơn..."
+            placeholder="Enter reason for cancellation..."
           />
           {errors.reason && (
             <p className="mt-1 text-sm text-error-500">{errors.reason.message}</p>
@@ -265,10 +265,10 @@ export const OrderCancelModal: React.FC<CancelModalProps> = ({
 
         <div className="flex items-center justify-end gap-3">
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Đóng
+            Close
           </Button>
           <Button type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? "Đang hủy..." : "Xác nhận hủy"}
+            {isSubmitting ? "Cancelling..." : "Confirm Cancellation"}
           </Button>
         </div>
       </form>
@@ -348,27 +348,27 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
       <div className="mb-5">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
-          Phân công lại (Assign)
+          Reassign Order
         </h2>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Admin chỉ định nhân viên xử lý đơn hàng này.
+          Admin assigns a staff member to handle this order.
         </p>
       </div>
 
       <form onSubmit={handleSubmit((data: any) => onAssign(data as AssignOrderFormData))} className="space-y-4">
         <div>
-          <Label htmlFor="staff-search">Tìm nhân viên (tên, sđt...)</Label>
+          <Label htmlFor="staff-search">Search Staff (Name, Phone...)</Label>
           <Input
             id="staff-search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Gõ để tìm kiếm nhân viên..."
+            placeholder="Type to search staff..."
             className="mt-2"
           />
         </div>
 
         <div>
-          <Label htmlFor="targetAccountId">Chọn nhân viên {isLoadingStaffs && "(Đang tải...)"}</Label>
+          <Label htmlFor="targetAccountId">Select Staff {isLoadingStaffs && "(Loading...)"}</Label>
           <select
             id="targetAccountId"
             {...register("targetAccountId")}
@@ -376,7 +376,7 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
               errors.targetAccountId ? "border-error-500" : "border-gray-300 dark:border-gray-700"
             } bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`}
           >
-            <option value="0" disabled>-- Vui lòng chọn nhân viên --</option>
+            <option value="0" disabled>-- Please select a staff member --</option>
             {staffs.map((staff) => (
               <option key={staff.accountId} value={staff.accountId}>
                 {staff.accountName} - {staff.email}
@@ -389,22 +389,22 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="assign-note">Ghi chú (không bắt buộc)</Label>
+          <Label htmlFor="assign-note">Note (Optional)</Label>
           <textarea
             id="assign-note"
             {...register("note")}
             className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
             rows={3}
-            placeholder="Ví dụ: Ưu tiên xử lý gấp..."
+            placeholder="Example: High priority..."
           />
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-3">
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Hủy
+            Cancel
           </Button>
           <Button type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? "Đang phân công..." : "Xác nhận phân công"}
+            {isSubmitting ? "Assigning..." : "Confirm Assignment"}
           </Button>
         </div>
       </form>

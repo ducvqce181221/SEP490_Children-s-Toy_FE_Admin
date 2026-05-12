@@ -22,6 +22,7 @@ import {
 } from "../types/campaign";
 import { useAuthContext } from "@/context/AuthContext";
 import { useCampaignImageUpload } from "../hooks/useCampaignImageUpload";
+import { formatLocalToUTC, formatUTCtoLocal } from "@/utils/date-utils";
 import {
   DocsIcon,
   BoxCubeIcon,
@@ -488,15 +489,23 @@ const Step2: React.FC<{
               const tpl = templates.find((t) => t.templateCode === code) || null;
               update({ templateCode: code, selectedTemplate: tpl });
             }}
-            className="h-11 w-full appearance-none rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-white/90 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-300"
+            className={`h-11 w-full appearance-none rounded-lg border px-4 py-2.5 text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-white/90 focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${errors.templateCode
+                ? "border-red-500 focus:border-red-500"
+                : "border-gray-300 dark:border-gray-700 focus:border-brand-300"
+              }`}
           >
             <option value="">-- Write custom content --</option>
-            {templates.map((t) => (
-              <option key={t.templateCode} value={t.templateCode}>
-                {t.titleTemplate}
-              </option>
-            ))}
+            {templates
+              .filter((t) => t.usageScope?.toUpperCase() !== "SYSTEM")
+              .map((t) => (
+                <option key={t.templateCode} value={t.templateCode}>
+                  {t.titleTemplate}
+                </option>
+              ))}
           </select>
+          {errors.templateCode && (
+            <p className="text-xs text-red-500 mt-1.5">{errors.templateCode}</p>
+          )}
           <p className="text-xs text-gray-400 mt-1.5">
             Choose a template to save time
           </p>
@@ -1054,7 +1063,7 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
         individualAccountIds: c.targets.filter((t) => t.targetType === "ACCOUNT_ID").map((t) => Number(t.targetValue)),
         individualAccountNames: c.targets.filter((t) => t.targetType === "ACCOUNT_ID").map((t) => t.targetValue),
         scheduleType: c.scheduledAt ? "scheduled" : "immediate",
-        scheduledAt: c.scheduledAt ? new Date(c.scheduledAt).toISOString().slice(0, 16) : "",
+        scheduledAt: formatUTCtoLocal(c.scheduledAt),
       });
     }).catch(() => {
       toast.error("Failed to load campaign info");
@@ -1076,6 +1085,13 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
       if (state.referenceType && !state.referenceId) errs.referenceId = "Please select a specific reference";
     }
     if (step === 2) {
+      if (!state.templateCode && !state.useCustomContent) {
+        errs.templateCode = "Please select a template or toggle custom content";
+      }
+      if (state.useCustomContent) {
+        if (!state.titleOverride.trim()) errs.titleOverride = "Please enter notification title";
+        if (!state.messageOverride.trim()) errs.messageOverride = "Please enter notification message";
+      }
       if (state.imageUrl && !/^https?:\/\/.+/.test(state.imageUrl) && !state.imageFile)
         errs.imageUrl = "Invalid image URL (must start with https://)";
       if (state.useCustomContent && state.titleOverride && state.titleOverride.length > 255)
@@ -1120,7 +1136,7 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
       messageOverride: state.useCustomContent && state.messageOverride ? state.messageOverride : null,
       sourceType: "ADMIN" as const,
       targetType: state.targetMode,
-      scheduledAt: state.scheduleType === "scheduled" && state.scheduledAt ? state.scheduledAt : null,
+      scheduledAt: state.scheduleType === "scheduled" && state.scheduledAt ? formatLocalToUTC(state.scheduledAt) : null,
       imageUrl: state.imageUrl || null,
       actionType: state.referenceType || null,
       actionTarget: state.referenceId ? String(state.referenceId) : null,

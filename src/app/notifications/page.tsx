@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString("vi-VN");
+  return d.toLocaleString("en-US");
 }
 
 type Tab = "unread" | "all";
@@ -97,10 +97,10 @@ export default function CustomerNotificationsPage() {
     <div>
       <div className="mb-6 rounded-2xl border border-amber-100 bg-white/80 p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/60">
         <h1 className="text-2xl font-bold text-amber-950 dark:text-amber-50">
-          Thông báo của bạn
+          Your Notifications
         </h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          Cập nhật đơn hàng, khuyến mãi và tin tức cửa hàng.
+          Order updates, promotions, and store news.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <div className="inline-flex rounded-full border border-amber-200 bg-amber-50/50 p-0.5 dark:border-amber-900/50 dark:bg-gray-800">
@@ -116,7 +116,7 @@ export default function CustomerNotificationsPage() {
                 setTab("unread");
               }}
             >
-              Chưa đọc
+              Unread
             </button>
             <button
               type="button"
@@ -130,7 +130,7 @@ export default function CustomerNotificationsPage() {
                 setTab("all");
               }}
             >
-              Tất cả
+              All
             </button>
           </div>
           <button
@@ -138,24 +138,24 @@ export default function CustomerNotificationsPage() {
             onClick={() => void markAllRead()}
             className="text-sm font-medium text-amber-800 underline-offset-2 hover:underline dark:text-amber-300"
           >
-            Đánh dấu đã đọc hết
+            Mark all as read
           </button>
           <Link
             href="/admin"
             className="ml-auto text-sm text-gray-500 hover:text-amber-800 dark:text-gray-400 dark:hover:text-amber-200"
           >
-            ← Về trang quản trị
+            ← Back to Admin
           </Link>
         </div>
       </div>
 
       {loading && (
-        <p className="text-center text-gray-500">Đang tải…</p>
+        <p className="text-center text-gray-500">Loading…</p>
       )}
 
       {!loading && items.length === 0 && (
         <p className="rounded-2xl border border-dashed border-amber-200 bg-white/60 py-12 text-center text-gray-500 dark:border-gray-700 dark:bg-gray-900/40">
-          Không có thông báo nào.
+          No notifications found.
         </p>
       )}
 
@@ -201,10 +201,10 @@ export default function CustomerNotificationsPage() {
             className="rounded-lg border px-3 py-1 text-sm disabled:opacity-40"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
-            Trước
+            Prev
           </button>
           <span className="self-center text-sm text-gray-500">
-            Trang {page} / {Math.ceil(total / pageSize)}
+            Page {page} / {Math.ceil(total / pageSize)}
           </span>
           <button
             type="button"
@@ -212,7 +212,7 @@ export default function CustomerNotificationsPage() {
             className="rounded-lg border px-3 py-1 text-sm disabled:opacity-40"
             onClick={() => setPage((p) => p + 1)}
           >
-            Sau
+            Next
           </button>
         </div>
       )}

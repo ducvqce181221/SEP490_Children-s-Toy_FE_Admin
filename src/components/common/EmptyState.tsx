@@ -11,8 +11,8 @@ interface EmptyStateProps {
 }
 
 const EmptyState: React.FC<EmptyStateProps> = ({
-  message = "Không có dữ liệu",
-  description = "Hiện tại không có thông tin nào để hiển thị.",
+  message = "No data available",
+  description = "There is currently no information to display.",
   image,
   action,
 }) => {

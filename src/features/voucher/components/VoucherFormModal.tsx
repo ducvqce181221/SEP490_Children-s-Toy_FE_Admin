@@ -95,7 +95,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               status: data.status as "Active" | "Inactive" | "Scheduled" | "Expired",
             });
           } catch {
-            toast.error("Gặp lỗi khi tải thông tin voucher");
+            toast.error("Error loading voucher details");
             onClose();
           } finally {
             setIsLoading(false);
