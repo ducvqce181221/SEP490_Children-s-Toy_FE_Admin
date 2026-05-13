@@ -95,9 +95,10 @@ export const promotionTimeSlotSchema = z.object({
   promotionProductSlots: z.array(promotionProductSlotSchema).default([]),
 }).refine(data => {
   if (!data.startAt || !data.endAt) return true;
-  return new Date(data.endAt).getTime() > new Date(data.startAt).getTime();
+  // 10 minutes = 10 * 60 * 1000 = 600000ms. We use 9 minutes (540000ms) to allow for second truncation.
+  return new Date(data.endAt).getTime() > new Date(data.startAt).getTime() + 9 * 60000;
 }, {
-  message: "End time must be after start time",
+  message: "End time must be at least 10 minutes after start time",
   path: ["endAt"]
 });
 
@@ -210,7 +211,7 @@ export const promotionFormSchema = z
         const slotA = data.promotionTimeSlots[i];
         const slotB = data.promotionTimeSlots[j];
         
-
+        if (slotA.status === "Expired" || slotB.status === "Expired") continue;
 
         const startA = new Date(slotA.startAt).getTime();
         const endA = new Date(slotA.endAt).getTime();

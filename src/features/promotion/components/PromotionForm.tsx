@@ -26,8 +26,8 @@ interface PromotionFormProps {
 
 const PROMOTION_STATUS_OPTIONS = [
   { value: "Active", label: "Active" },
-  { value: "Inactive", label: "Inactive" },
   { value: "Scheduled", label: "Scheduled" },
+  { value: "Inactive", label: "Inactive" },
   { value: "Expired", label: "Expired" },
 ];
 
