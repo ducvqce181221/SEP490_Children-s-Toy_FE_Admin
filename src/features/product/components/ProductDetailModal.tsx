@@ -288,9 +288,12 @@ const ProductDetailModal = ({
                   <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white">
                     Description
                   </h3>
-                  <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
-                    {product.description}
-                  </p>
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                    <div
+                      className="whitespace-normal"
+                      dangerouslySetInnerHTML={{ __html: product.description || "<p>--</p>" }}
+                    />
+                  </div>
                 </div>
               )}
 
