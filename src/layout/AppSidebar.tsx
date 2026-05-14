@@ -6,13 +6,19 @@ import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import {
   BoxCubeIcon,
-  CalenderIcon,
+  ChatIcon,
   ChevronDownIcon,
+  DollarLineIcon,
+  EnvelopeIcon,
+  GroupIcon,
   GridIcon,
   HorizontaLDots,
   ListIcon,
+  LockIcon,
   PageIcon,
-  PlugInIcon,
+  PaperPlaneIcon,
+  PieChartIcon,
+  TimeIcon,
   UserCircleIcon,
 } from "../icons/index";
 
@@ -31,23 +37,23 @@ const navItems: NavItem[] = [
     path: "/admin/accounts",
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <GroupIcon />,
     name: "Customer Management",
     path: "/admin/customers",
   },
-    {
-    icon: <CalenderIcon />,
+  {
+    icon: <ListIcon />,
     name: "Order Management",
-    path: "/admin/orders", 
+    path: "/admin/orders",
   },
   {
-    icon: <GridIcon />,
+    icon: <DollarLineIcon />,
     name: "Refund Management",
     path: "/admin/refunds",
   },
   {
     name: "Shift Management",
-    icon: <CalenderIcon />,
+    icon: <TimeIcon />,
     subItems: [
       { name: "Shift Templates", path: "/admin/shifts" },
       { name: "Work Schedules", path: "/admin/schedules" },
@@ -70,7 +76,7 @@ const navItems: NavItem[] = [
   },
   {
     name: "Sale Management",
-    icon: <BoxCubeIcon />,
+    icon: <PieChartIcon />,
     subItems: [
       { name: "Promotions", path: "/admin/promotions" },
       { name: "Vouchers", path: "/admin/vouchers" },
@@ -78,7 +84,7 @@ const navItems: NavItem[] = [
   },
   {
     name: "Campaign Management",
-    icon: <PageIcon />,
+    icon: <PaperPlaneIcon />,
     subItems: [
       { name: "Campaigns", path: "/admin/campaigns" },
       { name: "Templates", path: "/admin/campaigns/templates" },
@@ -86,7 +92,7 @@ const navItems: NavItem[] = [
   },
   {
     name: "Review Management",
-    icon: <ListIcon />,
+    icon: <ChatIcon />,
     subItems: [
       { name: "Product Reviews", path: "/admin/product-reviews" },
       { name: "Blog Reviews", path: "/admin/blog-reviews" },
@@ -101,7 +107,7 @@ const othersItems: NavItem[] = [
     subItems: [{ name: "Ecommerce", path: "/admin", pro: false }],
   },
   {
-    icon: <CalenderIcon />,
+    icon: <EnvelopeIcon />,
     name: "Inbox",
     path: "/admin/notifications",
   },
@@ -111,7 +117,7 @@ const othersItems: NavItem[] = [
     path: "/admin/profile",
   },
   {
-    icon: <PlugInIcon />,
+    icon: <LockIcon />,
     name: "Authentication",
     subItems: [
       { name: "Sign In", path: "/signin", pro: false },
