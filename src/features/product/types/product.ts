@@ -1,5 +1,9 @@
 export type ProductSortBy = "productname" | "price" | "quantity" | "createdat";
 
+export type InventoryReportFormat = "pdf" | "xlsx" | "csv";
+
+export type InventoryReportDateField = "createdat" | "updatedat";
+
 export interface ProductListItem {
   productId: number;
   productName: string;
@@ -89,15 +93,45 @@ export interface ProductLookupOption {
   label: string;
 }
 
+export interface ProductCategoryLookup extends ProductLookupOption {
+  superCategoryId: number;
+  superCategoryName: string;
+}
+
+export interface ProductBrandLookup extends ProductLookupOption {}
+
+export interface ProductSuperCategoryLookup extends ProductLookupOption {}
+
 export interface ProductPriceRangeLookup extends ProductLookupOption {
   min: number;
   max: number;
 }
 
 export interface ProductLookupsResponse {
+  superCategories: ProductSuperCategoryLookup[];
+  categories: ProductCategoryLookup[];
+  brands: ProductBrandLookup[];
   priceRanges: ProductPriceRangeLookup[];
   materials: ProductLookupOption[];
   ages: ProductLookupOption[];
   sexes: ProductLookupOption[];
   origins: ProductLookupOption[];
+}
+
+export interface InventoryReportRequest {
+  format: InventoryReportFormat;
+  searchTerm?: string;
+  sortBy?: ProductSortBy;
+  sortDesc?: boolean;
+  categoryId?: number | null;
+  brandId?: number | null;
+  priceRangeId?: number | null;
+  materialId?: number | null;
+  ageId?: number | null;
+  originId?: number | null;
+  status?: string;
+  lowStockOnly?: boolean;
+  dateFrom?: string;
+  dateTo?: string;
+  dateField?: InventoryReportDateField;
 }

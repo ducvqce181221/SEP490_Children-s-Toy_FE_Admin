@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Button from "@/components/ui/button/Button";
-import { PlusIcon } from "@/icons/index";
+import { PlusIcon, DownloadIcon } from "@/icons/index";
 import SearchInput from "@/components/common/SearchInput";
 import { Dropdown } from "@/components/ui/dropdown/Dropdown";
 import Label from "@/components/form/Label";
@@ -20,7 +20,16 @@ interface ProductToolbarProps {
   onSortByChange: (value: ProductSortBy) => void;
   sortDesc: boolean;
   onSortDirectionChange: (value: boolean) => void;
+  status: string;
+  onStatusChange: (value: string) => void;
+  categoryId: number | null;
+  onCategoryChange: (value: number | null) => void;
+  brandId: number | null;
+  onBrandChange: (value: number | null) => void;
+  categoryOptions: Array<{ value: string; label: string }>;
+  brandOptions: Array<{ value: string; label: string }>;
   onAddClick: () => void;
+  onExportClick: () => void;
 }
 
 const ProductToolbar: React.FC<ProductToolbarProps> = ({
@@ -30,7 +39,16 @@ const ProductToolbar: React.FC<ProductToolbarProps> = ({
   onSortByChange,
   sortDesc,
   onSortDirectionChange,
+  status,
+  onStatusChange,
+  categoryId,
+  onCategoryChange,
+  brandId,
+  onBrandChange,
+  categoryOptions,
+  brandOptions,
   onAddClick,
+  onExportClick,
 }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
@@ -49,8 +67,19 @@ const ProductToolbar: React.FC<ProductToolbarProps> = ({
   const clearFilters = () => {
     onSortByChange("createdat");
     onSortDirectionChange(true);
+    onStatusChange("");
+    onCategoryChange(null);
+    onBrandChange(null);
     setIsFilterOpen(false);
   };
+
+  const statusOptions = [
+    { value: "Active", label: "Active" },
+    { value: "Inactive", label: "Inactive" },
+    { value: "OutOfStock", label: "Out of Stock" },
+    { value: "Discontinued", label: "Discontinued" },
+    { value: "ComingSoon", label: "Coming Soon" },
+  ];
 
   return (
     <div className="px-5 py-5 sm:px-6">
@@ -64,6 +93,9 @@ const ProductToolbar: React.FC<ProductToolbarProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="outline" startIcon={<DownloadIcon />} onClick={onExportClick}>
+            Export Report
+          </Button>
           <Button variant="primary" startIcon={<PlusIcon />} onClick={onAddClick}>
             Add Product
           </Button>
@@ -88,7 +120,7 @@ const ProductToolbar: React.FC<ProductToolbarProps> = ({
             className="dropdown-toggle"
           >
             Filter
-            {(sortBy !== "createdat" || !sortDesc) && (
+            {(sortBy !== "createdat" || !sortDesc || status || categoryId || brandId) && (
               <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-brand-500 rounded-full">
                 !
               </span>
@@ -122,6 +154,40 @@ const ProductToolbar: React.FC<ProductToolbarProps> = ({
                   ]}
                   onChange={(e) => onSortDirectionChange(e.target.value === "desc")}
                   value={sortDesc ? "desc" : "asc"}
+                />
+              </div>
+
+              <div>
+                <Label>Status</Label>
+                <Select
+                  options={statusOptions}
+                  onChange={(e) => onStatusChange(e.target.value)}
+                  value={status}
+                  placeholder="All statuses"
+                />
+              </div>
+
+              <div>
+                <Label>Category</Label>
+                <Select
+                  options={categoryOptions}
+                  onChange={(e) =>
+                    onCategoryChange(e.target.value ? Number(e.target.value) : null)
+                  }
+                  value={categoryId ? String(categoryId) : ""}
+                  placeholder="All categories"
+                />
+              </div>
+
+              <div>
+                <Label>Brand</Label>
+                <Select
+                  options={brandOptions}
+                  onChange={(e) =>
+                    onBrandChange(e.target.value ? Number(e.target.value) : null)
+                  }
+                  value={brandId ? String(brandId) : ""}
+                  placeholder="All brands"
                 />
               </div>
 

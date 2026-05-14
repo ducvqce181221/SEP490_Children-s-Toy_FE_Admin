@@ -6,6 +6,7 @@ import {
   ProductDetail,
   ProductLookupsResponse,
   ProductQueryParams,
+  InventoryReportRequest,
 } from "../types/product";
 
 export const productApi = {
@@ -41,6 +42,18 @@ export const productApi = {
     return axiosClient.put<ProductDetail, ProductFormData>(
       `/products/${productId}`,
       payload,
+    );
+  },
+
+  exportInventoryReport: async (
+    payload: InventoryReportRequest,
+  ): Promise<Blob> => {
+    return axiosClient.post<Blob, InventoryReportRequest>(
+      "/products/inventory-report",
+      payload,
+      {
+        responseType: "blob",
+      },
     );
   },
 };
