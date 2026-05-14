@@ -1,0 +1,316 @@
+"use client";
+
+import React from "react";
+import Image from "next/image";
+import { WorkSchedule } from "../types/schedule";
+import { TrashBinIcon, TimeIcon, BoxIcon, UserCircleIcon, CalenderIcon, PencilIcon, CloseIcon } from "@/icons";
+import WorkScheduleToolbar from "./WorkScheduleToolbar";
+
+interface WorkScheduleTableProps {
+  schedules: WorkSchedule[];
+  isLoading: boolean;
+  onMarkAbsent: (id: number) => void;
+  onEdit: (schedule: WorkSchedule) => void;
+  onDelete: (id: number) => void;
+  dateFilter: string;
+  onDateChange: (date: Date[]) => void;
+  onTodayClick: () => void;
+  onAssignClick: () => void;
+}
+
+// ─── Status config ────────────────────────────────────────────────────────────
+const STATUS_CONFIG = {
+  Scheduled: {
+    dot: "bg-blue-500",
+    label: "Scheduled",
+    badge: "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400",
+  },
+  Completed: {
+    dot: "bg-success-500",
+    label: "Completed",
+    badge: "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-400",
+  },
+  Absent: {
+    dot: "bg-error-500",
+    label: "Absent",
+    badge: "bg-error-50 text-error-700 dark:bg-error-500/10 dark:text-error-400",
+  },
+  Cancelled: {
+    dot: "bg-gray-400",
+    label: "Cancelled",
+    badge: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  },
+};
+
+// ─── Schedule Card ────────────────────────────────────────────────────────────
+const ScheduleCard: React.FC<{
+  schedule: WorkSchedule;
+  onMarkAbsent: (id: number) => void;
+  onEdit: (schedule: WorkSchedule) => void;
+  onDelete: (id: number) => void;
+}> = ({ schedule, onMarkAbsent, onEdit, onDelete }) => {
+  const loadPercentage = schedule.maxLoad > 0
+    ? Math.round((schedule.currentLoad / schedule.maxLoad) * 100)
+    : 0;
+  const isOverloaded = loadPercentage >= 100;
+  const isHeavy = loadPercentage > 80 && !isOverloaded;
+
+  const progressColor = isOverloaded
+    ? "bg-error-500"
+    : isHeavy
+    ? "bg-warning-500"
+    : "bg-brand-500";
+
+  const statusCfg = STATUS_CONFIG[schedule.status as keyof typeof STATUS_CONFIG] ?? {
+    dot: "bg-gray-400",
+    label: schedule.status,
+    badge: "bg-gray-100 text-gray-600",
+  };
+
+  const isStaff = schedule.roleId === 3;
+  const avatarText = schedule.accountName ? schedule.accountName[0].toUpperCase() : "?";
+
+  return (
+    <div className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:border-brand-200 dark:border-white/[0.07] dark:bg-white/[0.03] dark:hover:border-brand-500/30">
+      {/* Role indicator strip */}
+      <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-2xl ${isStaff ? "bg-brand-500" : "bg-warning-500"}`} />
+
+      {/* Header: Avatar + Name + Status */}
+      <div className="flex items-start justify-between gap-3 mt-2 mb-4">
+        <div className="flex items-center gap-3">
+          {/* Avatar */}
+          <div className={`relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl text-sm font-black text-white shadow-md ${isStaff ? "bg-brand-500" : "bg-warning-500"}`}>
+            {schedule.imageUrl ? (
+              <Image
+                src={schedule.imageUrl}
+                alt={schedule.accountName}
+                width={48}
+                height={48}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              avatarText
+            )}
+          </div>
+
+          <div>
+            <h3 className="font-bold text-gray-900 dark:text-white leading-tight">
+              {schedule.accountName}
+            </h3>
+            <span className={`text-[10px] font-black uppercase tracking-widest ${isStaff ? "text-brand-500" : "text-warning-500"}`}>
+              {isStaff ? "Staff Member" : "Merchandiser"}
+            </span>
+          </div>
+        </div>
+
+        {/* Status badge */}
+        <div className={`flex items-center gap-1.5 shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${statusCfg.badge}`}>
+          <span className={`inline-block h-1.5 w-1.5 rounded-full ${statusCfg.dot}`} />
+          {statusCfg.label}
+        </div>
+      </div>
+
+      {/* Shift info */}
+      <div className="mb-4 flex items-center gap-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 px-3 py-2.5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700">
+          <TimeIcon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-gray-800 dark:text-white leading-none">{schedule.shiftName}</p>
+          <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wider font-semibold">Assigned Shift</p>
+        </div>
+      </div>
+
+      {/* Load progress */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+            Workload Capacity
+          </span>
+          <span className={`text-xs font-bold tabular-nums ${isOverloaded ? "text-error-600" : isHeavy ? "text-warning-600" : "text-gray-600 dark:text-gray-300"}`}>
+            {schedule.currentLoad} / {schedule.maxLoad}
+          </span>
+        </div>
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${progressColor}`}
+            style={{ width: `${Math.min(loadPercentage, 100)}%` }}
+          />
+        </div>
+        <div className="flex justify-end mt-1">
+          <span className={`text-[10px] font-bold ${isOverloaded ? "text-error-500" : isHeavy ? "text-warning-500" : "text-gray-400"}`}>
+            {loadPercentage}%
+          </span>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-auto flex items-center justify-between border-t border-gray-100 dark:border-white/[0.05] pt-3">
+        <span className="text-[10px] text-gray-400 font-medium">ID: #{schedule.scheduleId}</span>
+        
+        <div className="flex items-center gap-1.5">
+          {schedule.status === "Scheduled" && (
+            <>
+              <button
+                onClick={() => onEdit(schedule)}
+                className="flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 text-gray-400 transition-all hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 dark:border-gray-700"
+                title="Edit Assignment"
+              >
+                <PencilIcon className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => onDelete(schedule.scheduleId)}
+                className="flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 text-gray-400 transition-all hover:border-error-300 hover:bg-error-50 hover:text-error-600 dark:border-gray-700"
+                title="Remove Assignment"
+              >
+                                <TrashBinIcon className="w-4.6 h-4.6" />
+             
+              </button>
+              <button
+                onClick={() => onMarkAbsent(schedule.scheduleId)}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-500 transition-all hover:border-error-300 hover:bg-error-50 hover:text-error-600 dark:border-gray-700"
+              >
+                Mark Absent
+              </button>
+            </>
+          )}
+          {schedule.status !== "Scheduled" && (
+            <span className="text-[10px] text-gray-400 italic font-medium uppercase tracking-tighter">
+              {schedule.status} - Locked
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Grouped by shift name ────────────────────────────────────────────────────
+const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
+  schedules,
+  isLoading,
+  onMarkAbsent,
+  onEdit,
+  onDelete,
+  dateFilter,
+  onDateChange,
+  onTodayClick,
+  onAssignClick,
+}) => {
+  const showInitialLoading = isLoading && schedules.length === 0;
+
+  // Group by shiftName for easier admin oversight
+  const grouped = schedules.reduce<Record<string, WorkSchedule[]>>((acc, s) => {
+    const key = s.shiftName || "Unassigned";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(s);
+    return acc;
+  }, {});
+
+  const displayDate = dateFilter
+    ? new Date(dateFilter + "T00:00:00").toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "";
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.05] dark:bg-white/[0.03]">
+      <WorkScheduleToolbar
+        dateFilter={dateFilter}
+        onDateChange={onDateChange}
+        onTodayClick={onTodayClick}
+        onAssignClick={onAssignClick}
+      />
+
+      <div className="p-6 border-t border-gray-100 dark:border-white/[0.05]">
+        {/* Date subheader */}
+        {displayDate && (
+          <div className="flex items-center gap-2 mb-6">
+            <CalenderIcon className="w-4.6 h-4.6 text-brand-500" />
+            <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+              {displayDate}
+            </span>
+            {!isLoading && (
+              <span className="ml-auto text-xs font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1">
+                {schedules.length} assignment{schedules.length !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+        )}
+
+        {showInitialLoading ? (
+          /* Skeleton */
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-gray-100 dark:border-white/[0.05] p-5 animate-pulse">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-12 w-12 rounded-2xl bg-gray-100 dark:bg-gray-800" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
+                    <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/3" />
+                  </div>
+                </div>
+                <div className="h-12 bg-gray-100 dark:bg-gray-800 rounded-xl mb-3" />
+                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full w-full mb-1" />
+                <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full w-2/3" />
+              </div>
+            ))}
+          </div>
+        ) : schedules.length === 0 ? (
+          /* Empty state */
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gray-50 dark:bg-gray-800 mb-5 shadow-sm">
+              <UserCircleIcon className="h-10 w-10 text-gray-300 dark:text-gray-600" />
+            </div>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">No Assignments Found</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
+              No staff assigned on {displayDate}. Assign a new shift to get started.
+            </p>
+            <button
+              onClick={onAssignClick}
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-brand-500/25 hover:bg-brand-600 transition-colors"
+            >
+              + Assign Staff
+            </button>
+          </div>
+        ) : (
+          /* Grouped card grid */
+          <div className="space-y-8">
+            {Object.entries(grouped).map(([shiftName, group]) => (
+              <div key={shiftName}>
+                {/* Group header */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-500/10">
+                    <TimeIcon className="w-4.6 h-4.6 text-brand-500" />
+                  </div>
+                  <h4 className="text-sm font-black text-gray-800 dark:text-gray-200">{shiftName}</h4>
+                  <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800"></div>
+                  <span className="text-xs font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-full px-2.5 py-0.5">
+                    {group.length} staff
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                  {group.map((schedule) => (
+                    <ScheduleCard
+                      key={schedule.scheduleId}
+                      schedule={schedule}
+                      onMarkAbsent={onMarkAbsent}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default WorkScheduleTable;

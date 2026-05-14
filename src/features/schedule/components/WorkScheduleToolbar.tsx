@@ -1,0 +1,64 @@
+import Button from "@/components/ui/button/Button";
+import DatePicker from "@/components/form/date-picker";
+import { PlusIcon, CalenderIcon } from "@/icons";
+
+interface WorkScheduleToolbarProps {
+  dateFilter: string;
+  onDateChange: (date: Date[]) => void;
+  onTodayClick: () => void;
+  onAssignClick: () => void;
+}
+
+const WorkScheduleToolbar: React.FC<WorkScheduleToolbarProps> = ({
+  dateFilter,
+  onDateChange,
+  onTodayClick,
+  onAssignClick,
+}) => {
+  return (
+    <div className="px-5 py-5 sm:px-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+            Daily Work Schedule
+          </h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Manage staff assignments and track shift performance.
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          startIcon={<PlusIcon className="w-5 h-5" />}
+          onClick={onAssignClick}
+        >
+          Assign Staff
+        </Button>
+      </div>
+
+      {/* Filter row — matches other UI toolbars */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Date picker */}
+        <div className="w-full sm:max-w-xs">
+          <DatePicker
+            id="work-date-filter"
+            defaultDate={dateFilter || undefined}
+            onChange={onDateChange}
+            placeholder="Select Date"
+          />
+        </div>
+
+        {/* Today shortcut */}
+        <Button
+          variant="outline"
+          startIcon={<CalenderIcon className="w-6.5 h-6.5" />}
+          onClick={onTodayClick}
+          className="w-full sm:w-auto"
+        >
+          Jump to Today
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default WorkScheduleToolbar;
