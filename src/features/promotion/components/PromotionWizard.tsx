@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useId, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
+import type Quill from "quill";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { twMerge } from "tailwind-merge";
 
@@ -28,21 +29,13 @@ interface PromotionWizardProps {
   initialData?: Promotion | null;
 }
 
-
-const PROMOTION_STATUS_OPTIONS = [
-  { value: "Active", label: "Active" },
-  { value: "Inactive", label: "Inactive" },
-  { value: "Scheduled", label: "Scheduled" },
-  { value: "Expired", label: "Expired" },
-];
-
 const WIZARD_STEPS = ["General Information", "Select Products"];
 
 export function PromotionWizard({ initialData }: PromotionWizardProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
 
-  const isGlobalReadOnly = initialData?.status === "Expired" || initialData?.status === "Inactive";
+  const isGlobalReadOnly = initialData?.status === "Expired";
   const isActive = initialData?.status === "Active";
   const isGeneralLocked = isGlobalReadOnly || isActive;
   const isNew = !initialData;
@@ -89,6 +82,94 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
 
   const { fields, append, remove: removeField } = fieldArray;
 
+  const editorRef = useRef<HTMLDivElement>(null);
+  const quillRef = useRef<Quill | null>(null);
+  const pendingDescriptionRef = useRef("");
+  const isApplyingDescriptionRef = useRef(false);
+  const toolbarId = `promotion-description-toolbar-${useId().replace(/:/g, "")}`;
+  const descriptionValue = useWatch({ control, name: "description" });
+  const descriptionTextLength = descriptionValue ? descriptionValue.replace(/<[^>]*>?/gm, "").length : 0;
+
+  const normalizeDescriptionHtml = useCallback((rawValue: unknown) => {
+    if (typeof rawValue !== "string") return "";
+    const trimmed = rawValue.trim();
+    if (trimmed.length === 0 || trimmed === "<p><br></p>") return "";
+    return trimmed;
+  }, []);
+
+  const toDescriptionFormValue = useCallback(
+    (html: string): string | null => {
+      const normalizedHtml = normalizeDescriptionHtml(html);
+      if (normalizedHtml.length === 0) return null;
+      if (typeof window === "undefined") return normalizedHtml;
+      const parser = document.createElement("div");
+      parser.innerHTML = normalizedHtml;
+      const plainText = parser.textContent?.replace(/\u00a0/g, " ").trim() ?? "";
+      return plainText.length === 0 ? null : normalizedHtml;
+    },
+    [normalizeDescriptionHtml],
+  );
+
+  const setDescriptionEditorContent = useCallback(
+    (html: string) => {
+      const normalizedContent = normalizeDescriptionHtml(html);
+      if (!quillRef.current) {
+        pendingDescriptionRef.current = normalizedContent;
+        return;
+      }
+      isApplyingDescriptionRef.current = true;
+      if (normalizedContent.length === 0) {
+        quillRef.current.setText("", "api");
+      } else {
+        const delta = quillRef.current.clipboard.convert({ html: normalizedContent });
+        quillRef.current.setContents(delta, "api");
+      }
+      setValue("description", toDescriptionFormValue(quillRef.current.root.innerHTML), {
+        shouldValidate: true,
+      });
+      queueMicrotask(() => {
+        isApplyingDescriptionRef.current = false;
+      });
+    },
+    [normalizeDescriptionHtml, setValue, toDescriptionFormValue],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const initializeDescriptionEditor = async () => {
+      if (quillRef.current || !editorRef.current) return;
+      const QuillModule = await import("quill");
+      if (cancelled || !editorRef.current || quillRef.current) return;
+      const Quill = QuillModule.default;
+      const quill = new Quill(editorRef.current, {
+        theme: "snow",
+        modules: {
+          toolbar: `#${toolbarId}`,
+        },
+        placeholder: "Enter promotion description...",
+      });
+      quill.on("text-change", (_delta, _oldDelta, source) => {
+        if (source !== "user" || isApplyingDescriptionRef.current) return;
+        setValue("description", toDescriptionFormValue(quill.root.innerHTML), {
+          shouldValidate: true,
+        });
+      });
+      quillRef.current = quill;
+      setDescriptionEditorContent(pendingDescriptionRef.current);
+      quill.enable(!isGlobalReadOnly);
+    };
+    void initializeDescriptionEditor();
+    return () => {
+      cancelled = true;
+    };
+  }, [toolbarId, isGlobalReadOnly, setDescriptionEditorContent, setValue, toDescriptionFormValue]);
+
+  useEffect(() => {
+    if (quillRef.current) {
+      quillRef.current.enable(!isGlobalReadOnly && !isSubmitting);
+    }
+  }, [isGlobalReadOnly, isSubmitting]);
+
   useEffect(() => {
     if (initialData) {
       reset({
@@ -128,8 +209,13 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
           })),
         })) ?? [],
       });
+      pendingDescriptionRef.current = normalizeDescriptionHtml(initialData.description);
+      setDescriptionEditorContent(pendingDescriptionRef.current);
+    } else {
+      pendingDescriptionRef.current = "";
+      setDescriptionEditorContent("");
     }
-  }, [initialData, reset]);
+  }, [initialData, reset, normalizeDescriptionHtml, setDescriptionEditorContent]);
 
   const handleSyncProducts = (addedProducts: ProductListItem[], removedProductIds: number[]) => {
     if (removedProductIds.length > 0) {
@@ -290,18 +376,44 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     error={!!errors.priority}
                     hint={errors.priority?.message}
                     {...register("priority")}
-                    disabled={isGeneralLocked}
+                    disabled={isGlobalReadOnly}
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label htmlFor="description">Description</Label>
-                  <TextArea
-                    id="description"
-                    rows={3}
-                    {...register("description")}
-                    disabled={isGeneralLocked}
-                  />
+                  <Label>Description</Label>
+                  <div className="overflow-hidden rounded-lg border border-gray-300 dark:border-gray-700">
+                    <div id={toolbarId} className="border-b border-gray-300 p-2 dark:border-gray-700">
+                      <span className="ql-formats">
+                        <button className="ql-bold" type="button" />
+                        <button className="ql-italic" type="button" />
+                        <button className="ql-underline" type="button" />
+                        <button className="ql-strike" type="button" />
+                      </span>
+                      <span className="ql-formats">
+                        <select className="ql-color" />
+                        <select className="ql-background" />
+                      </span>
+                      <span className="ql-formats">
+                        <button className="ql-list" value="ordered" type="button" />
+                        <button className="ql-list" value="bullet" type="button" />
+                      </span>
+                      <span className="ql-formats">
+                        <button className="ql-clean" type="button" />
+                      </span>
+                    </div>
+                    <div
+                      ref={editorRef}
+                      className="min-h-[140px] bg-white text-sm text-gray-800 dark:bg-gray-900 dark:text-white/90"
+                    />
+                    <div className="border-t border-gray-200 px-3 py-2 text-right text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                      {descriptionTextLength}/1000
+                    </div>
+                  </div>
+                  <input type="hidden" {...register("description")} />
+                  {errors.description && (
+                    <p className="mt-1.5 text-sm text-error-500">{errors.description.message}</p>
+                  )}
                 </div>
               </div>
             </div>

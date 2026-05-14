@@ -23,6 +23,9 @@ export const useProducts = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<ProductSortBy>("createdat");
   const [sortDesc, setSortDesc] = useState(true);
+  const [status, setStatus] = useState("");
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [brandId, setBrandId] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(DEFAULT_PAGE_NUMBER);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [reloadToken, setReloadToken] = useState(0);
@@ -51,6 +54,9 @@ export const useProducts = () => {
           sortBy,
           sortDesc,
           searchTerm: debouncedSearchTerm.length > 0 ? debouncedSearchTerm : undefined,
+          status: status.length > 0 ? status : undefined,
+          categoryId: categoryId ?? undefined,
+          brandId: brandId ?? undefined,
         });
 
         if (!isCancelled) {
@@ -81,6 +87,9 @@ export const useProducts = () => {
     pageSize,
     sortBy,
     sortDesc,
+    status,
+    categoryId,
+    brandId,
     debouncedSearchTerm,
     reloadToken,
   ]);
@@ -100,6 +109,21 @@ export const useProducts = () => {
     setPageNumber(DEFAULT_PAGE_NUMBER);
   }, []);
 
+  const handleStatusChange = useCallback((value: string) => {
+    setStatus(value);
+    setPageNumber(DEFAULT_PAGE_NUMBER);
+  }, []);
+
+  const handleCategoryChange = useCallback((value: number | null) => {
+    setCategoryId(value);
+    setPageNumber(DEFAULT_PAGE_NUMBER);
+  }, []);
+
+  const handleBrandChange = useCallback((value: number | null) => {
+    setBrandId(value);
+    setPageNumber(DEFAULT_PAGE_NUMBER);
+  }, []);
+
   const handlePageSizeChange = useCallback((value: number) => {
     setPageSize(value);
     setPageNumber(DEFAULT_PAGE_NUMBER);
@@ -116,6 +140,9 @@ export const useProducts = () => {
     searchTerm,
     sortBy,
     sortDesc,
+    status,
+    categoryId,
+    brandId,
     pageNumber,
     pageSize,
     totalCount: response?.totalCount ?? 0,
@@ -125,6 +152,9 @@ export const useProducts = () => {
     handleSearchChange,
     handleSortByChange,
     handleSortDirectionChange,
+    handleStatusChange,
+    handleCategoryChange,
+    handleBrandChange,
     handlePageSizeChange,
     setPageNumber,
     reloadData,

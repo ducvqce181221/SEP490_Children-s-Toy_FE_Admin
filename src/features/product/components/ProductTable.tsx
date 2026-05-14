@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Pagination from "@/components/common/Pagination";
 import {
   Table,
@@ -14,12 +14,15 @@ import { useProducts } from "../hooks/useProducts";
 import {
   ProductListItem,
   ProductMutationResult,
+  ProductLookupsResponse,
 } from "../types/product";
 import { ProductFormData } from "../types/product.schema";
 import ProductFormModal from "./ProductFormModal";
 import { ProductRow } from "./ProductRow";
 import ProductToolbar from "./ProductToolbar";
 import ProductDetailModal from "./ProductDetailModal";
+import ProductExportReportModal from "./ProductExportReportModal";
+import { productApi } from "../services/product-api";
 
 const ProductTable = () => {
   const {
@@ -29,6 +32,9 @@ const ProductTable = () => {
     searchTerm,
     sortBy,
     sortDesc,
+    status,
+    categoryId,
+    brandId,
     pageNumber,
     pageSize,
     totalCount,
@@ -36,6 +42,9 @@ const ProductTable = () => {
     handleSearchChange,
     handleSortByChange,
     handleSortDirectionChange,
+    handleStatusChange,
+    handleCategoryChange,
+    handleBrandChange,
     handlePageSizeChange,
     setPageNumber,
     reloadData,
@@ -50,10 +59,59 @@ const ProductTable = () => {
   const [viewingProduct, setViewingProduct] =
     useState<ProductListItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [lookups, setLookups] = useState<ProductLookupsResponse | null>(null);
+  const [isLookupLoading, setIsLookupLoading] = useState(false);
 
   const hasData = products.length > 0;
   const showInitialLoading = isLoading && !hasData;
   const isEditMode = editingProduct !== null;
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const fetchLookups = async () => {
+      setIsLookupLoading(true);
+      try {
+        const data = await productApi.getProductLookups();
+        if (!isCancelled) {
+          setLookups(data);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          console.error("[ProductTable] Failed to fetch product lookups", error);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLookupLoading(false);
+        }
+      }
+    };
+
+    fetchLookups();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  const categoryOptions = useMemo(
+    () =>
+      lookups?.categories.map((category) => ({
+        value: String(category.id),
+        label: category.label,
+      })) ?? [],
+    [lookups?.categories],
+  );
+
+  const brandOptions = useMemo(
+    () =>
+      lookups?.brands.map((brand) => ({
+        value: String(brand.id),
+        label: brand.label,
+      })) ?? [],
+    [lookups?.brands],
+  );
 
   const handleOpenCreateModal = () => {
     setEditingProduct(null);
@@ -114,7 +172,16 @@ const ProductTable = () => {
         onSortByChange={handleSortByChange}
         sortDesc={sortDesc}
         onSortDirectionChange={handleSortDirectionChange}
+        status={status}
+        onStatusChange={handleStatusChange}
+        categoryId={categoryId}
+        onCategoryChange={handleCategoryChange}
+        brandId={brandId}
+        onBrandChange={handleBrandChange}
+        categoryOptions={categoryOptions}
+        brandOptions={brandOptions}
         onAddClick={handleOpenCreateModal}
+        onExportClick={() => setIsExportModalOpen(true)}
       />
 
       <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
@@ -255,6 +322,23 @@ const ProductTable = () => {
           isOpen={isDetailModalOpen}
           productId={viewingProduct.productId}
           onClose={handleCloseDetailModal}
+        />
+      )}
+
+      {isExportModalOpen && (
+        <ProductExportReportModal
+          isOpen={isExportModalOpen}
+          isLoadingLookups={isLookupLoading}
+          lookups={lookups}
+          currentFilters={{
+            searchTerm,
+            sortBy,
+            sortDesc,
+            status,
+            categoryId,
+            brandId,
+          }}
+          onClose={() => setIsExportModalOpen(false)}
         />
       )}
     </div>

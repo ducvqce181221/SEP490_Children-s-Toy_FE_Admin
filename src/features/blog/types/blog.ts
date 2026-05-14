@@ -21,6 +21,7 @@ export type FeaturedFilter = "all" | "featured";
 
 export interface BlogListItem {
   blogPostId: number;
+  accountId: number;
   blogCategoryId: number;
   blogCategoryName: string;
   blogTitle: string;
@@ -82,7 +83,7 @@ export interface SubmitBlogRequest {
 }
 
 export interface ApproveBlogRequest {
-  decision: "Approved" | "Rejected";
+  decision: "ApprovePublishNow" | "ApproveKeepSchedule" | "Rejected";
   reason?: string | null;
 }
 

@@ -128,7 +128,7 @@ export const referenceSearchApi = {
 
   searchBlogPosts: (searchTerm?: string): Promise<BlogPostSearchItem[]> =>
     axiosClient
-      .get<{ items: BlogPostSearchItem[] }>("/blogs/search", {
+      .get<{ items: BlogPostSearchItem[] }>("/customer/blogs", {
         params: {
           pageNumber: 1,
           pageSize: 20,

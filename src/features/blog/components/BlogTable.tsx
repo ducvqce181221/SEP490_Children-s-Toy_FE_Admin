@@ -41,6 +41,7 @@ const BlogTable = () => {
     roleLabel,
     isAdmin,
     isStaff,
+    currentAccountId,
     handleSearchChange,
     handleSearchSubmit,
     handleStatusFilterChange,
@@ -144,12 +145,27 @@ const BlogTable = () => {
     toast.error(result.message);
   };
 
-  const handleApprove = async () => {
+  const handleApprovePublishNow = async () => {
     if (!selectedApprovalBlogId) {
       return;
     }
 
-    const result = await approveBlog(selectedApprovalBlogId, "Approved");
+    const result = await approveBlog(selectedApprovalBlogId, "ApprovePublishNow");
+    if (result.success) {
+      toast.success(result.message);
+      setSelectedApprovalBlogId(null);
+      return;
+    }
+
+    toast.error(result.message);
+  };
+
+  const handleApproveKeepSchedule = async () => {
+    if (!selectedApprovalBlogId) {
+      return;
+    }
+
+    const result = await approveBlog(selectedApprovalBlogId, "ApproveKeepSchedule");
     if (result.success) {
       toast.success(result.message);
       setSelectedApprovalBlogId(null);
@@ -222,7 +238,7 @@ const BlogTable = () => {
     <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <BlogToolbar
         roleLabel={roleLabel}
-        canAdd={isStaff}
+        canAdd={isStaff || isAdmin}
         searchTerm={searchTerm}
         statusFilter={statusFilter}
         featuredFilter={featuredFilter}
@@ -297,6 +313,7 @@ const BlogTable = () => {
                     rowNumber={(pageNumber - 1) * pageSize + index + 1}
                     isAdmin={isAdmin}
                     isStaff={isStaff}
+                    currentAccountId={currentAccountId}
                     isSubmitting={isSubmittingBlog}
                     isPublishingNow={isPublishingNow}
                     isHidingBlog={isHidingBlog}
@@ -350,7 +367,7 @@ const BlogTable = () => {
         )}
       </div>
 
-      {isStaff && (
+      {(isStaff || isAdmin) && (
         <BlogFormModal
           isOpen={isCreateModalOpen}
           mode="create"
@@ -367,7 +384,7 @@ const BlogTable = () => {
         onClose={() => setSelectedDetailBlogId(null)}
       />
 
-      {isStaff && (
+      {(isStaff || isAdmin) && (
         <BlogFormModal
           isOpen={selectedEditBlogId !== null}
           mode="edit"
@@ -386,7 +403,8 @@ const BlogTable = () => {
           isOpen={selectedApprovalBlogId !== null}
           isSubmitting={isApproving}
           onClose={() => setSelectedApprovalBlogId(null)}
-          onApprove={handleApprove}
+          onApprovePublishNow={handleApprovePublishNow}
+          onApproveKeepSchedule={handleApproveKeepSchedule}
           onReject={handleReject}
         />
       )}

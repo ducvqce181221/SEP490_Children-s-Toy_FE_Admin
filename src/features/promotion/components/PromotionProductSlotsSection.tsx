@@ -8,6 +8,7 @@ import { PromotionProductSlotTable } from "./PromotionProductSlotTable";
 import { ProductCatalogSection } from "./ProductCatalogSection";
 import type { ProductListItem } from "@/features/product/types/product";
 import Select from "@/components/form/Select";
+import { formatDisplayDate } from "@/utils/date-utils";
 
 interface PromotionProductSlotsSectionProps {
   form: UseFormReturn<PromotionFormData>;
@@ -108,8 +109,8 @@ export function PromotionProductSlotsSection({
   const currentSlotIndex = Math.min(selectedSlotIndex, timeSlots.length - 1);
 
   const slotOptions = timeSlots.map((ts, index) => {
-    const start = ts.startAt ? ts.startAt.replace("T", " ").substring(0, 16) : "N/A";
-    const end = ts.endAt ? ts.endAt.replace("T", " ").substring(0, 16) : "N/A";
+    const start = formatDisplayDate(ts.startAt, "N/A");
+    const end = formatDisplayDate(ts.endAt, "N/A");
     return {
       value: index.toString(),
       label: `Slot ${index + 1}: ${start} to ${end}`,
@@ -117,7 +118,7 @@ export function PromotionProductSlotsSection({
   });
 
   const currentSlotStatus = timeSlots[currentSlotIndex]?.status;
-  const isSlotReadOnly = readonly || currentSlotStatus === "Active" || currentSlotStatus === "Expired" || currentSlotStatus === "Inactive";
+  const isSlotReadOnly = readonly || currentSlotStatus === "Active" || currentSlotStatus === "Expired";
 
   return (
     <div className="space-y-6">
