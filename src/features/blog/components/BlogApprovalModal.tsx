@@ -8,7 +8,8 @@ interface BlogApprovalModalProps {
   isOpen: boolean;
   isSubmitting: boolean;
   onClose: () => void;
-  onApprove: () => Promise<void>;
+  onApprovePublishNow: () => Promise<void>;
+  onApproveKeepSchedule: () => Promise<void>;
   onReject: (reason: string) => Promise<void>;
 }
 
@@ -19,15 +20,21 @@ const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
   isOpen,
   isSubmitting,
   onClose,
-  onApprove,
+  onApprovePublishNow,
+  onApproveKeepSchedule,
   onReject,
 }) => {
   const [reason, setReason] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const handleApprove = async () => {
+  const handleApprovePublishNow = async () => {
     setLocalError(null);
-    await onApprove();
+    await onApprovePublishNow();
+  };
+
+  const handleApproveKeepSchedule = async () => {
+    setLocalError(null);
+    await onApproveKeepSchedule();
   };
 
   const handleReject = async () => {
@@ -55,7 +62,7 @@ const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
       <div className="mb-6 flex flex-col gap-2">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Approve Blog</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Approve now or reject with reason. Only Pending blogs can be reviewed.
+          Choose how to approve the pending blog, or reject with a reason.
         </p>
       </div>
 
@@ -87,8 +94,11 @@ const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
         <Button variant="outline" className="text-error-600 ring-error-300 hover:bg-error-50 dark:text-error-400 dark:ring-error-700 dark:hover:bg-error-500/10" onClick={handleReject} disabled={isSubmitting}>
           {isSubmitting ? "Processing..." : "Reject"}
         </Button>
-        <Button variant="primary" onClick={handleApprove} disabled={isSubmitting}>
-          {isSubmitting ? "Processing..." : "Approve"}
+        <Button variant="outline" onClick={handleApproveKeepSchedule} disabled={isSubmitting}>
+          {isSubmitting ? "Processing..." : "Approve & Keep Schedule"}
+        </Button>
+        <Button variant="primary" onClick={handleApprovePublishNow} disabled={isSubmitting}>
+          {isSubmitting ? "Processing..." : "Approve & Publish Now"}
         </Button>
       </div>
     </Modal>

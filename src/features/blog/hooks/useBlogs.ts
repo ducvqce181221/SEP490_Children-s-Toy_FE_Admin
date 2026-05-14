@@ -18,6 +18,7 @@ export const useBlogs = () => {
   const { account } = useAuthContext();
   const isAdmin = account?.roleName?.toLowerCase() === "admin";
   const isStaff = account?.roleName?.toLowerCase() === "staff";
+  const currentAccountId = account?.accountId ?? null;
   const isAuthorizedRole = isAdmin || isStaff;
 
   const [blogsResponse, setBlogsResponse] = useState<PaginatedResponse<BlogListItem> | null>(null);
@@ -166,6 +167,7 @@ export const useBlogs = () => {
     roleLabel,
     isAdmin,
     isStaff,
+    currentAccountId,
     handleSearchChange,
     handleSearchSubmit,
     handleStatusFilterChange,
