@@ -46,6 +46,14 @@ const navItems: NavItem[] = [
     path: "/admin/refunds",
   },
   {
+    name: "Shift Management",
+    icon: <CalenderIcon />,
+    subItems: [
+      { name: "Shift Templates", path: "/admin/shifts" },
+      { name: "Work Schedules", path: "/admin/schedules" },
+    ],
+  },
+  {
     name: "Blog Management",
     icon: <PageIcon />,
     path: "/admin/blogs",
