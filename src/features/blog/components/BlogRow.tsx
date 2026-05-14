@@ -11,6 +11,7 @@ interface BlogRowProps {
   rowNumber: number;
   isAdmin: boolean;
   isStaff: boolean;
+  currentAccountId: number | null;
   isSubmitting: boolean;
   isPublishingNow: boolean;
   isHidingBlog: boolean;
@@ -54,6 +55,7 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
   rowNumber,
   isAdmin,
   isStaff,
+  currentAccountId,
   isSubmitting,
   isPublishingNow,
   isHidingBlog,
@@ -65,11 +67,12 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
   onHideBlog,
   onOpenThumbnailPreview,
 }) => {
-  const canStaffEdit = isStaff;
-  const canStaffSubmit = isStaff && blog.status.toLowerCase() === "draft";
+  const canEdit = isStaff || isAdmin;
+  const isOwnBlog = currentAccountId !== null && blog.accountId === currentAccountId;
+  const canSubmitDraft = (isStaff || isAdmin) && isOwnBlog && blog.status.toLowerCase() === "draft";
   const canAdminApprove = isAdmin && blog.status.toLowerCase() === "pending";
   const canPublishNow =
-    (isAdmin || isStaff) &&
+    isAdmin &&
     (blog.status.toLowerCase() === "approved" || blog.status.toLowerCase() === "scheduled");
   const canAdminHideBlog = isAdmin && blog.status.toLowerCase() !== "hidden";
 
@@ -143,7 +146,7 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
             <EyeIcon />
           </button>
 
-          {canStaffEdit && (
+          {canEdit && (
             <button
               type="button"
               onClick={() => onOpenEdit(blog.blogPostId)}
@@ -154,7 +157,7 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
             </button>
           )}
 
-          {canStaffSubmit && (
+          {canSubmitDraft && (
             <button
               type="button"
               disabled={isSubmitting}
