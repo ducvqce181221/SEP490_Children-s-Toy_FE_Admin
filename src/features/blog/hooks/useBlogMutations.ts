@@ -137,7 +137,7 @@ export const useBlogMutations = (onSuccess?: () => void) => {
 
   const approveBlog = async (
     blogPostId: number,
-    decision: "Approved" | "Rejected",
+    decision: "ApprovePublishNow" | "ApproveKeepSchedule" | "Rejected",
     reason?: string,
   ): Promise<ApproveBlogResult> => {
     setIsApproving(true);
@@ -152,9 +152,11 @@ export const useBlogMutations = (onSuccess?: () => void) => {
       return {
         success: true,
         message:
-          decision === "Approved"
-            ? "Blog approved successfully."
-            : "Blog rejected successfully.",
+          decision === "Rejected"
+            ? "Blog rejected successfully."
+            : decision === "ApprovePublishNow"
+            ? "Blog approved and published now successfully."
+            : "Blog approved and kept on schedule successfully.",
         data: updatedBlog,
       };
     } catch (error) {

@@ -18,7 +18,7 @@ export const blogApi = {
   getBlogsForAdmin: async (
     params: BlogQueryParams,
   ): Promise<PaginatedResponse<BlogListItem>> => {
-    return axiosClient.get<PaginatedResponse<BlogListItem>>("/blogs/admin", {
+    return axiosClient.get<PaginatedResponse<BlogListItem>>("/admin/blogs", {
       params,
     });
   },
@@ -26,21 +26,21 @@ export const blogApi = {
   getBlogsForStaff: async (
     params: BlogQueryParams,
   ): Promise<PaginatedResponse<BlogListItem>> => {
-    return axiosClient.get<PaginatedResponse<BlogListItem>>("/blogs/staff", {
+    return axiosClient.get<PaginatedResponse<BlogListItem>>("/admin/blogs/my", {
       params,
     });
   },
 
   getBlogById: async (blogPostId: number): Promise<BlogDetail> => {
-    return axiosClient.get<BlogDetail>(`/blogs/${blogPostId}`);
+    return axiosClient.get<BlogDetail>(`/admin/blogs/${blogPostId}`);
   },
 
   getBlogCategories: async (): Promise<BlogCategoryItem[]> => {
-    return axiosClient.get<BlogCategoryItem[]>("/blogs/categories");
+    return axiosClient.get<BlogCategoryItem[]>("/admin/blog-categories");
   },
 
   createBlog: async (payload: CreateBlogRequest): Promise<BlogDetail> => {
-    return axiosClient.post<BlogDetail, CreateBlogRequest>("/blogs", payload);
+    return axiosClient.post<BlogDetail, CreateBlogRequest>("/admin/blogs", payload);
   },
 
   updateBlog: async (
@@ -48,7 +48,7 @@ export const blogApi = {
     payload: UpdateBlogRequest,
   ): Promise<BlogDetail> => {
     return axiosClient.put<BlogDetail, UpdateBlogRequest>(
-      `/blogs/${blogPostId}`,
+      `/admin/blogs/${blogPostId}`,
       payload,
     );
   },
@@ -58,7 +58,7 @@ export const blogApi = {
     payload: SubmitBlogRequest,
   ): Promise<BlogDetail> => {
     return axiosClient.patch<BlogDetail, SubmitBlogRequest>(
-      `/blogs/${blogPostId}/submit`,
+      `/admin/blogs/${blogPostId}/submit`,
       payload,
     );
   },
@@ -68,17 +68,17 @@ export const blogApi = {
     payload: ApproveBlogRequest,
   ): Promise<BlogDetail> => {
     return axiosClient.patch<BlogDetail, ApproveBlogRequest>(
-      `/blogs/${blogPostId}/approval`,
+      `/admin/blogs/${blogPostId}/approval`,
       payload,
     );
   },
 
   publishNow: async (blogPostId: number): Promise<BlogDetail> => {
-    return axiosClient.patch<BlogDetail>(`/blogs/${blogPostId}/publish-now`);
+    return axiosClient.patch<BlogDetail>(`/admin/blogs/${blogPostId}/publish-now`);
   },
 
   hideBlog: async (blogPostId: number): Promise<BlogDetail> => {
-    return axiosClient.patch<BlogDetail>(`/blogs/${blogPostId}/hide`);
+    return axiosClient.patch<BlogDetail>(`/admin/blogs/${blogPostId}/hide`);
   },
 
   uploadThumbnail: async (file: File): Promise<{ url: string }> => {
@@ -96,7 +96,7 @@ export const blogApi = {
       : `${normalizedBaseURL}/api`;
 
     const response = await axios.post<{ url: string }>(
-      `${apiBaseURL}/blogs/thumbnail/upload`,
+      `${apiBaseURL}/admin/blogs/thumbnail/upload`,
       formData,
       {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -112,7 +112,7 @@ export const blogApi = {
     searchTerm?: string;
     status?: "Visible" | "Hidden";
   }): Promise<PaginatedResponse<BlogReview>> => {
-    return axiosClient.get<PaginatedResponse<BlogReview>>("/blogs/reviews/manage", {
+    return axiosClient.get<PaginatedResponse<BlogReview>>("/admin/blog-reviews", {
       params,
     });
   },
@@ -124,7 +124,7 @@ export const blogApi = {
     return axiosClient.post<
       BlogReviewReply,
       { comment: string; parentReplyId?: number | null; replyToAccountId?: number | null }
-    >(`/blogs/reviews/${reviewBlogId}/replies`, payload);
+    >(`/admin/blog-reviews/${reviewBlogId}/replies`, payload);
   },
 
   updateBlogReviewStatus: async (
@@ -132,7 +132,7 @@ export const blogApi = {
     status: "Visible" | "Hidden",
   ): Promise<BlogReview> => {
     return axiosClient.patch<BlogReview, { status: "Visible" | "Hidden" }>(
-      `/blogs/reviews/${reviewBlogId}/status`,
+      `/admin/blog-reviews/${reviewBlogId}/status`,
       { status },
     );
   },
@@ -142,7 +142,7 @@ export const blogApi = {
     status: "Visible" | "Hidden",
   ): Promise<BlogReviewReply> => {
     return axiosClient.patch<BlogReviewReply, { status: "Visible" | "Hidden" }>(
-      `/blogs/reviews/replies/${replyBlogId}/status`,
+      `/admin/blog-review-replies/${replyBlogId}/status`,
       { status },
     );
   },
