@@ -117,7 +117,7 @@ export function PromotionProductSlotsSection({
   });
 
   const currentSlotStatus = timeSlots[currentSlotIndex]?.status;
-  const isSlotReadOnly = readonly || currentSlotStatus === "Active" || currentSlotStatus === "Expired" || currentSlotStatus === "Inactive";
+  const isSlotReadOnly = readonly || currentSlotStatus === "Active" || currentSlotStatus === "Expired";
 
   return (
     <div className="space-y-6">

@@ -28,21 +28,13 @@ interface PromotionWizardProps {
   initialData?: Promotion | null;
 }
 
-
-const PROMOTION_STATUS_OPTIONS = [
-  { value: "Active", label: "Active" },
-  { value: "Inactive", label: "Inactive" },
-  { value: "Scheduled", label: "Scheduled" },
-  { value: "Expired", label: "Expired" },
-];
-
 const WIZARD_STEPS = ["General Information", "Select Products"];
 
 export function PromotionWizard({ initialData }: PromotionWizardProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
 
-  const isGlobalReadOnly = initialData?.status === "Expired" || initialData?.status === "Inactive";
+  const isGlobalReadOnly = initialData?.status === "Expired";
   const isActive = initialData?.status === "Active";
   const isGeneralLocked = isGlobalReadOnly || isActive;
   const isNew = !initialData;

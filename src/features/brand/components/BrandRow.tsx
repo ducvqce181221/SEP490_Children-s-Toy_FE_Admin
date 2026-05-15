@@ -1,13 +1,14 @@
 "use client";
 
 import React, { memo } from "react";
-import { PencilIcon } from "@/icons/index";
+import { EyeIcon, PencilIcon } from "@/icons/index";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { BrandListItem } from "../types/brand";
 
 interface BrandRowProps {
   brand: BrandListItem;
   rowNumber: number;
+  onViewDetails: (brand: BrandListItem) => void;
   onEdit: (brand: BrandListItem) => void;
 }
 
@@ -34,7 +35,12 @@ const statusClassNameByValue: Record<BrandListItem["status"], string> = {
     "border border-error-200 bg-error-50 text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-300",
 };
 
-const BrandRowComponent: React.FC<BrandRowProps> = ({ brand, rowNumber, onEdit }) => {
+const BrandRowComponent: React.FC<BrandRowProps> = ({
+  brand,
+  rowNumber,
+  onViewDetails,
+  onEdit,
+}) => {
   return (
     <TableRow>
       <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-300">
@@ -63,6 +69,14 @@ const BrandRowComponent: React.FC<BrandRowProps> = ({ brand, rowNumber, onEdit }
 
       <TableCell className="px-5 py-4 text-center">
         <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => onViewDetails(brand)}
+            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
+            aria-label={`View brand ${brand.brandName} details`}
+          >
+            <EyeIcon />
+          </button>
           <button
             type="button"
             onClick={() => onEdit(brand)}

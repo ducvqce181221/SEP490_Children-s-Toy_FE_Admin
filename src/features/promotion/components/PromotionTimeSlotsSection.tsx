@@ -1,11 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useFieldArray } from "react-hook-form";
 import type { PromotionFormData } from "../types/promotion";
 import Input from "@/components/form/input/InputField";
-import Select from "@/components/form/Select";
 import Button from "@/components/ui/button/Button";
 import {
   Table,
@@ -14,8 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TrashBinIcon } from "@/icons";
+import { TrashBinIcon, CloseIcon } from "@/icons";
 import { formatUTCtoLocal, formatLocalToUTC, getIdealFutureTime } from "@/utils/date-utils";
+import { twMerge } from "tailwind-merge";
 
 interface PromotionTimeSlotsSectionProps {
   form: UseFormReturn<PromotionFormData>;
@@ -23,14 +23,15 @@ interface PromotionTimeSlotsSectionProps {
   isNew?: boolean;
 }
 
-
+type TabFilter = "Active_Scheduled" | "Inactive" | "Expired" | "All";
 
 export function PromotionTimeSlotsSection({
   form,
   readonly = false,
-  isNew = false,
 }: PromotionTimeSlotsSectionProps) {
-  const { fields, append, remove } = useFieldArray({
+  const [activeTab, setActiveTab] = useState<TabFilter>("Active_Scheduled");
+
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "promotionTimeSlots",
   });
@@ -50,6 +51,13 @@ export function PromotionTimeSlotsSection({
     });
   };
 
+  const tabs: { id: TabFilter; label: string }[] = [
+    { id: "Active_Scheduled", label: "Active & Scheduled" },
+    { id: "Inactive", label: "Inactive" },
+    { id: "Expired", label: "Expired" },
+    { id: "All", label: "All" },
+  ];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -61,6 +69,24 @@ export function PromotionTimeSlotsSection({
             + Add Time Slot
           </Button>
         )}
+      </div>
+
+      <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-800">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={twMerge(
+              "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+              activeTab === tab.id
+                ? "border-brand-500 text-brand-600 dark:text-brand-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <div className="rounded-xl border border-gray-200 dark:border-white/[0.05] overflow-hidden">
@@ -80,8 +106,8 @@ export function PromotionTimeSlotsSection({
                 Status
               </TableCell>
               {!readonly && (
-                <TableCell isHeader className="px-4 py-3 w-16 text-center font-medium text-gray-500 text-theme-xs">
-                  Delete
+                <TableCell isHeader className="px-4 py-3 w-24 text-center font-medium text-gray-500 text-theme-xs">
+                  Action
                 </TableCell>
               )}
             </TableRow>
@@ -100,11 +126,15 @@ export function PromotionTimeSlotsSection({
               </TableRow>
             ) : (
               fields.map((field, index) => {
-                const isSlotActive = field.status === "Active";
-                const isTimeLocked = readonly || field.status !== "Scheduled";
+                const status = field.status || "Scheduled";
                 
+                // Filter logic
+                if (activeTab === "Active_Scheduled" && status !== "Active" && status !== "Scheduled") return null;
+                if (activeTab === "Inactive" && status !== "Inactive") return null;
+                if (activeTab === "Expired" && status !== "Expired") return null;
 
-
+                const isTimeLocked = readonly || status !== "Scheduled";
+                
                 return (
                 <TableRow key={field.id}>
                   <TableCell className="px-4 py-3 text-sm text-gray-500">
@@ -114,10 +144,13 @@ export function PromotionTimeSlotsSection({
                   {/* startAt */}
                   <TableCell className="px-4 py-3">
                     {isTimeLocked ? (
-                      <span className="text-sm">
-                        {/* Hiển thị local từ giá trị datetime-local đã lưu */}
-                        {field.startAt ? field.startAt.replace("T", " ").substring(0, 16) : "—"}
-                      </span>
+                      <>
+                        <input type="hidden" {...form.register(`promotionTimeSlots.${index}.startAt`)} />
+                        <span className="text-sm dark:text-white">
+                          {/* Hiển thị local từ giá trị datetime-local đã lưu */}
+                          {field.startAt ? field.startAt.replace("T", " ").substring(0, 16) : "—"}
+                        </span>
+                      </>
                     ) : (
                       <Input
                         type="datetime-local"
@@ -132,9 +165,12 @@ export function PromotionTimeSlotsSection({
                   {/* endAt */}
                   <TableCell className="px-4 py-3">
                     {isTimeLocked ? (
-                      <span className="text-sm">
-                        {field.endAt ? field.endAt.replace("T", " ").substring(0, 16) : "—"}
-                      </span>
+                      <>
+                        <input type="hidden" {...form.register(`promotionTimeSlots.${index}.endAt`)} />
+                        <span className="text-sm dark:text-white">
+                          {field.endAt ? field.endAt.replace("T", " ").substring(0, 16) : "—"}
+                        </span>
+                      </>
                     ) : (
                       <Input
                         type="datetime-local"
@@ -149,21 +185,35 @@ export function PromotionTimeSlotsSection({
                   {/* status */}
                   <TableCell className="px-4 py-3">
                     <input type="hidden" {...form.register(`promotionTimeSlots.${index}.status`)} />
-                    <span className="text-sm px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm rounded text-gray-900 dark:text-white">
                       {field.status || "Scheduled"}
                     </span>
                   </TableCell>
 
                   {!readonly && (
                     <TableCell className="px-4 py-3 text-center">
-                      {!isTimeLocked && (
+                      {!isTimeLocked && status === "Scheduled" && (
                         <button
                           type="button"
                           onClick={() => remove(index)}
-                          className="text-gray-400 hover:text-error-500 transition-colors"
+                          className="text-gray-400 hover:text-error-500 transition-colors p-1"
                           title="Delete slot"
                         >
                           <TrashBinIcon className="w-5 h-5" />
+                        </button>
+                      )}
+                      {status === "Active" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to stop this Active time slot? It will become Inactive and cannot be resumed.")) {
+                              update(index, { ...field, status: "Inactive" });
+                            }
+                          }}
+                          className="text-gray-400 hover:text-error-500 transition-colors p-1"
+                          title="Emergency Stop"
+                        >
+                          <CloseIcon className="w-5 h-5" />
                         </button>
                       )}
                     </TableCell>
