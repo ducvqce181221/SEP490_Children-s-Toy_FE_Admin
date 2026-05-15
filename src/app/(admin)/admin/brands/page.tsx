@@ -10,11 +10,9 @@ export const metadata: Metadata = {
 
 export default function BrandsPage() {
   return (
-    <div>
+    <div className="space-y-5 sm:space-y-6">
       <PageBreadcrumb pageTitle="Brand Management" />
-      <div className="space-y-6">
-        <BrandTable />
-      </div>
+      <BrandTable />
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
   BrandMutationResult,
 } from "../types/brand";
 import BrandFormModal from "./BrandFormModal";
+import BrandDetailModal from "./BrandDetailModal";
 import { BrandRow } from "./BrandRow";
 import BrandToolbar from "./BrandToolbar";
 
@@ -54,6 +55,8 @@ const BrandTable = () => {
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<BrandListItem | null>(null);
+  const [viewingBrand, setViewingBrand] = useState<BrandListItem | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const pageRangeText = useMemo(() => {
     if (totalCount === 0) {
@@ -82,6 +85,16 @@ const BrandTable = () => {
   const handleOpenEditModal = (brand: BrandListItem) => {
     setEditingBrand(brand);
     setIsFormModalOpen(true);
+  };
+
+  const handleOpenDetailModal = (brand: BrandListItem) => {
+    setViewingBrand(brand);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setViewingBrand(null);
   };
 
   const handleCloseFormModal = () => {
@@ -206,6 +219,7 @@ const BrandTable = () => {
                     key={brand.brandId}
                     brand={brand}
                     rowNumber={(pageNumber - 1) * pageSize + index + 1}
+                    onViewDetails={handleOpenDetailModal}
                     onEdit={handleOpenEditModal}
                   />
                 ))}
@@ -257,6 +271,14 @@ const BrandTable = () => {
         onClose={handleCloseFormModal}
         onSubmit={handleSubmitBrand}
       />
+
+      {isDetailModalOpen && viewingBrand && (
+        <BrandDetailModal
+          isOpen={isDetailModalOpen}
+          brand={viewingBrand}
+          onClose={handleCloseDetailModal}
+        />
+      )}
     </div>
   );
 };
