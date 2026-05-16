@@ -3,6 +3,7 @@
 import React, { memo } from "react";
 import { EyeIcon } from "@/icons/index";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { formatDisplayDate } from "@/utils/date-utils";
 import {
   ORDER_STATUS_ID,
   ORDER_STATUS_LABEL,
@@ -19,15 +20,8 @@ interface OrderRowProps {
 
 const formatDateTime = (dateValue: string | null) => {
   if (!dateValue) return null;
-  const d = new Date(dateValue);
-  if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
+  const res = formatDisplayDate(dateValue, "");
+  return res === "" ? null : res;
 };
 
 const formatCurrency = (amount: number) =>
@@ -121,16 +115,27 @@ const OrderRowComponent: React.FC<OrderRowProps> = ({ order, rowNumber, onOpenDe
 
       {/* Nhân viên phụ trách */}
       <TableCell className="px-5 py-4 text-start">
-        {order.assignedToStaffName ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-200">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
-            {order.assignedToStaffName}
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-1 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
-            Chưa gán
-          </span>
-        )}
+        <div className="flex flex-col gap-1.5">
+          {order.assignedToStaffName ? (
+            <span className="inline-flex w-max items-center gap-1.5 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+              <span className="font-semibold text-blue-500">S:</span> {order.assignedToStaffName}
+            </span>
+          ) : (
+            <span className="inline-flex w-max items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
+              Staff: Chưa gán
+            </span>
+          )}
+          
+          {order.assignedToMerchName ? (
+            <span className="inline-flex w-max items-center gap-1.5 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+              <span className="font-semibold text-purple-500">M:</span> {order.assignedToMerchName}
+            </span>
+          ) : (
+             <span className="inline-flex w-max items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
+              Merch: Chưa gán
+            </span>
+          )}
+        </div>
       </TableCell>
 
       {/* Timestamps */}

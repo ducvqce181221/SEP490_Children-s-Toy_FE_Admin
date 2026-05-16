@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Button from "@/components/ui/button/Button";
 import { useAuthContext } from "@/context/AuthContext";
+import { formatDisplayDate } from "@/utils/date-utils";
 import { orderApi } from "../services/order-api";
 import { useOrderMutations } from "../hooks/useOrderMutations";
 import {
@@ -38,13 +39,7 @@ interface OrderDetailPageProps {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmtDt = (v: string | null | undefined) => {
-  if (!v) return "—";
-  const d = new Date(v);
-  return Number.isNaN(d.getTime())
-    ? "—"
-    : new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(d);
-};
+const fmtDt = (v: string | null | undefined) => formatDisplayDate(v, "—");
 
 const fmtCurrency = (n: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
@@ -274,10 +269,29 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             <OrderStatusBadge statusId={order.statusId} statusName={order.statusName} />
             <PaymentBadge status={order.paymentStatus} />
           </div>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Assigned to: <span className="font-medium text-gray-700 dark:text-gray-300">{order.assignedToStaffName ?? "Unassigned"}</span>
-            {" · "}Placed at {fmtDt(order.orderDate)}
-          </p>
+          <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-2">
+            <span>Assigned:</span>
+            {order.assignedToStaffName ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                <span className="font-semibold text-blue-500">S:</span> {order.assignedToStaffName}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
+                Staff: Chưa gán
+              </span>
+            )}
+            {order.assignedToMerchName ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                <span className="font-semibold text-purple-500">M:</span> {order.assignedToMerchName}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
+                Merch: Chưa gán
+              </span>
+            )}
+            <span className="ml-2 text-gray-400">·</span>
+            <span>Placed at {fmtDt(order.orderDate)}</span>
+          </div>
         </div>
         {order.statusName === ORDER_STATUS.CANCELLED && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800/50 dark:bg-red-900/20">

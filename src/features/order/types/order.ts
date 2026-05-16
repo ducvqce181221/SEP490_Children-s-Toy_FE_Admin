@@ -93,6 +93,8 @@ export interface OrderListItem {
   paymentStatus: string;
   assignedToStaffId: number | null;
   assignedToStaffName: string | null;
+  assignedToMerchId: number | null;
+  assignedToMerchName: string | null;
   orderDate: string;
   confirmedAt: string | null;
   shippedAt: string | null;
@@ -173,6 +175,8 @@ export interface OrderDetail {
   // Phân công
   assignedToStaffId: number | null;
   assignedToStaffName: string | null;
+  assignedToMerchId: number | null;
+  assignedToMerchName: string | null;
   // Lịch sử đơn hàng
   statusHistory: OrderStatusHistory[];
   // Vận chuyển
