@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TrashBinIcon, CloseIcon } from "@/icons";
-import { formatUTCtoLocal, formatLocalToUTC, getIdealFutureTime, formatDisplayDate } from "@/utils/date-utils";
+import { formatUTCtoLocal, formatLocalToUTC, getIdealFutureTime, formatLocalToDisplay } from "@/utils/date-utils";
 import { twMerge } from "tailwind-merge";
 
 interface PromotionTimeSlotsSectionProps {
@@ -147,7 +147,7 @@ export function PromotionTimeSlotsSection({
                       <>
                         <input type="hidden" {...form.register(`promotionTimeSlots.${index}.startAt`)} />
                         <span className="text-sm dark:text-white">
-                          {formatDisplayDate(field.startAt)}
+                          {formatLocalToDisplay(field.startAt)}
                         </span>
                       </>
                     ) : (
@@ -167,7 +167,7 @@ export function PromotionTimeSlotsSection({
                       <>
                         <input type="hidden" {...form.register(`promotionTimeSlots.${index}.endAt`)} />
                         <span className="text-sm dark:text-white">
-                          {formatDisplayDate(field.endAt)}
+                          {formatLocalToDisplay(field.endAt)}
                         </span>
                       </>
                     ) : (
