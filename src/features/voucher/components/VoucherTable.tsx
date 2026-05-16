@@ -14,7 +14,10 @@ import Pagination from "@/components/common/Pagination";
 import { useVouchers } from "../hooks/useVouchers";
 import { useVoucherMutations } from "../hooks/useVoucherMutations";
 import { VoucherRow } from "./VoucherRow";
-import { VoucherFormData } from "../types/voucher";
+import { VoucherFormData, Voucher } from "../types/voucher";
+import { useAuthContext } from "@/context/AuthContext";
+import { VoucherRejectModal } from "./VoucherRejectModal";
+import { useState, useCallback } from "react";
 
 export const VoucherTable = () => {
   const {
@@ -40,27 +43,51 @@ export const VoucherTable = () => {
     refetch
   } = useVouchers();
 
-  const { createVoucher, updateVoucher, deleteVoucher: apiDeleteVoucher, isSubmitting } = useVoucherMutations(() => {
+  const { account } = useAuthContext();
+  const [rejectVoucherItem, setRejectVoucherItem] = useState<Voucher | null>(null);
+
+  const { createVoucher, updateVoucher, deleteVoucher: apiDeleteVoucher, approveVoucher, rejectVoucher, isSubmitting } = useVoucherMutations(() => {
     // on success reload list
     refetch();
     setIsModalOpen(false);
     setEditVoucher(null);
     setViewVoucher(null);
     setDeleteVoucher(null);
+    setRejectVoucherItem(null);
   });
 
-  const handleSave = async (formData: VoucherFormData) => {
+  const handleSave = useCallback(async (formData: VoucherFormData) => {
     if (editVoucher) {
       await updateVoucher(editVoucher.voucherId, formData);
     } else {
       await createVoucher(formData);
     }
-  };
+  }, [editVoucher, updateVoucher, createVoucher]);
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false);
+    setEditVoucher(null);
+    setViewVoucher(null);
+  }, [setIsModalOpen, setEditVoucher, setViewVoucher]);
 
   const handleDeleteConfirm = async () => {
     if (deleteVoucher) {
       await apiDeleteVoucher(deleteVoucher.voucherId);
     }
+  };
+
+  const handleApprove = async (voucher: Voucher) => {
+    await approveVoucher(voucher.voucherId);
+  };
+
+  const handleRejectConfirm = async (reason: string) => {
+    if (rejectVoucherItem) {
+      await rejectVoucher(rejectVoucherItem.voucherId, reason);
+    }
+  };
+
+  const handleInactive = async (voucher: Voucher) => {
+    await updateVoucher(voucher.voucherId, { status: "Inactive" });
   };
 
   const paginatedData = data?.items || [];
@@ -156,6 +183,10 @@ export const VoucherTable = () => {
                     onDeleteClick={() => setDeleteVoucher(voucher)}
                     onDeleteCancel={() => setDeleteVoucher(null)}
                     onDeleteConfirm={handleDeleteConfirm}
+                    onApprove={() => handleApprove(voucher)}
+                    onReject={() => setRejectVoucherItem(voucher)}
+                    onInactive={() => handleInactive(voucher)}
+                    roleName={account?.roleName}
                   />
                 ))
               ) : (
@@ -205,11 +236,14 @@ export const VoucherTable = () => {
         voucherId={currentVoucherId}
         isSubmitting={isSubmitting}
         onSave={handleSave}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditVoucher(null);
-          setViewVoucher(null);
-        }} 
+        onClose={handleCloseModal} 
+      />
+
+      <VoucherRejectModal
+        isOpen={!!rejectVoucherItem}
+        onClose={() => setRejectVoucherItem(null)}
+        onConfirm={handleRejectConfirm}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

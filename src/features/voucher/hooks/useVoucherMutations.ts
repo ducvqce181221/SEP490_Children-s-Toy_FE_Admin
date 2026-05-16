@@ -24,7 +24,7 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
     }
   };
 
-  const updateVoucher = async (id: number, data: VoucherFormData) => {
+  const updateVoucher = async (id: number, data: Partial<VoucherFormData & { isDeleted?: boolean, reason?: string | null }>) => {
     setIsSubmitting(true);
     try {
       await voucherApi.updateVoucher(id, data);
@@ -35,6 +35,42 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
       toast.error(error instanceof Error ? error.message : "Cập nhật thất bại");
       if (process.env.NODE_ENV === "development") {
         console.error("[useVoucherMutations.updateVoucher]", error);
+      }
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const approveVoucher = async (id: number) => {
+    setIsSubmitting(true);
+    try {
+      await voucherApi.updateVoucher(id, { status: "Scheduled" });
+      toast.success("Phê duyệt voucher thành công");
+      onSuccess?.();
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Phê duyệt thất bại");
+      if (process.env.NODE_ENV === "development") {
+        console.error("[useVoucherMutations.approveVoucher]", error);
+      }
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const rejectVoucher = async (id: number, reason: string) => {
+    setIsSubmitting(true);
+    try {
+      await voucherApi.updateVoucher(id, { status: "Rejected", reason });
+      toast.success("Từ chối voucher thành công");
+      onSuccess?.();
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Từ chối thất bại");
+      if (process.env.NODE_ENV === "development") {
+        console.error("[useVoucherMutations.rejectVoucher]", error);
       }
       return false;
     } finally {
@@ -60,5 +96,5 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
     }
   }
 
-  return { createVoucher, updateVoucher, deleteVoucher, isSubmitting };
+  return { createVoucher, updateVoucher, deleteVoucher, approveVoucher, rejectVoucher, isSubmitting };
 };
