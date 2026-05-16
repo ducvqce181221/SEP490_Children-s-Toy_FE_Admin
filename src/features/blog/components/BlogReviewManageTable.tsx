@@ -5,6 +5,11 @@ import toast from "react-hot-toast";
 import Pagination from "@/components/common/Pagination";
 import { Modal } from "@/components/ui/modal";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/button/Button";
+import { Dropdown } from "@/components/ui/dropdown/Dropdown";
+import Label from "@/components/form/Label";
+import Select from "@/components/form/Select";
 import { blogApi } from "../services/blog-api";
 import { BlogReview, BlogReviewReply } from "../types/blog";
 
@@ -18,8 +23,11 @@ const flattenReplies = (replies: BlogReviewReply[], depth = 1): Array<{ item: Bl
 const headerCellClassName =
   "px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400";
 
-const footerSelectClassName =
-  "h-10 rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300";
+const FilterIcon = () => (
+  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2.5 5.83333H17.5M5 10H15M8.33333 14.1667H11.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 const toDateTimeText = (value: string | null) => {
   if (!value) {
@@ -95,6 +103,7 @@ export default function BlogReviewManageTable() {
   const [replyText, setReplyText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [expandedReviews, setExpandedReviews] = useState<Record<number, boolean>>({});
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -119,7 +128,6 @@ export default function BlogReviewManageTable() {
     void fetchData();
   }, [pageNumber, pageSize, status, submittedSearch]);
 
-  const totalRows = useMemo(() => items.reduce((sum, item) => sum + 1 + flattenReplies(item.replies).length, 0), [items]);
   const pageRangeText = useMemo(() => {
     if (totalCount === 0) {
       return "No data available";
@@ -177,38 +185,56 @@ export default function BlogReviewManageTable() {
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white text-black dark:border-white/[0.05] dark:bg-white/[0.03] dark:text-white">
-      <div className="flex flex-wrap items-center gap-3 p-4">
-        <input
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleSearchSubmit();
-            }
-          }}
-          placeholder="Search blog title, user, comment..."
-          className="h-10 w-[320px] rounded-lg border border-gray-300 px-3 text-sm text-black placeholder:text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-300"
-        />
-        <button
-          onClick={handleSearchSubmit}
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600"
-        >
-          Search
-        </button>
-        <select
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value as "all" | "Visible" | "Hidden");
-            setPageNumber(1);
-          }}
-          className="h-10 rounded-lg border border-gray-300 px-3 text-sm text-black dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-        >
-          <option value="all">All status</option>
-          <option value="Visible">Visible</option>
-          <option value="Hidden">Hidden</option>
-        </select>
-        <span className="text-sm text-gray-500 dark:text-gray-400">Rows in page: {totalRows}</span>
+      <div className="px-5 py-5 sm:px-6">
+        <div className="mb-5">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Blog Reviews</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Manage customer reviews and replies for blog posts.
+          </p>
+        </div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-xs">
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearchSubmit();
+                }
+              }}
+              placeholder="Search reviews... (Press Enter)"
+            />
+          </div>
+          <div className="relative">
+            <Button
+              variant="outline"
+              startIcon={<FilterIcon />}
+              onClick={() => setIsFilterOpen((prev) => !prev)}
+              className="h-11 px-7 font-medium"
+            >
+              Filter
+            </Button>
+            <Dropdown isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} className="right-0 w-[280px] p-4">
+              <div className="space-y-3">
+                <Label>Status</Label>
+                <Select
+                  options={[
+                    { value: "all", label: "All status" },
+                    { value: "Visible", label: "Visible" },
+                    { value: "Hidden", label: "Hidden" },
+                  ]}
+                  value={status}
+                  onChange={(e) => {
+                    setStatus(e.target.value as "all" | "Visible" | "Hidden");
+                    setPageNumber(1);
+                    setIsFilterOpen(false);
+                  }}
+                />
+              </div>
+            </Dropdown>
+          </div>
+        </div>
       </div>
 
       <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
@@ -417,7 +443,7 @@ export default function BlogReviewManageTable() {
           <label htmlFor="blog-review-page-size" className="font-medium">Rows per page</label>
           <select
             id="blog-review-page-size"
-            className={footerSelectClassName}
+            className="rounded-md border border-gray-300 px-2 py-1 focus:outline-hidden focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800"
             value={pageSize}
             onChange={(event) => {
               setPageSize(Number(event.target.value));

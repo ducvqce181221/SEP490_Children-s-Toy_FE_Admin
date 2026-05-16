@@ -1,8 +1,17 @@
-import React from "react";
-import SearchInput from "@/components/common/SearchInput";
+import React, { useState } from "react";
 import Button from "@/components/ui/button/Button";
 import { PlusIcon } from "@/icons/index";
+import SearchInput from "@/components/common/SearchInput";
+import { Dropdown } from "@/components/ui/dropdown/Dropdown";
+import Label from "@/components/form/Label";
+import Select from "@/components/form/Select";
 import { BrandSortBy } from "../types/brand";
+
+const FilterIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2.5 5.83333H17.5M5 10H15M8.33333 14.1667H11.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 interface BrandToolbarProps {
   searchTerm: string;
@@ -14,21 +23,6 @@ interface BrandToolbarProps {
   onAddClick: () => void;
 }
 
-const sortOptions: Array<{ value: BrandSortBy; label: string }> = [
-  { value: "createdat", label: "Created Date" },
-  { value: "updatedat", label: "Updated Date" },
-  { value: "status", label: "Status" },
-  { value: "brandname", label: "Brand Name" },
-];
-
-const directionOptions = [
-  { value: "asc", label: "Ascending" },
-  { value: "desc", label: "Descending" },
-] as const;
-
-const selectClassName =
-  "h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800";
-
 const BrandToolbar: React.FC<BrandToolbarProps> = ({
   searchTerm,
   onSearchChange,
@@ -38,15 +32,34 @@ const BrandToolbar: React.FC<BrandToolbarProps> = ({
   onSortDirectionChange,
   onAddClick,
 }) => {
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+
+  React.useEffect(() => {
+    setLocalSearchTerm(searchTerm);
+  }, [searchTerm]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      onSearchChange(localSearchTerm);
+    }
+  };
+
+  const clearFilters = () => {
+    onSortByChange("createdat");
+    onSortDirectionChange(true);
+    setIsFilterOpen(false);
+  };
+
   return (
     <div className="px-5 py-5 sm:px-6">
-      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Brand List
+            Brands
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage brand records with backend-synced data.
+            Manage brands in the system.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -56,59 +69,71 @@ const BrandToolbar: React.FC<BrandToolbarProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-5 lg:pt-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-xs">
           <SearchInput
-            value={searchTerm}
-            onChange={onSearchChange}
-            placeholder="Search by brand name"
+            placeholder="Search brands... (Press Enter)"
+            value={localSearchTerm}
+            onChange={setLocalSearchTerm}
+            onKeyDown={handleKeyDown}
           />
         </div>
 
-        <div className="lg:col-span-7">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:justify-end">
-            <div>
-              <label
-                htmlFor="brand-sort-field"
-                className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Sort by
-              </label>
-              <select
-                id="brand-sort-field"
-                className={`${selectClassName} w-full sm:w-44`}
-                value={sortBy}
-                onChange={(event) => onSortByChange(event.target.value as BrandSortBy)}
-              >
-                {sortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="relative">
+          <Button
+            variant="outline"
+            startIcon={<FilterIcon />}
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="dropdown-toggle"
+          >
+            Filter
+            {(sortBy !== "createdat" || !sortDesc) && (
+              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-brand-500 rounded-full">
+                !
+              </span>
+            )}
+          </Button>
 
-            <div>
-              <label
-                htmlFor="brand-sort-direction"
-                className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Direction
-              </label>
-              <select
-                id="brand-sort-direction"
-                className={`${selectClassName} w-full sm:w-40`}
-                value={sortDesc ? "desc" : "asc"}
-                onChange={(event) => onSortDirectionChange(event.target.value === "desc")}
-              >
-                {directionOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+          <Dropdown isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} className="w-[300px] p-4 right-0">
+            <div className="flex flex-col gap-4">
+              <h4 className="font-semibold text-gray-800 dark:text-white/90">Filter Brands</h4>
+
+              <div>
+                <Label>Sort By</Label>
+                <Select
+                  options={[
+                    { value: "createdat", label: "Created Date" },
+                    { value: "updatedat", label: "Updated Date" },
+                    { value: "status", label: "Status" },
+                    { value: "brandname", label: "Brand Name" },
+                  ]}
+                  onChange={(e) => onSortByChange(e.target.value as BrandSortBy)}
+                  value={sortBy}
+                />
+              </div>
+
+              <div>
+                <Label>Order</Label>
+                <Select
+                  options={[
+                    { value: "desc", label: "Descending" },
+                    { value: "asc", label: "Ascending" },
+                  ]}
+                  onChange={(e) => onSortDirectionChange(e.target.value === "desc")}
+                  value={sortDesc ? "desc" : "asc"}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+                <Button variant="primary" size="sm" onClick={() => setIsFilterOpen(false)}>
+                  Apply
+                </Button>
+              </div>
             </div>
-          </div>
+          </Dropdown>
         </div>
       </div>
     </div>
