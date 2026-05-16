@@ -124,6 +124,8 @@ export const VoucherToolbar: React.FC<VoucherToolbarProps> = ({
                     { value: "Inactive", label: "Inactive" },
                     { value: "Scheduled", label: "Scheduled" },
                     { value: "Expired", label: "Expired" },
+                    { value: "Pending", label: "Pending" },
+                    { value: "Rejected", label: "Rejected" },
                   ]}
                   onChange={handleStatusChange}
                   value={localFilters.status}

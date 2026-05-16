@@ -52,6 +52,11 @@ const navItems: NavItem[] = [
     path: "/admin/refunds",
   },
   {
+    icon: <DollarLineIcon />,
+    name: "Wallet Management",
+    path: "/admin/wallets",
+  },
+  {
     name: "Shift Management",
     icon: <TimeIcon />,
     subItems: [

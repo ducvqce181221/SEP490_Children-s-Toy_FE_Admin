@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getMinimumFutureTime } from "@/utils/date-utils";
 
 export const VoucherFormSchema = z.object({
   voucherCode: z
@@ -37,8 +38,8 @@ export const VoucherFormSchema = z.object({
   
   // SỬA LỖI 3: Đổi 'errorMap' thành 'message'
   discountTarget: z
-    .enum(["ORDER_TOTAL", "SHIPPING_FEE"], { 
-      message: "Discount target must be either ORDER_TOTAL or SHIPPING_FEE." 
+    .enum(["ORDER_TOTAL", "SHIPPING_FEE", "FINAL_PRICE"], { 
+      message: "Discount target must be either ORDER_TOTAL, SHIPPING_FEE, or FINAL_PRICE." 
     }),
   
   minOrderAmount: z
@@ -69,8 +70,8 @@ export const VoucherFormSchema = z.object({
   
   // SỬA LỖI 4: Đổi 'errorMap' thành 'message'
   status: z
-    .enum(["Scheduled", "Active", "Inactive", "Expired"], { 
-      message: "Status must be one of Scheduled, Active, Inactive, or Expired." 
+    .enum(["Scheduled", "Active", "Inactive", "Expired", "Pending", "Rejected"], { 
+      message: "Status must be one of Scheduled, Active, Inactive, Expired, Pending, or Rejected." 
     }),
 })
 .refine(data => {
@@ -80,6 +81,16 @@ export const VoucherFormSchema = z.object({
   return true;
 }, {
   message: "Discount value must be less than or equal to 100 for percentage vouchers.",
+  path: ["discountValue"]
+})
+.refine(data => {
+  // Đối với FIXED, giá trị giảm giá không được lớn hơn mức chi tiêu tối thiểu (nếu có)
+  if (data.discountType === "FIXED" && data.minOrderAmount !== null && data.minOrderAmount !== undefined) {
+    return data.discountValue <= data.minOrderAmount;
+  }
+  return true;
+}, {
+  message: "Discount value cannot be greater than the minimum order amount for fixed vouchers.",
   path: ["discountValue"]
 })
 .refine(data => {
@@ -104,6 +115,15 @@ export const VoucherFormSchema = z.object({
   path: ["endDate"]
 })
 .refine(data => {
+  const start = new Date(data.startDate);
+  const minFutureTime = getMinimumFutureTime(); 
+  return start.getTime() >= minFutureTime;
+}, {
+  message: "Start date must be at least 10 minutes from now.",
+  path: ["startDate"]
+})
+
+.refine(data => {
   if (data.totalQuantity !== null && data.totalQuantity !== undefined && data.maxUsagePerUser !== null && data.maxUsagePerUser !== undefined) {
     return data.maxUsagePerUser <= data.totalQuantity;
   }
@@ -111,6 +131,15 @@ export const VoucherFormSchema = z.object({
 }, {
   message: "Max usage per user must be less than or equal to total quantity.",
   path: ["maxUsagePerUser"]
+})
+.refine(data => {
+  if (data.discountType === "PERCENTAGE" && (data.maxDiscountCap === null || data.maxDiscountCap === undefined)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Max discount cap is required for percentage vouchers.",
+  path: ["maxDiscountCap"]
 });
 
 export type VoucherFormDataSchema = z.infer<typeof VoucherFormSchema>;

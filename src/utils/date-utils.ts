@@ -35,10 +35,22 @@ export const formatLocalToUTC = (dateString: string | null | undefined): string 
 
 /**
  * UTC (API) -> Local (UI Display)
+ * Dùng cho dữ liệu trực tiếp từ API (UTC+0)
  */
 export const formatDisplayDate = (dateString: string | null | undefined, fallback = "-"): string => {
   if (!dateString) return fallback;
   const date = parseISO(ensureUTC(dateString));
+  return isValid(date) ? format(date, "dd/MM/yyyy HH:mm") : fallback;
+};
+
+/**
+ * Local (Input string yyyy-MM-ddTHH:mm) -> Local (UI Display dd/MM/yyyy HH:mm)
+ * Dùng khi hiển thị giá trị đang nằm trong form (đã qua formatUTCtoLocal)
+ * Tránh việc bị cộng dồn múi giờ (double conversion)
+ */
+export const formatLocalToDisplay = (dateString: string | null | undefined, fallback = "-"): string => {
+  if (!dateString) return fallback;
+  const date = parseISO(dateString); 
   return isValid(date) ? format(date, "dd/MM/yyyy HH:mm") : fallback;
 };
 

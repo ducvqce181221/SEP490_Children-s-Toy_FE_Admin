@@ -8,10 +8,10 @@ import Input from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
 import TextArea from "@/components/form/input/TextArea";
 import Button from "@/components/ui/button/Button";
-import { VoucherFormData } from "../types/voucher";
+import { Voucher, VoucherFormData } from "../types/voucher";
 import { VoucherFormSchema } from "../types/voucher.schema";
 import { voucherApi } from "../services/voucher-api";
-import { formatUTCtoLocal, formatLocalToUTC, formatDisplayDate } from "@/utils/date-utils";
+import { formatUTCtoLocal, formatLocalToUTC, formatDisplayDate, getIdealFutureTime } from "@/utils/date-utils";
 
 export type VoucherModalMode = "create" | "edit" | "detail";
 
@@ -51,15 +51,20 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
   const isEditMode = mode === "edit";
   const isDetailMode = mode === "detail";
   const isReadOnly = isDetailMode;
-
+  
   const [isLoading, setIsLoading] = useState(false);
-  const [rawVoucher, setRawVoucher] = useState<any>(null);
+  const [rawVoucher, setRawVoucher] = useState<Voucher | null>(null);
+
+  // Không hiển thị Status khi tạo mới hoặc khi edit một voucher đang bị Rejected
+  const shouldShowStatus = isDetailMode || (isEditMode && rawVoucher?.status !== "Rejected");
 
   const {
     register,
     handleSubmit,
     reset,
     control,
+    setValue,
+    trigger,
     formState: { errors },
   } = useForm<VoucherFormData>({
     resolver: zodResolver(VoucherFormSchema),
@@ -67,8 +72,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
     mode: "onTouched",
   });
 
-  const startDate = useWatch({ control, name: "startDate" });
-  const endDate = useWatch({ control, name: "endDate" });
+  const discountType = useWatch({ control, name: "discountType" });
 
   useEffect(() => {
     if (isOpen) {
@@ -104,10 +108,21 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
         fetchVoucher();
       } else {
         setRawVoucher(null);
-        reset(defaultValues);
+        reset({
+          ...defaultValues,
+          startDate: formatUTCtoLocal(new Date(getIdealFutureTime()).toISOString()),
+          endDate: formatUTCtoLocal(new Date(getIdealFutureTime() + 86400000).toISOString()),
+        });
       }
     }
   }, [isOpen, voucherId, isEditMode, isDetailMode, reset, onClose]);
+
+  // Tự động xóa Max Discount Cap khi chọn loại giảm giá là FIXED
+  useEffect(() => {
+    if (discountType === "FIXED" && !isReadOnly) {
+      setValue("maxDiscountCap", null);
+    }
+  }, [discountType, setValue, isReadOnly]);
 
   const onFormSubmit = (data: VoucherFormData) => {
     if (isReadOnly) return;
@@ -144,6 +159,28 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
         <div className="py-10 text-center text-gray-500">Loading voucher details...</div>
       ) : (
         <form className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto pr-2" onSubmit={handleSubmit(onFormSubmit)}>
+          
+          {isEditMode && rawVoucher?.status === "Rejected" && rawVoucher?.reason && (
+            <div className="bg-error-50 dark:bg-error-500/10 border-l-4 border-error-500 p-4 rounded-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-error-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-error-800 dark:text-error-400">
+                    Voucher Rejected
+                  </h3>
+                  <div className="mt-2 text-sm text-error-700 dark:text-error-300">
+                    <p>Reason: {rawVoucher.reason}</p>
+                    <p className="mt-1 italic text-xs">Edit and save to resubmit for approval.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <Label>
@@ -222,13 +259,15 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <Label>Max Discount Cap (VND)</Label>
+              <Label className={discountType === "FIXED" ? "opacity-50" : ""}>
+                Max Discount Cap (VND) {discountType === "FIXED" && <span className="text-xs italic">(Not applicable for Fixed)</span>}
+              </Label>
               <Input 
                 type="number" 
-                placeholder="Limit discount up to..." 
+                placeholder={discountType === "FIXED" ? "Not applicable" : "Limit discount up to..."} 
                 error={!!errors.maxDiscountCap}
                 hint={errors.maxDiscountCap?.message}
-                disabled={isReadOnly}
+                disabled={isReadOnly || discountType === "FIXED"}
                 {...register("maxDiscountCap", { 
                   setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v) 
                 })}
@@ -243,19 +282,21 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
                 hint={errors.minOrderAmount?.message}
                 disabled={isReadOnly}
                 {...register("minOrderAmount", { 
-                  setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v) 
+                  setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v),
+                  onChange: () => trigger("discountValue")
                 })}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
+            <div className={shouldShowStatus ? "" : "sm:col-span-2"}>
               <Label>Discount Target</Label>
               <Select 
                 options={[
                   { value: "ORDER_TOTAL", label: "Entire Order" },
                   { value: "SHIPPING_FEE", label: "Shipping Fee" },
+                  { value: "FINAL_PRICE", label: "Final Price" },
                 ]}
                 error={!!errors.discountTarget}
                 hint={errors.discountTarget?.message}
@@ -263,21 +304,25 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
                 {...register("discountTarget")}
               />
             </div>
-            <div>
-              <Label>Status</Label>
-              <Select 
-                options={[
-                  { value: "Active", label: "Active" },
-                  { value: "Inactive", label: "Inactive" },
-                  { value: "Scheduled", label: "Scheduled" },
-                  { value: "Expired", label: "Expired" },
-                ]}
-                error={!!errors.status}
-                hint={errors.status?.message}
-                disabled={isReadOnly}
-                {...register("status")}
-              />
-            </div>
+            {shouldShowStatus && (
+              <div>
+                <Label>Status</Label>
+                <Select 
+                  options={[
+                    { value: "Active", label: "Active" },
+                    { value: "Inactive", label: "Inactive" },
+                    { value: "Scheduled", label: "Scheduled" },
+                    { value: "Expired", label: "Expired" },
+                    { value: "Pending", label: "Pending" },
+                    { value: "Rejected", label: "Rejected" },
+                  ]}
+                  error={!!errors.status}
+                  hint={errors.status?.message}
+                  disabled={isReadOnly}
+                  {...register("status")}
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

@@ -8,7 +8,7 @@ import { PromotionProductSlotTable } from "./PromotionProductSlotTable";
 import { ProductCatalogSection } from "./ProductCatalogSection";
 import type { ProductListItem } from "@/features/product/types/product";
 import Select from "@/components/form/Select";
-import { formatDisplayDate } from "@/utils/date-utils";
+import { formatLocalToDisplay } from "@/utils/date-utils";
 
 interface PromotionProductSlotsSectionProps {
   form: UseFormReturn<PromotionFormData>;
@@ -109,8 +109,8 @@ export function PromotionProductSlotsSection({
   const currentSlotIndex = Math.min(selectedSlotIndex, timeSlots.length - 1);
 
   const slotOptions = timeSlots.map((ts, index) => {
-    const start = formatDisplayDate(ts.startAt, "N/A");
-    const end = formatDisplayDate(ts.endAt, "N/A");
+    const start = formatLocalToDisplay(ts.startAt, "N/A");
+    const end = formatLocalToDisplay(ts.endAt, "N/A");
     return {
       value: index.toString(),
       label: `Slot ${index + 1}: ${start} to ${end}`,

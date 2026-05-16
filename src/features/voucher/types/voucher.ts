@@ -20,6 +20,7 @@ export interface Voucher {
   status: string;
   createdAt: string;
   updatedAt: string | null;
+  reason: string | null;
 }
 
 export type VoucherFormData = z.infer<typeof VoucherFormSchema>;

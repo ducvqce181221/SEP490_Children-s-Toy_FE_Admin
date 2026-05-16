@@ -28,6 +28,6 @@ export const voucherApi = {
   createVoucher: (data: VoucherFormData) => 
     axiosClient.post<Voucher, VoucherFormData>("/vouchers", data),
 
-  updateVoucher: (id: number, data: Partial<VoucherFormData & { isDeleted: boolean }>) =>
-    axiosClient.put<Voucher, Partial<VoucherFormData & { isDeleted: boolean }>>(`/vouchers/${id}`, data),
+  updateVoucher: (id: number, data: Partial<VoucherFormData & { isDeleted: boolean, reason?: string | null }>) =>
+    axiosClient.put<Voucher, Partial<VoucherFormData & { isDeleted: boolean, reason?: string | null }>>(`/vouchers/${id}`, data),
 };
