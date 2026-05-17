@@ -23,6 +23,7 @@ import {
 import { useAuthContext } from "@/context/AuthContext";
 import { useCampaignImageUpload } from "../hooks/useCampaignImageUpload";
 import { formatLocalToUTC, formatUTCtoLocal } from "@/utils/date-utils";
+import { accountApi } from "@/features/account/services/account-api";
 import {
   DocsIcon,
   BoxCubeIcon,
@@ -142,7 +143,7 @@ const DesktopPreview: React.FC<{ title: string; message: string; imageUrl?: stri
 
 // ─── Step Progress Bar ────────────────────────────────────────────────────────
 
-const STEP_LABELS = ["Subject", "Content", "Audience & Schedule"];
+const STEP_LABELS = ["Subject", "Content", "Audience"];
 
 const WizardProgress: React.FC<{ currentStep: number }> = ({ currentStep }) => (
   <div className="flex items-center gap-0 mb-8">
@@ -233,6 +234,7 @@ const SearchDropdown: React.FC<{
         </svg>
         <input
           value={term}
+          maxLength={255}
           onChange={(e) => handleChange(e.target.value)}
           onFocus={() => { setOpen(true); onSearch(term); }}
           placeholder={placeholder}
@@ -341,6 +343,9 @@ const Step1: React.FC<{
       <div>
         <Label>
           Campaign name <span className="text-red-500">*</span>
+          <span className="block text-xs font-normal text-gray-400 dark:text-gray-500 mt-0.5">
+            Up to 255 characters ({state.campaignName.length}/255)
+          </span>
         </Label>
         <Input
           type="text"
@@ -460,9 +465,8 @@ const Step2: React.FC<{
   templates: NotificationTemplate[];
   isUploading: boolean;
   onSelectImage: (file: File) => void;
-  onImageUrlChange: (value: string) => void;
   onClearImage: () => void;
-}> = ({ state, update, errors, templates, isUploading, onSelectImage, onImageUrlChange, onClearImage }) => {
+}> = ({ state, update, errors, templates, isUploading, onSelectImage, onClearImage }) => {
   const previewTitle = getPreviewTitle(state);
   const previewMessage = getPreviewMessage(state);
   const previewImageUrl = state.imagePreviewUrl || state.imageUrl || undefined;
@@ -624,14 +628,14 @@ const Step2: React.FC<{
                   Click to upload image
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center max-w-xs">
-                  SVG, PNG, JPG or WEBP (max 5MB)
+                  JPEG, PNG or WEBP up to 5MB · local upload only
                 </p>
               </label>
             )}
             <input
               id="campaign-image-upload"
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               className="hidden"
               disabled={isUploading}
               onChange={handleImageFileChange}
@@ -647,22 +651,6 @@ const Step2: React.FC<{
               Uploading image...
             </div>
           )}
-
-          <div className="relative flex items-center py-2">
-            <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
-            <span className="flex-shrink-0 mx-4 text-xs font-medium text-gray-400 uppercase tracking-wider">Or provide URL</span>
-            <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
-          </div>
-
-          <Input
-            type="text"
-            placeholder="https://example.com/banner.jpg"
-            maxLength={500}
-            value={state.imageUrl}
-            onChange={(e) => onImageUrlChange(e.target.value)}
-            error={!!errors.imageUrl}
-            hint={errors.imageUrl || "Paste an image URL if you don't want to upload a file"}
-          />
         </div>
       </div>
 
@@ -691,7 +679,7 @@ const Step2: React.FC<{
   );
 };
 
-// ─── Step 3: Audience & Schedule ──────────────────────────────────────────────
+// ─── Step 3: Audience ─────────────────────────────────────────────────────────
 
 const Step3: React.FC<{
   state: WizardState;
@@ -718,7 +706,8 @@ const Step3: React.FC<{
   }, [state.individualAccountIds]);
 
   const handleAccountInput = (value: string) => {
-    setAccountSearch(value);
+    const v = value.length > 255 ? value.slice(0, 255) : value;
+    setAccountSearch(v);
     if (debounceRef.current !== null) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => handleAccountSearch(value), 350);
   };
@@ -741,12 +730,9 @@ const Step3: React.FC<{
     });
   };
 
-  // Min date for scheduler
-  const minDate = new Date(Date.now() + 60_000).toISOString().slice(0, 16);
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Left: Targeting + Schedule (2/3) */}
+      {/* Left: Targeting (2/3) */}
       <div className="lg:col-span-2 space-y-7">
         {/* Audience Cards */}
         <div>
@@ -818,6 +804,7 @@ const Step3: React.FC<{
               </svg>
               <input
                 value={accountSearch}
+                maxLength={255}
                 onChange={(e) => handleAccountInput(e.target.value)}
                 placeholder="Search by customer name or email..."
                 className="w-full h-11 pl-9 pr-4 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-white/90 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
@@ -862,49 +849,6 @@ const Step3: React.FC<{
             {errors.targeting && <p className="text-xs text-red-500">{errors.targeting}</p>}
           </div>
         )}
-
-
-        {/* Schedule */}
-        <div>
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            When to send?
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { id: "immediate", label: "Send immediately", icon: <PaperPlaneIcon className="w-8 h-8" />, desc: "Notification will be sent immediately" },
-              { id: "scheduled", label: "Schedule send", icon: <TimeIcon className="w-8 h-8" />, desc: "Choose a specific date and time" },
-            ].map((card) => {
-              const selected = state.scheduleType === card.id;
-              return (
-                <button key={card.id} type="button"
-                  onClick={() => update({ scheduleType: card.id as WizardState["scheduleType"], scheduledAt: "" })}
-                  className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${selected ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-900/50"
-                    }`}
-                >
-                  <span className="text-2xl flex-shrink-0">{card.icon}</span>
-                  <div>
-                    <p className={`text-sm font-semibold ${selected ? "text-brand-600 dark:text-brand-400" : "text-gray-800 dark:text-white/90"}`}>{card.label}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{card.desc}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {state.scheduleType === "scheduled" && (
-            <div className="mt-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-              <Label>Send time</Label>
-              <Input
-                type="datetime-local"
-                min={minDate}
-                value={state.scheduledAt}
-                onChange={(e) => update({ scheduledAt: e.target.value })}
-                error={!!errors.scheduledAt}
-                hint={errors.scheduledAt}
-              />
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Right: Summary sidebar (1/3) */}
@@ -935,17 +879,6 @@ const Step3: React.FC<{
               empty={!state.selectedTemplate && !(state.useCustomContent && state.titleOverride)}
             />
             <SummaryRow label="Audience" value={TARGET_MODE_CARDS.find((c) => c.id === state.targetMode)?.label || ""} />
-            <SummaryRow
-              label="Schedule"
-              value={
-                state.scheduleType === "immediate"
-                  ? "Send immediately"
-                  : state.scheduledAt
-                    ? new Date(state.scheduledAt).toLocaleString("en-US")
-                    : "Not scheduled"
-              }
-              empty={state.scheduleType === "scheduled" && !state.scheduledAt}
-            />
           </ul>
         </div>
       </div>
@@ -994,22 +927,9 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
       }
       return {
         ...prev,
+        imageUrl: "",
         imageFile: file,
         imagePreviewUrl: URL.createObjectURL(file),
-      };
-    });
-  }, []);
-
-  const handleImageUrlChange = useCallback((value: string) => {
-    setState((prev) => {
-      if (prev.imagePreviewUrl) {
-        URL.revokeObjectURL(prev.imagePreviewUrl);
-      }
-      return {
-        ...prev,
-        imageUrl: value,
-        imageFile: null,
-        imagePreviewUrl: "",
       };
     });
   }, []);
@@ -1043,32 +963,53 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
   useEffect(() => {
     if (!isEditing || !campaignId) return;
     setIsLoadingCampaign(true);
-    campaignApi.getCampaignById(campaignId).then((c: Campaign) => {
-      setState({
-        campaignName: c.campaignName,
-        referenceType: c.referenceType || "",
-        referenceId: c.referenceId || null,
-        resolvedObject: c.resolvedReference || null,
-        referenceDisplayName: c.resolvedReference?.displayName || "",
-        templateCode: c.templateCode || "",
-        selectedTemplate: null,
-        useCustomContent: !!(c.titleOverride || c.messageOverride),
-        titleOverride: c.titleOverride || "",
-        messageOverride: c.messageOverride || "",
-        imageUrl: c.imageUrl || "",
-        imageFile: null,
-        imagePreviewUrl: "",
-        targetMode: (c.targetType as WizardState["targetMode"]) || "ALL",
-        selectedRoleId: c.targets.find((t) => t.targetType === "ROLE_ID")?.targetValue || "",
-        individualAccountIds: c.targets.filter((t) => t.targetType === "ACCOUNT_ID").map((t) => Number(t.targetValue)),
-        individualAccountNames: c.targets.filter((t) => t.targetType === "ACCOUNT_ID").map((t) => t.targetValue),
-        scheduleType: c.scheduledAt ? "scheduled" : "immediate",
-        scheduledAt: formatUTCtoLocal(c.scheduledAt),
-      });
-    }).catch(() => {
-      toast.error("Failed to load campaign info");
-      router.push("/admin/campaigns");
-    }).finally(() => setIsLoadingCampaign(false));
+    campaignApi
+      .getCampaignById(campaignId)
+      .then(async (c: Campaign) => {
+        const accountTargets = c.targets.filter((t) => t.targetType === "ACCOUNT_ID");
+        const individualAccountIds = accountTargets.map((t) => Number(t.targetValue));
+        const individualAccountNames = await Promise.all(
+          accountTargets.map(async (t) => {
+            const id = Number(t.targetValue);
+            if (Number.isNaN(id) || id <= 0) return t.targetValue;
+            try {
+              const acc = await accountApi.getAccountById(id);
+              const email = acc.email?.trim();
+              const name = acc.accountName?.trim();
+              if (email && name) return `${name} (${email})`;
+              return email || name || `Account #${id}`;
+            } catch {
+              return `Account #${id}`;
+            }
+          }),
+        );
+        setState({
+          campaignName: c.campaignName,
+          referenceType: c.referenceType || "",
+          referenceId: c.referenceId || null,
+          resolvedObject: c.resolvedReference || null,
+          referenceDisplayName: c.resolvedReference?.displayName || "",
+          templateCode: c.templateCode || "",
+          selectedTemplate: null,
+          useCustomContent: !!(c.titleOverride || c.messageOverride),
+          titleOverride: c.titleOverride || "",
+          messageOverride: c.messageOverride || "",
+          imageUrl: c.imageUrl || "",
+          imageFile: null,
+          imagePreviewUrl: "",
+          targetMode: (c.targetType as WizardState["targetMode"]) || "ALL",
+          selectedRoleId: c.targets.find((t) => t.targetType === "ROLE_ID")?.targetValue || "",
+          individualAccountIds,
+          individualAccountNames,
+          scheduleType: "immediate", // Schedule is set separately after approval
+          scheduledAt: "",
+        });
+      })
+      .catch(() => {
+        toast.error("Failed to load campaign info");
+        router.push("/admin/campaigns");
+      })
+      .finally(() => setIsLoadingCampaign(false));
   }, [campaignId, isEditing, router]);
 
   // Once templates are loaded, find the selected template
@@ -1092,8 +1033,6 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
         if (!state.titleOverride.trim()) errs.titleOverride = "Please enter notification title";
         if (!state.messageOverride.trim()) errs.messageOverride = "Please enter notification message";
       }
-      if (state.imageUrl && !/^https?:\/\/.+/.test(state.imageUrl) && !state.imageFile)
-        errs.imageUrl = "Invalid image URL (must start with https://)";
       if (state.useCustomContent && state.titleOverride && state.titleOverride.length > 255)
         errs.titleOverride = "Title must not exceed 255 characters";
       if (state.useCustomContent && state.messageOverride && state.messageOverride.length > 500)
@@ -1103,10 +1042,6 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
       if (state.targetMode === "ROLE" && !state.selectedRoleId) errs.selectedRoleId = "Please select a user role";
       if (state.targetMode === "INDIVIDUAL" && state.individualAccountIds.length === 0)
         errs.targeting = "Please add at least one customer";
-      if (state.scheduleType === "scheduled" && !state.scheduledAt)
-        errs.scheduledAt = "Please select a scheduled time";
-      if (state.scheduleType === "scheduled" && state.scheduledAt && new Date(state.scheduledAt) <= new Date())
-        errs.scheduledAt = "Scheduled time must be in the future";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -1136,7 +1071,7 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
       messageOverride: state.useCustomContent && state.messageOverride ? state.messageOverride : null,
       sourceType: "ADMIN" as const,
       targetType: state.targetMode,
-      scheduledAt: state.scheduleType === "scheduled" && state.scheduledAt ? formatLocalToUTC(state.scheduledAt) : null,
+      scheduledAt: null, // Scheduling is done separately after Admin approval
       imageUrl: state.imageUrl || null,
       actionType: state.referenceType || null,
       actionTarget: state.referenceId ? String(state.referenceId) : null,
@@ -1184,16 +1119,16 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <p className="text-sm text-gray-500">Đang tải thông tin chiến dịch...</p>
+          <p className="text-sm text-gray-500">Loading campaign information...</p>
         </div>
       </div>
     );
   }
 
   const stepTitles = [
-    "Chiến dịch này về cái gì?",
-    "Nội dung thông báo",
-    "Gửi cho ai và khi nào?",
+    "What is this campaign about?",
+    "Notification Content",
+    "Who should receive it?",
   ];
 
   return (
@@ -1210,7 +1145,7 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {step === 1 && "Name your campaign and choose content type"}
             {step === 2 && "Design the notification content to send to customers"}
-            {step === 3 && "Determine recipients and send time"}
+            {step === 3 && "Select the target audience for notifications"}
           </p>
         </div>
 
@@ -1225,7 +1160,6 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
             templates={templates}
             isUploading={isUploading}
             onSelectImage={handleImageFileSelect}
-            onImageUrlChange={handleImageUrlChange}
             onClearImage={handleClearImage}
           />
         )}
@@ -1264,7 +1198,7 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
               onClick={handleNext}
               className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-sm font-semibold transition-colors"
             >
-              Tiếp theo
+              Next
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>

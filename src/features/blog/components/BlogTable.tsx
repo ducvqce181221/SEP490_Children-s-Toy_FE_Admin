@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import Pagination from "@/components/common/Pagination";
 import Button from "@/components/ui/button/Button";
@@ -79,6 +79,16 @@ const BlogTable = () => {
   const [hideTarget, setHideTarget] = useState<{ blogPostId: number; blogTitle: string } | null>(
     null,
   );
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const blogId = params.get("blogId");
+      if (blogId) {
+        setSelectedDetailBlogId(Number(blogId));
+      }
+    }
+  }, []);
 
   const pageRangeText = useMemo(() => {
     if (totalCount === 0) {

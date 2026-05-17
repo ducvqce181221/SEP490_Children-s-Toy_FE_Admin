@@ -13,6 +13,10 @@ type PropsType = {
   defaultDate?: DateOption;
   label?: string;
   placeholder?: string;
+  enableTime?: boolean;
+  dateFormat?: string;
+  minDate?: DateOption;
+  maxDate?: DateOption;
 };
 
 export default function DatePicker({
@@ -22,6 +26,10 @@ export default function DatePicker({
   label,
   defaultDate,
   placeholder,
+  enableTime,
+  dateFormat,
+  minDate,
+  maxDate,
 }: PropsType) {
   const fpRef = useRef<flatpickr.Instance | null>(null);
 
@@ -29,7 +37,10 @@ export default function DatePicker({
     const instance = flatpickr(`#${id}`, {
       mode: mode || "single",
       monthSelectorType: "static",
-      dateFormat: "Y-m-d",
+      dateFormat: dateFormat || "Y-m-d",
+      enableTime: enableTime || false,
+      minDate: minDate,
+      maxDate: maxDate,
       defaultDate,
       onChange,
     });
@@ -41,6 +52,16 @@ export default function DatePicker({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, id]); // Initialize once
+
+  useEffect(() => {
+    if (!fpRef.current) return;
+    if (minDate !== undefined) fpRef.current.set("minDate", minDate);
+  }, [minDate]);
+
+  useEffect(() => {
+    if (!fpRef.current) return;
+    if (maxDate !== undefined) fpRef.current.set("maxDate", maxDate);
+  }, [maxDate]);
 
   useEffect(() => {
     if (fpRef.current) {
