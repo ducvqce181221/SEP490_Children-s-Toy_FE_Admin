@@ -19,6 +19,15 @@ import { campaignApi, PaginatedCampaigns } from "../services/campaign-api";
 import { CampaignListItem } from "../types/campaign";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 import { formatDisplayDate } from "@/utils/date-utils";
+import { useCampaignMutations } from "../hooks/useCampaignMutations";
+import { useAuthContext } from "@/context/AuthContext";
+import { CampaignReviewModal } from "./CampaignReviewModal";
+import {
+  campaignDetailPath,
+  campaignSchedulePath,
+  resolveCampaignListItemId,
+} from "../utils/campaign-navigation";
+
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -34,6 +43,39 @@ const STATUS_CONFIG: Record<
     icon: (
       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+      </svg>
+    ),
+  },
+  PendingApproval: {
+    label: "Pending Approval",
+    bg: "bg-yellow-50 dark:bg-yellow-900/20",
+    text: "text-yellow-600 dark:text-yellow-400",
+    dot: "bg-yellow-500",
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  Approved: {
+    label: "Approved",
+    bg: "bg-emerald-50 dark:bg-emerald-900/20",
+    text: "text-emerald-600 dark:text-emerald-400",
+    dot: "bg-emerald-500",
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    ),
+  },
+  Rejected: {
+    label: "Rejected",
+    bg: "bg-red-50 dark:bg-red-900/20",
+    text: "text-red-600 dark:text-red-400",
+    dot: "bg-red-500",
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
       </svg>
     ),
   },
@@ -136,9 +178,15 @@ const TARGET_TYPE_LABELS: Record<string, string> = {
   INDIVIDUAL: "Individual",
 };
 
+const selectClassName =
+  "h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800";
+
 const STATUS_TABS = [
   { id: "", label: "All Status" },
   { id: "Draft", label: "Draft" },
+  { id: "PendingApproval", label: "Pending Approval" },
+  { id: "Approved", label: "Approved" },
+  { id: "Rejected", label: "Rejected" },
   { id: "Scheduled", label: "Scheduled" },
   { id: "Sending", label: "Sending" },
   { id: "Sent", label: "Sent" },
@@ -258,6 +306,10 @@ export const CampaignListPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [confirmCancelState, setConfirmCancelState] = useState<{ isOpen: boolean; campaign: CampaignListItem | null }>({ isOpen: false, campaign: null });
+  const [submitId, setSubmitId] = useState<number | null>(null);
+  const [reviewId, setReviewId] = useState<number | null>(null);
+
+  const { account } = useAuthContext();
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -308,6 +360,30 @@ export const CampaignListPage: React.FC = () => {
     }
   };
 
+  const { submitCampaign, reviewCampaign, isSubmitting } = useCampaignMutations(() => {
+    fetchData();
+    setSubmitId(null);
+    setReviewId(null);
+  });
+
+  const handleConfirmSubmit = async () => {
+    if (submitId) {
+      await submitCampaign(submitId);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (reviewId) {
+      await reviewCampaign(reviewId, { action: "Approved" });
+    }
+  };
+
+  const handleReject = async (reason: string) => {
+    if (reviewId) {
+      await reviewCampaign(reviewId, { action: "Rejected", reviewNote: reason });
+    }
+  };
+
   const items = data?.items ?? [];
   const totalItems = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalItems / pageSize);
@@ -334,8 +410,11 @@ export const CampaignListPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-xs">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-5">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Search
+            </label>
             <SearchInput
               value={searchInput}
               onChange={setSearchInput}
@@ -348,22 +427,25 @@ export const CampaignListPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-            {STATUS_TABS.map((tab) => {
-              const active = activeStatus === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveStatus(tab.id)}
-                  className={`flex-shrink-0 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${active
-                    ? "bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:bg-gray-50 dark:hover:text-gray-300 dark:hover:bg-white/[0.02]"
-                    }`}
+          <div className="lg:col-span-7">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:justify-end">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Status
+                </label>
+                <select
+                  className={`${selectClassName} w-full sm:w-44`}
+                  value={activeStatus}
+                  onChange={(e) => setActiveStatus(e.target.value)}
                 >
-                  {tab.label}
-                </button>
-              );
-            })}
+                  {STATUS_TABS.map((tab) => (
+                    <option key={tab.id} value={tab.id}>
+                      {tab.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -436,13 +518,22 @@ export const CampaignListPage: React.FC = () => {
 
                     {/* Name */}
                     <TableCell className="px-5 py-4">
-                      <Link
-                        href={`/admin/campaigns/${campaign.campaignId}`}
-                        className="font-medium text-gray-900 dark:text-white hover:text-brand-500 transition-colors block max-w-[220px] truncate"
-                        title={campaign.campaignName}
-                      >
-                        {campaign.campaignName}
-                      </Link>
+                      {(() => {
+                        const cid = resolveCampaignListItemId(campaign);
+                        return cid != null ? (
+                          <Link
+                            href={campaignDetailPath(cid)}
+                            className="font-medium text-gray-900 dark:text-white hover:text-brand-500 transition-colors block max-w-[220px] truncate"
+                            title={campaign.campaignName}
+                          >
+                            {campaign.campaignName}
+                          </Link>
+                        ) : (
+                          <span className="font-medium text-gray-900 dark:text-white block max-w-[220px] truncate" title={campaign.campaignName}>
+                            {campaign.campaignName}
+                          </span>
+                        );
+                      })()}
                       <span className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 block">
                         {formatDisplayDate(campaign.createdAt)}
                       </span>
@@ -478,39 +569,104 @@ export const CampaignListPage: React.FC = () => {
                     {/* Actions */}
                     <TableCell className="px-5 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        {/* View detail — always */}
-                        <Link
-                          href={`/admin/campaigns/${campaign.campaignId}`}
-                          className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
+                        {/* Submit button (for Draft) */}
+                        {campaign.status === "Draft" && (
+                          <button
+                            title="Submit for Review"
+                            onClick={() => setSubmitId(campaign.campaignId)}
+                            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-green-400 hover:text-green-500 dark:border-gray-700 dark:text-gray-300"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </button>
+                        )}
+
+
+
+                        {/* Schedule button (for Approved) */}
+                        {campaign.status === "Approved" && (
+                          <button
+                            type="button"
+                            title="Schedule Campaign"
+                            onClick={() => {
+                              const cid = resolveCampaignListItemId(campaign);
+                              if (cid != null) router.push(campaignSchedulePath(cid, "schedule"));
+                            }}
+                            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-purple-400 hover:text-purple-500 dark:border-gray-700 dark:text-gray-300"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                        )}
+
+                        {campaign.status === "Scheduled" &&
+                          (campaign.maxRescheduleCount == null ||
+                            (campaign.rescheduleCount ?? 0) < campaign.maxRescheduleCount) && (
+                            <button
+                              title="Reschedule"
+                              type="button"
+                              onClick={() => {
+                                const cid = resolveCampaignListItemId(campaign);
+                                if (cid != null) router.push(campaignSchedulePath(cid, "reschedule"));
+                              }}
+                              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-purple-400 hover:text-purple-500 dark:border-gray-700 dark:text-gray-300"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </button>
+                          )}
+
+                        {/* View detail — always (router.push avoids edge cases where in-table Link clicks don't navigate) */}
+                        <button
+                          type="button"
                           title="View details"
+                          disabled={resolveCampaignListItemId(campaign) == null}
+                          onClick={() => {
+                            const cid = resolveCampaignListItemId(campaign);
+                            if (cid != null) router.push(campaignDetailPath(cid));
+                          }}
+                          className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
                         >
                           <EyeIcon className="w-5 h-5" />
-                        </Link>
+                        </button>
 
                         {/* Sent → view results */}
                         {campaign.status === "Sent" && (
-                          <Link
-                            href={`/admin/campaigns/${campaign.campaignId}`}
-                            className="rounded-lg border border-gray-300 p-1.5 text-gray-500 transition-colors hover:border-green-400 hover:text-green-500 dark:border-gray-700 dark:text-gray-300"
+                          <button
+                            type="button"
                             title="View results"
+                            disabled={resolveCampaignListItemId(campaign) == null}
+                            onClick={() => {
+                              const cid = resolveCampaignListItemId(campaign);
+                              if (cid != null) router.push(campaignDetailPath(cid));
+                            }}
+                            className="rounded-lg border border-gray-300 p-1.5 text-gray-500 transition-colors hover:border-green-400 hover:text-green-500 dark:border-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
                           >
                             <PieChartIcon className="w-5.7 h-5.7" />
-                          </Link>
+                          </button>
                         )}
 
-                        {/* Draft/Scheduled → edit */}
-                        {(campaign.status === "Draft" || campaign.status === "Scheduled") && (
-                          <Link
-                            href={`/admin/campaigns/${campaign.campaignId}/edit`}
-                            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-500 dark:border-gray-700 dark:text-gray-300"
+                        {/* Draft/Rejected → edit */}
+                        {(campaign.status === "Draft" || campaign.status === "Rejected") && (
+                          <button
+                            type="button"
                             title="Edit campaign"
+                            disabled={resolveCampaignListItemId(campaign) == null}
+                            onClick={() => {
+                              const cid = resolveCampaignListItemId(campaign);
+                              if (cid != null) router.push(`${campaignDetailPath(cid)}/edit`);
+                            }}
+                            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-500 dark:border-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
                           >
                             <PencilIcon className="w-5 h-5" />
-                          </Link>
+                          </button>
                         )}
 
-                        {/* Draft/Scheduled → cancel */}
-                        {(campaign.status === "Draft" || campaign.status === "Scheduled") && (
+                        {/* Draft/PendingApproval/Approved/Rejected/Scheduled → cancel */}
+                        {["Draft", "Approved", "Scheduled"].includes(campaign.status) && (
                           <button
                             onClick={() => handleCancelClick(campaign)}
                             disabled={cancellingId === campaign.campaignId}
@@ -580,6 +736,25 @@ export const CampaignListPage: React.FC = () => {
         confirmText="Cancel Campaign"
         isDestructive={true}
         isLoading={cancellingId !== null}
+      />
+
+      <ConfirmModal
+        isOpen={submitId !== null}
+        onClose={() => setSubmitId(null)}
+        onConfirm={handleConfirmSubmit}
+        title="Submit for Approval"
+        message="Are you sure you want to submit this campaign for Admin approval? Once submitted, you will not be able to edit it until it has been reviewed."
+        confirmText="Submit"
+        isDestructive={false}
+        isLoading={isSubmitting}
+      />
+
+      <CampaignReviewModal
+        isOpen={reviewId !== null}
+        onClose={() => setReviewId(null)}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

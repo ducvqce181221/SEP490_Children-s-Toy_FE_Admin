@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
@@ -16,6 +16,8 @@ import { Template } from "@/features/template/types/template";
 import { Campaign, ReferenceTypeInfo } from "../types/campaign";
 import { useAuthContext } from "@/context/AuthContext";
 import { formatLocalToUTC, formatUTCtoLocal, formatDisplayDate } from "@/utils/date-utils";
+import { useCampaignImageUpload } from "../hooks/useCampaignImageUpload";
+import { accountApi } from "@/features/account/services/account-api";
 
 export type CampaignModalMode = "create" | "edit" | "detail";
 
@@ -76,6 +78,11 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
   const [fullCampaign, setFullCampaign] = useState<Campaign | null>(null);
   const [activeTemplates, setActiveTemplates] = useState<Template[]>([]);
   const [referenceTypes, setReferenceTypes] = useState<ReferenceTypeInfo[]>([]);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+  const [localImagePreview, setLocalImagePreview] = useState<string | null>(null);
+  const [accountLabelById, setAccountLabelById] = useState<Record<number, string>>({});
+
+  const { uploadImage, isUploading } = useCampaignImageUpload();
 
   const isEditMode = mode === "edit";
   const isDetailMode = mode === "detail";
@@ -105,8 +112,63 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
   const watchedTargetType = watch("targetType");
   const watchedSourceType = watch("sourceType");
   const watchedActionType = watch("actionType");
+  const watchedCampaignName = watch("campaignName");
   const watchedTitle = watch("titleOverride");
   const watchedMessage = watch("messageOverride");
+  const watchedTargets = watch("targets");
+
+  const targetsResolveKey = useMemo(
+    () =>
+      JSON.stringify(
+        (watchedTargets ?? []).map((t) => [t.targetType, t.targetValue]),
+      ),
+    [watchedTargets],
+  );
+
+  useEffect(() => {
+    if (!isOpen) {
+      setAccountLabelById({});
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const targets = watchedTargets ?? [];
+    const ids = [
+      ...new Set(
+        targets
+          .filter(
+            (t) =>
+              t.targetType === "ACCOUNT_ID" &&
+              /^\d+$/.test(String(t.targetValue ?? "").trim()),
+          )
+          .map((t) => parseInt(String(t.targetValue).trim(), 10))
+          .filter((id) => !Number.isNaN(id) && id > 0),
+      ),
+    ];
+    if (ids.length === 0) {
+      setAccountLabelById({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const updates: Record<number, string> = {};
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const acc = await accountApi.getAccountById(id);
+            updates[id] = acc.email?.trim() || acc.accountName || `Account #${id}`;
+          } catch {
+            updates[id] = `Account #${id}`;
+          }
+        }),
+      );
+      if (!cancelled) setAccountLabelById(updates);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, targetsResolveKey]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -128,6 +190,16 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
       setValue("targets", []);
     }
   }, [watchedTargetType, setValue]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setPendingImageFile(null);
+      setLocalImagePreview((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+        return null;
+      });
+    }
+  }, [isOpen]);
 
   // Load data when modal opens in edit/detail mode
   useEffect(() => {
@@ -152,7 +224,7 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
               if (!data.scheduledAt) return "";
               const scheduled = new Date(data.scheduledAt);
               const now = new Date();
-              // Nếu scheduledAt đã qua → đây là "gửi ngay", để trống field
+              // If scheduledAt is in the past, treat as send-now and clear the field
               if (scheduled <= now) return "";
               return formatUTCtoLocal(data.scheduledAt);
             })(),
@@ -166,6 +238,11 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
               targetValue: t.targetValue,
             })),
           });
+          setPendingImageFile(null);
+          setLocalImagePreview((prev) => {
+            if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+            return null;
+          });
         } catch {
           toast.error("Error loading campaign information");
           onClose();
@@ -177,13 +254,24 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
     } else {
       setFullCampaign(null);
       reset(getDefaultValues(account?.accountId ?? 0));
+      setPendingImageFile(null);
+      setLocalImagePreview((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+        return null;
+      });
     }
   }, [isOpen, campaignId, isEditMode, isDetailMode, reset, onClose, account]);
 
   if (!isMounted) return null;
 
-  const onFormSubmit = (data: CampaignFormData) => {
+  const onFormSubmit = async (data: CampaignFormData) => {
     if (isReadOnly) return;
+    let imageUrl = (data.imageUrl || "").trim() || null;
+    if (pendingImageFile) {
+      const url = await uploadImage(pendingImageFile);
+      if (!url) return;
+      imageUrl = url;
+    }
     const payload: CampaignFormData = {
       ...data,
       scheduledAt: formatLocalToUTC(data.scheduledAt) || null,
@@ -192,7 +280,7 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
       referenceId: data.referenceId || null,
       titleOverride: data.titleOverride || null,
       messageOverride: data.messageOverride || null,
-      imageUrl: data.imageUrl || null,
+      imageUrl,
       actionType: data.actionType || null,
       actionTarget: data.actionTarget || null,
       // Only send targets for ROLE or INDIVIDUAL, otherwise send empty array
@@ -203,6 +291,30 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
     };
     onSave?.(payload);
   };
+
+  const handleBannerFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || isReadOnly) return;
+    setLocalImagePreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+    setPendingImageFile(file);
+    setValue("imageUrl", "", { shouldValidate: true });
+  };
+
+  const clearBannerImage = () => {
+    setPendingImageFile(null);
+    setLocalImagePreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setValue("imageUrl", "", { shouldValidate: true });
+  };
+
+  const watchedImageUrl = watch("imageUrl");
+  const bannerPreviewSrc = localImagePreview || (watchedImageUrl?.trim() ? watchedImageUrl : null);
 
   const title = isDetailMode ? "Campaign Details" : isEditMode ? "Edit Campaign" : "Add New Campaign";
   const description = isDetailMode
@@ -242,7 +354,12 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="sm:col-span-2">
-                <Label>Campaign Name <span className="text-error-500">*</span></Label>
+                <Label>
+                  Campaign Name <span className="text-error-500">*</span>
+                  <span className="block text-xs font-normal text-gray-400 dark:text-gray-500 mt-0.5">
+                    Up to 255 characters ({(watchedCampaignName ?? "").length}/255)
+                  </span>
+                </Label>
                 <Input
                   type="text"
                   placeholder="e.g. Summer Holiday Sale"
@@ -297,17 +414,7 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
                 />
               </div>
 
-              <div>
-                <Label>Scheduled Date</Label>
-                <Input
-                  type="datetime-local"
-                  min={!isReadOnly ? minScheduled : undefined}
-                  error={!!errors.scheduledAt}
-                  hint={errors.scheduledAt?.message || "Leave blank to send immediately (for Admin)."}
-                  disabled={isReadOnly}
-                  {...register("scheduledAt")}
-                />
-              </div>
+
 
               {watchedSourceType === "SYSTEM" && (
                 <div>
@@ -392,7 +499,7 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
                             options={[
                               ...(watchedTargetType === "ROLE"
                                 ? [{ value: "ROLE_ID", label: "Role ID" }]
-                                : [{ value: "ACCOUNT_ID", label: "Account ID" }]),
+                                : [{ value: "ACCOUNT_ID", label: "Account (email)" }]),
                             ]}
                             disabled={isReadOnly}
                             error={!!errors.targets?.[index]?.targetType}
@@ -405,19 +512,58 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
                           )}
                         </div>
                         <div className="flex-1">
-                          <Input
-                            type="text"
-                            placeholder={
-                              watchedTargetType === "ROLE"
-                                ? "Ex: 2 (Role ID)"
-                                : "Ex: 123 (Account ID)"
+                          {(() => {
+                            const row = watchedTargets?.[index];
+                            const tt = row?.targetType;
+                            const tv = String(row?.targetValue ?? "").trim();
+                            const isNumericAccount =
+                              tt === "ACCOUNT_ID" && /^\d+$/.test(tv);
+                            const idNum = isNumericAccount ? parseInt(tv, 10) : NaN;
+                            const resolved =
+                              !Number.isNaN(idNum) && idNum > 0
+                                ? accountLabelById[idNum]
+                                : undefined;
+                            const showResolvedEmail =
+                              isNumericAccount && resolved !== undefined;
+
+                            if (showResolvedEmail) {
+                              return (
+                                <>
+                                  <input
+                                    type="hidden"
+                                    {...register(`targets.${index}.targetValue`)}
+                                  />
+                                  <Input
+                                    type="text"
+                                    value={resolved}
+                                    maxLength={200}
+                                    disabled
+                                    readOnly
+                                    error={!!errors.targets?.[index]?.targetValue}
+                                    hint={
+                                      errors.targets?.[index]?.targetValue?.message ||
+                                      `Account ID: ${tv} (change by removing this row and adding again)`
+                                    }
+                                  />
+                                </>
+                              );
                             }
-                            maxLength={200}
-                            disabled={isReadOnly}
-                            error={!!errors.targets?.[index]?.targetValue}
-                            hint={errors.targets?.[index]?.targetValue?.message}
-                            {...register(`targets.${index}.targetValue`)}
-                          />
+                            return (
+                              <Input
+                                type="text"
+                                placeholder={
+                                  watchedTargetType === "ROLE"
+                                    ? "Ex: 2 (Role ID)"
+                                    : "Ex: 123 (account ID — email shows after lookup)"
+                                }
+                                maxLength={200}
+                                disabled={isReadOnly}
+                                error={!!errors.targets?.[index]?.targetValue}
+                                hint={errors.targets?.[index]?.targetValue?.message}
+                                {...register(`targets.${index}.targetValue`)}
+                              />
+                            );
+                          })()}
                         </div>
                         {!isReadOnly && (
                           <button
@@ -510,16 +656,55 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="sm:col-span-2">
-                <Label>Banner / Image URL</Label>
-                <Input
-                  type="text"
-                  placeholder="https://example.com/banner.png"
-                  maxLength={500}
-                  error={!!errors.imageUrl}
-                  hint={errors.imageUrl?.message || "Image URL displayed with notification (optional)."}
-                  disabled={isReadOnly}
-                  {...register("imageUrl")}
-                />
+                <input type="hidden" {...register("imageUrl")} />
+                <Label>Banner image (optional)</Label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Upload from your device only (JPEG, PNG, WEBP, max 5MB). Pasted URLs are not used here.
+                </p>
+                {errors.imageUrl && (
+                  <p className="text-xs text-error-500 mb-2">{errors.imageUrl.message}</p>
+                )}
+                {!isReadOnly && (
+                  <div className="flex flex-wrap items-center gap-3 mb-2">
+                    <label
+                      htmlFor="campaign-form-banner-upload"
+                      className="inline-flex cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      Choose image
+                    </label>
+                    <input
+                      id="campaign-form-banner-upload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      disabled={isUploading}
+                      onChange={handleBannerFileChange}
+                    />
+                    {(pendingImageFile || bannerPreviewSrc) && (
+                      <button
+                        type="button"
+                        onClick={clearBannerImage}
+                        className="text-sm text-error-600 hover:underline"
+                      >
+                        Remove image
+                      </button>
+                    )}
+                  </div>
+                )}
+                {bannerPreviewSrc ? (
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-h-48 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- preview blob or existing URL */}
+                    <img
+                      src={bannerPreviewSrc}
+                      alt="Banner"
+                      className="max-h-48 w-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">
+                    {isReadOnly ? "No image attached." : "No image yet."}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -596,7 +781,19 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
                         key={t.campaignTargetId}
                         className="text-xs px-3 py-1 rounded-full bg-brand-50 dark:bg-gray-700 border border-brand-100 dark:border-gray-600 text-brand-600 dark:text-brand-400"
                       >
-                        {t.targetType}: <strong>{t.targetValue}</strong>
+                        {t.targetType}
+                        {": "}
+                        <strong>
+                          {t.targetType === "ACCOUNT_ID"
+                            ? (() => {
+                                const id = parseInt(t.targetValue, 10);
+                                if (!Number.isNaN(id) && id > 0) {
+                                  return accountLabelById[id] ?? `Account #${id}`;
+                                }
+                                return t.targetValue;
+                              })()
+                            : t.targetValue}
+                        </strong>
                       </span>
                     ))}
                   </div>
@@ -641,8 +838,8 @@ export const CampaignFormModal: React.FC<CampaignFormModalProps> = ({
               {isReadOnly ? "Close" : "Cancel"}
             </Button>
             {!isReadOnly && (
-              <Button variant="primary" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Processing..." : isEditMode ? "Update Campaign" : "Create Campaign"}
+              <Button variant="primary" type="submit" disabled={isSubmitting || isUploading}>
+                {isSubmitting || isUploading ? "Processing..." : isEditMode ? "Update Campaign" : "Create Campaign"}
               </Button>
             )}
           </div>

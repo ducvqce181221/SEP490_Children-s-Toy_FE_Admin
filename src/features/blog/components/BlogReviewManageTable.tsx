@@ -10,6 +10,7 @@ import Button from "@/components/ui/button/Button";
 import { Dropdown } from "@/components/ui/dropdown/Dropdown";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
+import TextArea from "@/components/form/input/TextArea";
 import { blogApi } from "../services/blog-api";
 import { BlogReview, BlogReviewReply } from "../types/blog";
 
@@ -420,12 +421,12 @@ export default function BlogReviewManageTable() {
               Replying to <span className="font-semibold text-black dark:text-white">{replyTarget.replyToAccountName}</span>
             </p>
           )}
-          <textarea
+          <TextArea
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
             maxLength={500}
             rows={4}
-            className="w-full rounded border border-blue-200 p-2 text-sm text-black dark:border-blue-400/40 dark:bg-gray-800 dark:text-white"
+            className="border-blue-200 dark:border-blue-400/40"
           />
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-300">{replyText.length}/500</span>

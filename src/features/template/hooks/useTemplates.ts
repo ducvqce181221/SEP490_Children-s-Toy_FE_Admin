@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Template, PaginatedTemplates } from "../types/template";
 import { templateApi } from "../services/template-api";
+import { getTemplateListErrorMessage } from "../utils/template-errors";
 
 export interface TemplateFilters {
   isActive?: boolean;
@@ -42,8 +43,7 @@ export const useTemplates = () => {
       );
       setData(response);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Tải dữ liệu thất bại";
-      setError(message);
+      setError(getTemplateListErrorMessage(err, "Tải dữ liệu thất bại"));
     } finally {
       setIsLoading(false);
     }

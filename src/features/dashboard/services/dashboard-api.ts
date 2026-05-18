@@ -6,7 +6,10 @@ import {
   DashboardOrderRateStatistics,
   DashboardOrderStatusStatistics,
   DashboardRevenueStatistics,
+  DashboardSlowMovingProducts,
   DashboardTimeFilter,
+  DashboardTopSellingProducts,
+  DashboardTotalProducts,
 } from "../types/dashboard";
 
 const toParams = (filter: DashboardTimeFilter): Record<string, number | string> => {
@@ -59,4 +62,15 @@ export const dashboardApi = {
     axiosClient.get<DashboardOrderRateStatistics>("/admin/dashboard/order-rates", {
       params: toParams(filter),
     }),
+
+  getTop5BestSellers: (): Promise<DashboardTopSellingProducts> =>
+    axiosClient.get<DashboardTopSellingProducts>("/admin/dashboard/products/top-5-best-sellers"),
+
+  getSlowMovingProducts: (limit = 10): Promise<DashboardSlowMovingProducts> =>
+    axiosClient.get<DashboardSlowMovingProducts>("/admin/dashboard/products/slow-moving", {
+      params: { limit },
+    }),
+
+  getTotalProducts: (): Promise<DashboardTotalProducts> =>
+    axiosClient.get<DashboardTotalProducts>("/admin/dashboard/products/total-count"),
 };

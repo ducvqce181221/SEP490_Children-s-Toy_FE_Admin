@@ -31,16 +31,27 @@ const defaultValues: TemplateFormData = {
 
 const PLACEHOLDER_GROUPS = [
   {
-    title: "Customer Information",
-    items: ["{{CustomerName}}", "{{StoreName}}"],
+    title: "Campaign — Voucher",
+    items: [
+      "{{VoucherCode}}",
+      "{{VoucherName}}",
+      "{{DiscountValue}}",
+      "{{DiscountType}}",
+      "{{MinOrderAmount}}",
+      "{{MaxDiscountCap}}",
+    ],
   },
   {
-    title: "Order Information",
-    items: ["{{OrderCode}}", "{{ProductName}}"],
+    title: "Campaign — Product",
+    items: ["{{ProductName}}", "{{Price}}"],
   },
   {
-    title: "Voucher Information",
-    items: ["{{DiscountValue}}", "{{ExpiryDate}}"],
+    title: "Campaign — Sale",
+    items: ["{{PromotionName}}"],
+  },
+  {
+    title: "Campaign — Blog",
+    items: ["{{BlogTitle}}"],
   },
 ];
 
@@ -167,6 +178,15 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
               {isDetailMode
                 ? "Review template details and structure."
                 : "Craft your message template with dynamic placeholders."}
+            </p>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+              For <strong className="font-medium text-gray-600 dark:text-gray-300">campaigns</strong>, tokens must match the
+              campaign reference type (Voucher, Product, Sale, Blog). Only placeholders resolved for that reference are
+              replaced at send time; others stay as plain text. Use{" "}
+              <code className="text-[11px] bg-gray-100 dark:bg-gray-800 px-1 rounded">{"{{Name}}"}</code> style — see{" "}
+              <strong className="font-medium">Campaign → Reference types</strong> in the API/docs for the full list per type.
+              Transactional (system) templates may also use{" "}
+              <code className="text-[11px] bg-gray-100 dark:bg-gray-800 px-1 rounded">{"[Key]"}</code> where supported by the notifier.
             </p>
             {isSystemTemplate && (
               <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">

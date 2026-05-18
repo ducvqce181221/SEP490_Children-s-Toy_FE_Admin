@@ -42,6 +42,8 @@ const defaultValues: BlogFormInput = {
   blogThumbnail: "",
   blogAt: "",
 };
+const allowedThumbnailMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const allowedThumbnailExtensions = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
 const decodeHtmlEntities = (value: string) => {
   if (typeof window === "undefined") {
@@ -337,6 +339,20 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
       return;
     }
 
+    const lowerName = selectedFile.name.toLowerCase();
+    const extension = lowerName.lastIndexOf(".") >= 0 ? lowerName.slice(lowerName.lastIndexOf(".")) : "";
+    if (!allowedThumbnailExtensions.has(extension)) {
+      setFormError("Only JPG, JPEG, PNG, WEBP are supported.");
+      event.target.value = "";
+      return;
+    }
+
+    if (!allowedThumbnailMimeTypes.has(selectedFile.type)) {
+      setFormError("Only image/jpeg, image/png, image/webp are supported.");
+      event.target.value = "";
+      return;
+    }
+
     setFormError(null);
     setIsUploadingThumbnail(true);
 
@@ -462,7 +478,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
             </label>
             <input
               type="file"
-              accept="image/*"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
               className={`${inputClassName} h-auto cursor-pointer py-2.5 file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-600 hover:file:bg-brand-100 dark:file:bg-brand-500/15 dark:file:text-brand-300`}
               onChange={handleThumbnailFileChange}
               disabled={isUploadingThumbnail || isEditLoading || isSubmitting}

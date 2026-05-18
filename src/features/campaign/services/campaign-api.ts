@@ -12,7 +12,13 @@ import {
   RoleItem,
   AccountSearchItem,
   PaginatedDeliveries,
+  ReviewCampaignDto,
+  ScheduleCampaignDto,
+  ScheduleCampaignResultDto,
+  RescheduleCampaignDto,
+  CampaignScheduleBounds,
 } from "../types/campaign";
+import { normalizeCampaignFromApi } from "../utils/normalize-campaign-from-api";
 
 export interface PaginatedCampaigns {
   items: CampaignListItem[];
@@ -70,7 +76,10 @@ export const campaignApi = {
     }),
 
   getCampaignById: (id: number) =>
-    axiosClient.get<Campaign>(`/campaigns/${id}`),
+    axiosClient.get<Campaign>(`/campaigns/${id}`).then((c) => normalizeCampaignFromApi(c)),
+
+  getScheduleBounds: (id: number) =>
+    axiosClient.get<CampaignScheduleBounds>(`/campaigns/${id}/schedule-bounds`),
 
   createCampaign: (data: CampaignPayload | CampaignFormData) =>
     axiosClient.post<Campaign, CampaignPayload | CampaignFormData>("/campaigns", data),
@@ -80,6 +89,21 @@ export const campaignApi = {
 
   cancelCampaign: (id: number) =>
     axiosClient.post<void>(`/campaigns/${id}/cancel`),
+
+  submitCampaign: (id: number) =>
+    axiosClient.post<void>(`/campaigns/${id}/submit`),
+
+  reviewCampaign: (id: number, data: ReviewCampaignDto) =>
+    axiosClient.post<void>(`/campaigns/${id}/review`, data),
+
+  scheduleCampaign: (id: number, data: ScheduleCampaignDto) =>
+    axiosClient.post<ScheduleCampaignResultDto>(`/campaigns/${id}/schedule`, data),
+
+  rescheduleCampaign: (id: number, data: RescheduleCampaignDto) =>
+    axiosClient.post<ScheduleCampaignResultDto>(`/campaigns/${id}/reschedule`, data),
+
+  recallCampaign: (id: number) =>
+    axiosClient.post<void>(`/campaigns/${id}/recall`),
 
   getReferenceTypes: () =>
     axiosClient.get<ReferenceTypeInfo[]>("/campaigns/reference-types"),
