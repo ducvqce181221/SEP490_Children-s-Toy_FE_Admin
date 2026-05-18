@@ -786,7 +786,43 @@ docs: update CODING_RULES with deployment guide
 
 ---
 
-## 18. 🔍 Code Style
+## 19. ⏳ Date & Time Handling
+
+Để tránh lỗi lệch múi giờ (timezone mismatch) giữa Server (UTC) và Client (Local), dự án sử dụng bộ utility tập trung tại `src/utils/date-utils.ts`.
+
+### Quy tắc bắt buộc
+- **Không dùng `new Date()`** trực tiếp cho dữ liệu từ API.
+- **Không dùng thư viện khác** (như moment.js) nếu không thực sự cần thiết.
+- **Xử lý Timezone**: Mọi dữ liệu thời gian từ API mặc định là UTC. Phải qua hàm chuyển đổi trước khi hiển thị hoặc đưa vào form.
+
+### Các hàm tiện ích chính
+| Hàm | Mục đích | Input | Output |
+|---|---|---|---|
+| `formatDisplayDate` | Hiển thị trên UI (Table, Detail) | UTC String | `dd/MM/yyyy HH:mm` |
+| `formatUTCtoLocal` | Đưa dữ liệu vào `input type="datetime-local"` | UTC String | `yyyy-MM-ddTHH:mm` |
+| `formatLocalToUTC` | Gửi dữ liệu từ form về API | Local String | ISO UTC String |
+| `formatLocalToDisplay` | Hiển thị giá trị đang nằm trong form | Local String | `dd/MM/yyyy HH:mm` |
+
+### Ví dụ xử lý Form
+```tsx
+// 1. Khi load dữ liệu vào form
+const defaultValues = {
+  startDate: formatUTCtoLocal(voucher.startDate)
+};
+
+// 2. Khi hiển thị giá trị preview từ form (tránh double conversion)
+<span>{formatLocalToDisplay(watch("startDate"))}</span>
+
+// 3. Khi submit form về API
+const payload = {
+  ...data,
+  startDate: formatLocalToUTC(data.startDate)
+};
+```
+
+---
+
+## 20. 🔍 Code Style
 
 ### ESLint + Prettier
 - Cấu hình: `eslint.config.mjs` + `prettier.config.js`
