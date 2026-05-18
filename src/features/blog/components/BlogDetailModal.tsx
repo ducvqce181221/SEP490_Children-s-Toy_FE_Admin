@@ -4,6 +4,7 @@ import { AxiosError } from "axios";
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
+import TextArea from "@/components/form/input/TextArea";
 import { blogApi } from "../services/blog-api";
 import { ApiErrorResponse, BlogDetail } from "../types/blog";
 
@@ -166,8 +167,8 @@ const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
           {blogDetail.reason && (
             <div className="sm:col-span-2">
               <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
-              <textarea
-                className={`${inputClassName} min-h-[96px] resize-y`}
+              <TextArea
+                className="min-h-[96px] resize-y bg-gray-50 dark:bg-gray-800"
                 value={blogDetail.reason}
                 readOnly
               />

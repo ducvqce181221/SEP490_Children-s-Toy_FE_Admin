@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import Input from "@/components/form/input/InputField";
+import TextArea from "@/components/form/input/TextArea";
 import Label from "@/components/form/Label";
 import {
   CancelOrderFormData,
@@ -53,9 +54,9 @@ export const OrderConfirmModal: React.FC<ConfirmModalProps> = ({
 
       <div className="mb-6">
         <Label htmlFor="confirm-note">Note (Optional)</Label>
-        <textarea
+        <TextArea
           id="confirm-note"
-          className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+          className="mt-2"
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -103,9 +104,9 @@ export const OrderProcessModal: React.FC<ProcessModalProps> = ({
 
       <div className="mb-6">
         <Label htmlFor="process-note">Note (Optional)</Label>
-        <textarea
+        <TextArea
           id="process-note"
-          className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+          className="mt-2"
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -189,10 +190,10 @@ export const OrderShipModal: React.FC<ShipModalProps> = ({
 
         <div>
           <Label htmlFor="ship-note">Note (Optional)</Label>
-          <textarea
+          <TextArea
             id="ship-note"
+            className="mt-2"
             {...register("note")}
-            className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
             rows={3}
             placeholder="Example: Inspectable, no try-on..."
           />
@@ -249,18 +250,15 @@ export const OrderCancelModal: React.FC<CancelModalProps> = ({
       <form onSubmit={handleSubmit((data) => onCancel(data))}>
         <div className="mb-6">
           <Label htmlFor="cancel-reason">Reason for Cancellation (Required)</Label>
-          <textarea
+          <TextArea
             id="cancel-reason"
+            className="mt-2"
             {...register("reason")}
-            className={`mt-2 w-full rounded-lg border ${
-              errors.reason ? "border-error-500" : "border-gray-300 dark:border-gray-700"
-            } bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90`}
             rows={3}
             placeholder="Enter reason for cancellation..."
+            error={!!errors.reason}
+            hint={errors.reason?.message}
           />
-          {errors.reason && (
-            <p className="mt-1 text-sm text-error-500">{errors.reason.message}</p>
-          )}
         </div>
 
         <div className="flex items-center justify-end gap-3">
@@ -390,10 +388,10 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
 
         <div>
           <Label htmlFor="assign-note">Note (Optional)</Label>
-          <textarea
+          <TextArea
             id="assign-note"
+            className="mt-2"
             {...register("note")}
-            className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
             rows={3}
             placeholder="Example: High priority..."
           />

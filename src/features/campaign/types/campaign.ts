@@ -26,10 +26,36 @@ export interface ReferenceTypeInfo {
   placeholders: { token: string; description: string }[];
 }
 
+/** A product associated within a flash sale time slot. */
+export interface ResolvedFlashProductLine {
+  slotProductId: number;
+  productId: number;
+  productName: string;
+  salePrice: number;
+  discountPercent?: number | null;
+  saleQuantity: number;
+  soldQuantity: number;
+  reservedQuantity: number;
+  isActive: boolean;
+}
+
+/** Flash sale time slot (UTC) — API embedded in resolved reference for FLASH_SALE. */
+export interface ResolvedFlashTimeSlot {
+  timeSlotId: number;
+  startAtUtc: string;
+  endAtUtc: string;
+  status: string;
+  productLines?: ResolvedFlashProductLine[] | null;
+}
+
 export interface ResolvedReference {
   displayName?: string | null;
+  /** SALE: FLASH_SALE | DISCOUNT | … from API */
+  promotionType?: string | null;
   placeholders: Record<string, string>;
   defaultActionTarget?: string | null;
+  /** Only with FLASH_SALE: time slot used to align when scheduling send time. */
+  flashTimeSlots?: ResolvedFlashTimeSlot[] | null;
 }
 
 // ─── Full Campaign detail (GET /campaigns/{id}) ────────────────────────────────
@@ -54,10 +80,58 @@ export interface Campaign {
   actionType?: string | null;
   actionTarget?: string | null;
   createdByAccountId: number;
+  createdByAccountName?: string | null;
   createdAt: string;
   updatedAt?: string | null;
+
+  // Audit Fields
+  submittedByAccountId?: number | null;
+  submittedByAccountName?: string | null;
+  submittedAt?: string | null;
+  reviewedByAccountId?: number | null;
+  reviewedByAccountName?: string | null;
+  reviewedAt?: string | null;
+  reviewNote?: string | null;
+
+  validFrom?: string | null;
+  validTo?: string | null;
+  approvedExpireAt?: string | null;
+  rescheduleCount?: number;
+  maxRescheduleCount?: number;
+
   stat?: CampaignStat | null;
   targets: CampaignTarget[];
+}
+
+export interface ReviewCampaignDto {
+  action: "Approved" | "Rejected";
+  reviewNote?: string | null;
+}
+
+export interface ScheduleCampaignDto {
+  scheduledAt: string | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+}
+
+export interface RescheduleCampaignDto {
+  newScheduledAt: string;
+  reason?: string | null;
+}
+
+export interface ScheduleCampaignResultDto {
+  warningCodes?: string[] | null;
+}
+
+/** GET /campaigns/{id}/schedule-bounds */
+export interface CampaignScheduleBounds {
+  earliestUtc: string;
+  latestUtc: string;
+  isFeasible: boolean;
+  referenceType?: string | null;
+  promotionType?: string | null;
+  referenceRulesApplied: boolean;
+  referenceHintWarning?: string | null;
 }
 
 // ─── List item (GET /campaigns paged list) ────────────────────────────────────
@@ -75,6 +149,8 @@ export interface CampaignListItem {
   createdByAccountId: number;
   createdAt: string;
   updatedAt?: string | null;
+  rescheduleCount?: number;
+  maxRescheduleCount?: number;
 }
 
 // ─── Template ────────────────────────────────────────────────────────────────
