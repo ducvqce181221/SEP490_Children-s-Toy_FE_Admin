@@ -50,11 +50,18 @@ export function formatPlaceholderValueDisplay(
   if (looksLikeDateKey && vnWall) {
     return { text: value.trim(), isLikelyDate: true };
   }
-  const d = new Date(value);
+  let dateString = value.trim();
+  if (looksLikeDateKey) {
+    dateString = dateString.replace(" ", "T");
+    if (!dateString.includes("Z") && !dateString.includes("+")) {
+      dateString += "Z";
+    }
+  }
+  const d = new Date(dateString);
   const parseOk = !Number.isNaN(d.getTime()) && value.length >= 8;
   if (looksLikeDateKey && parseOk) {
     const hasTime =
-      value.includes("T") && (value.includes(":") || value.length > 12);
+      value.includes("T") || value.includes(":") || value.length > 12;
     return {
       text: d.toLocaleString("en-US", hasTime ? VN_DATETIME_OPTS : VN_DATE_OPTS),
       isLikelyDate: true,
@@ -91,8 +98,15 @@ export function getFlashSlotPhase(now: Date, start: Date, end: Date): FlashSlotP
 
 /** Display slot range in Vietnam timezone (UTC from API). */
 export function formatFlashSlotRangeVi(startAtUtc: string | Date, endAtUtc: string | Date): string {
-  const s = typeof startAtUtc === "string" ? new Date(startAtUtc) : startAtUtc;
-  const e = typeof endAtUtc === "string" ? new Date(endAtUtc) : endAtUtc;
+  const ensureUTCString = (dateStr: string): string => {
+    let formatted = dateStr.trim().replace(" ", "T");
+    if (!formatted.includes("Z") && !formatted.includes("+")) {
+      formatted += "Z";
+    }
+    return formatted;
+  };
+  const s = typeof startAtUtc === "string" ? new Date(ensureUTCString(startAtUtc)) : startAtUtc;
+  const e = typeof endAtUtc === "string" ? new Date(ensureUTCString(endAtUtc)) : endAtUtc;
   if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return "—";
   return `${s.toLocaleString("en-US", VN_DATETIME_OPTS)} → ${e.toLocaleString("en-US", VN_DATETIME_OPTS)}`;
 }
