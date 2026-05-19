@@ -4,13 +4,15 @@ import { dashboardApi } from "../services/dashboard-api";
 import {
   DASHBOARD_PERIOD,
   DashboardCompletedOrderStatistics,
-  DashboardGrowthStatistics,
   DashboardNewCustomerStatistics,
   DashboardOrderRateStatistics,
   DashboardOrderStatusStatistics,
   DashboardPeriod,
   DashboardRevenueStatistics,
+  DashboardSlowMovingProducts,
   DashboardTimeFilter,
+  DashboardTopSellingProducts,
+  DashboardTotalProducts,
 } from "../types/dashboard";
 
 type DashboardApiError = {
@@ -32,8 +34,10 @@ export const useDashboardStatistics = () => {
   const [orderStatus, setOrderStatus] = useState<DashboardOrderStatusStatistics | null>(null);
   const [newCustomers, setNewCustomers] = useState<DashboardNewCustomerStatistics | null>(null);
   const [completedOrders, setCompletedOrders] = useState<DashboardCompletedOrderStatistics | null>(null);
-  const [growth, setGrowth] = useState<DashboardGrowthStatistics | null>(null);
   const [orderRates, setOrderRates] = useState<DashboardOrderRateStatistics | null>(null);
+  const [top5BestSellers, setTop5BestSellers] = useState<DashboardTopSellingProducts | null>(null);
+  const [slowMovingProducts, setSlowMovingProducts] = useState<DashboardSlowMovingProducts | null>(null);
+  const [totalProducts, setTotalProducts] = useState<DashboardTotalProducts | null>(null);
 
   const filter = useMemo(
     () => buildFilter(period),
@@ -50,23 +54,29 @@ export const useDashboardStatistics = () => {
         orderStatusData,
         newCustomersData,
         completedOrdersData,
-        growthData,
         orderRatesData,
+        top5Data,
+        slowMovingData,
+        totalProductsData,
       ] = await Promise.all([
         dashboardApi.getRevenueStatistics(filter),
         dashboardApi.getOrderStatusStatistics(filter),
         dashboardApi.getNewCustomerStatistics(filter),
         dashboardApi.getCompletedOrderStatistics(filter),
-        dashboardApi.getGrowthStatistics(filter),
         dashboardApi.getOrderRateStatistics(filter),
+        dashboardApi.getTop5BestSellers(),
+        dashboardApi.getSlowMovingProducts(5),
+        dashboardApi.getTotalProducts(),
       ]);
 
       setRevenue(revenueData);
       setOrderStatus(orderStatusData);
       setNewCustomers(newCustomersData);
       setCompletedOrders(completedOrdersData);
-      setGrowth(growthData);
       setOrderRates(orderRatesData);
+      setTop5BestSellers(top5Data);
+      setSlowMovingProducts(slowMovingData);
+      setTotalProducts(totalProductsData);
     } catch (err) {
       const axiosError = err as AxiosError<DashboardApiError>;
       setError(
@@ -102,8 +112,10 @@ export const useDashboardStatistics = () => {
     orderStatus,
     newCustomers,
     completedOrders,
-    growth,
     orderRates,
+    top5BestSellers,
+    slowMovingProducts,
+    totalProducts,
     setPeriod,
     reload: loadData,
   };

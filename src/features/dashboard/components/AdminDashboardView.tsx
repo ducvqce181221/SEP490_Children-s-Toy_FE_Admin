@@ -2,10 +2,13 @@
 
 import { ApexOptions } from "apexcharts";
 import dynamic from "next/dynamic";
+import type { ReactNode } from "react";
 import { formatCurrency } from "@/utils/format-utils";
 import {
   DASHBOARD_PERIOD,
   DashboardPeriod,
+  DashboardSlowMovingProductItem,
+  DashboardTopSellingProductItem,
 } from "../types/dashboard";
 import { useDashboardStatistics } from "../hooks/useDashboardStatistics";
 
@@ -39,8 +42,10 @@ export function AdminDashboardView() {
     orderStatus,
     newCustomers,
     completedOrders,
-    growth,
     orderRates,
+    top5BestSellers,
+    slowMovingProducts,
+    totalProducts,
     setPeriod,
   } = useDashboardStatistics();
 
@@ -140,13 +145,12 @@ export function AdminDashboardView() {
         <MetricCard title="Revenue" value={formatCurrency(revenue?.totalRevenue ?? 0)} delta={revenue?.growthPercentage ?? 0} />
         <MetricCard title="New Customers" value={numberFormatter.format(newCustomers?.totalNewCustomers ?? 0)} delta={newCustomers?.growthPercentage ?? 0} />
         <MetricCard title="Completed Orders" value={numberFormatter.format(completedOrders?.totalCompletedOrders ?? 0)} delta={completedOrders?.growthPercentage ?? 0} />
-        <MetricCard title="Revenue Growth" value={calcDeltaLabel(growth?.revenueGrowthPercentage ?? 0)} delta={growth?.revenueGrowthPercentage ?? 0} />
-        <MetricCard title="Order Growth" value={calcDeltaLabel(growth?.ordersGrowthPercentage ?? 0)} delta={growth?.ordersGrowthPercentage ?? 0} />
-        <MetricCard title="Cancel / Refund Rate" value={`${(orderRates?.cancellationRatePercentage ?? 0).toFixed(2)}% / ${(orderRates?.refundRatePercentage ?? 0).toFixed(2)}%`} delta={0} />
+        <MetricCard title="Total Products" value={numberFormatter.format(totalProducts?.totalProducts ?? 0)} />
+        <MetricCard title="Cancel / Refund Rate" value={`${(orderRates?.cancellationRatePercentage ?? 0).toFixed(2)}% / ${(orderRates?.refundRatePercentage ?? 0).toFixed(2)}%`} />
       </section>
 
-      <section className="grid grid-cols-12 gap-4">
-        <div className="col-span-12 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] xl:col-span-8">
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] xl:col-span-2">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Revenue Over Time</h3>
           {isLoading ? (
             <div className="mt-4 h-[320px] animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
@@ -157,7 +161,7 @@ export function AdminDashboardView() {
           )}
         </div>
 
-        <div className="col-span-12 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] xl:col-span-4">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Orders by Status</h3>
           {isLoading ? (
             <div className="mt-4 h-[320px] animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
@@ -168,6 +172,42 @@ export function AdminDashboardView() {
           )}
         </div>
       </section>
+
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <ProductListCard
+          title="Top 5 Best Sellers"
+          className="xl:col-span-2"
+          isLoading={isLoading}
+          items={top5BestSellers?.products ?? []}
+          renderMeta={(item) => (
+            <>
+              Sold: {numberFormatter.format(item.totalSold)}
+              {" | "}
+              Revenue: {formatCurrency(item.revenue)}
+            </>
+          )}
+        />
+        <ProductListCard
+          title="Top 5 Slow-moving Products"
+          isLoading={isLoading}
+          items={slowMovingProducts?.products ?? []}
+          renderMeta={(item) => {
+            if (!("quantityInStock" in item)) {
+              return null;
+            }
+
+            return (
+              <>
+                Stock: {numberFormatter.format(item.quantityInStock)}
+                {" | "}
+                {item.daysInStock} days
+                {" | "}
+                Since {formatDate(item.stockedAt)}
+              </>
+            );
+          }}
+        />
+      </section>
     </div>
   );
 }
@@ -175,20 +215,74 @@ export function AdminDashboardView() {
 type MetricCardProps = {
   title: string;
   value: string;
-  delta: number;
+  delta?: number;
 };
 
 function MetricCard({ title, value, delta }: MetricCardProps) {
-  const isPositive = delta >= 0;
-  const deltaLabel = calcDeltaLabel(delta);
+  const hasDelta = typeof delta === "number";
+  const isPositive = (delta ?? 0) >= 0;
+  const deltaLabel = calcDeltaLabel(delta ?? 0);
 
   return (
     <article className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
       <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
       <p className="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{value}</p>
-      <p className={`mt-2 text-sm font-medium ${isPositive ? "text-green-600" : "text-red-500"}`}>
-        {deltaLabel}
-      </p>
+      {hasDelta ? (
+        <p className={`mt-2 text-sm font-medium ${isPositive ? "text-green-600" : "text-red-500"}`}>
+          {deltaLabel}
+        </p>
+      ) : null}
     </article>
   );
 }
+
+type ProductListCardProps = {
+  title: string;
+  className?: string;
+  isLoading: boolean;
+  items: DashboardTopSellingProductItem[] | DashboardSlowMovingProductItem[];
+  renderMeta: (item: DashboardTopSellingProductItem | DashboardSlowMovingProductItem) => ReactNode;
+};
+
+function ProductListCard({ title, className, isLoading, items, renderMeta }: ProductListCardProps) {
+  return (
+    <article className={`rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] ${className ?? ""}`}>
+      <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">{title}</h3>
+      {isLoading ? (
+        <div className="mt-4 h-[240px] animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+      ) : (
+        <div className="mt-4 space-y-3">
+          {items.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">No data available.</p>
+          ) : (
+            items.map((item) => (
+              <div key={item.productId} className="flex items-center gap-3 rounded-xl border border-gray-100 p-3 dark:border-gray-800">
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt={item.productName} className="h-12 w-12 rounded-lg object-cover" />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                    N/A
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{item.productName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{renderMeta(item)}</p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+const formatDate = (value: string): string => {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "-";
+  }
+
+  return parsed.toLocaleDateString("vi-VN");
+};
+

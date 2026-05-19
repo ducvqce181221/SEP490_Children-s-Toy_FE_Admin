@@ -1,4 +1,5 @@
-import { format, parseISO, isValid } from "date-fns";
+import { format, parseISO, isValid, formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 
 /**
  * Đảm bảo chuỗi ngày tháng từ DateTime2 (UTC+0) được chuẩn hóa sang ISO 8601
@@ -12,6 +13,15 @@ const ensureUTC = (dateString: string): string => {
     formatted += "Z";
   }
   return formatted;
+};
+
+/**
+ * Hiển thị thời gian kiểu "X phút trước", "Y giờ trước"
+ */
+export const formatTimeAgo = (dateString: string | null | undefined): string => {
+  if (!dateString) return "-";
+  const date = parseISO(ensureUTC(dateString));
+  return isValid(date) ? formatDistanceToNow(date, { addSuffix: true, locale: vi }) : "-";
 };
 
 /**
