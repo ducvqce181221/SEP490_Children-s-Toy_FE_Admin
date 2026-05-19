@@ -8,6 +8,8 @@ import Badge from "@/components/ui/badge/Badge";
 import { EyeIcon, PencilIcon, TrashBinIcon } from "@/icons/index";
 import { campaignDetailPath, resolveCampaignListItemId } from "../utils/campaign-navigation";
 
+import { formatDisplayDate } from "@/utils/date-utils";
+
 interface CampaignRowProps {
   rowNumber: number;
   campaign: CampaignListItem;
@@ -89,7 +91,7 @@ export const CampaignRow: React.FC<CampaignRowProps> = ({
       </TableCell>
       <TableCell className="px-5 py-4 sm:py-3 text-sm text-gray-500 dark:text-gray-400">
         {campaign.scheduledAt
-          ? new Date(campaign.scheduledAt).toLocaleString("en-US")
+          ? formatDisplayDate(campaign.scheduledAt)
           : <span className="text-gray-300">—</span>}
       </TableCell>
       <TableCell className="px-5 py-4 sm:py-3 text-center">

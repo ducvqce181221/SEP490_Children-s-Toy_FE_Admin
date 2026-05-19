@@ -21,6 +21,7 @@ import { useCampaignMutations } from "../hooks/useCampaignMutations";
 import { CampaignReviewModal } from "./CampaignReviewModal";
 import { CampaignReferenceCardFromCampaign } from "./CampaignReferenceCard";
 import { campaignSchedulePath } from "../utils/campaign-navigation";
+import { formatDisplayDate } from "@/utils/date-utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -361,13 +362,7 @@ const RecipientTable: React.FC<{ campaignId: number }> = ({ campaignId }) => {
                     </TableCell>
                     <TableCell className="px-5 py-3.5 text-sm text-gray-500 dark:text-gray-400">
                       {delivery.readAt ? (
-                        new Date(delivery.readAt).toLocaleString("en-US", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
+                        formatDisplayDate(delivery.readAt)
                       ) : (
                         <span className="text-gray-300 dark:text-gray-600">—</span>
                       )}
@@ -579,8 +574,8 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
                 {statusCfg.label}
               </span>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Created on {new Date(campaign.createdAt).toLocaleDateString("en-US", { day: "2-digit", month: "long", year: "numeric" })} by <span className="font-medium text-gray-700 dark:text-gray-300">{campaign.createdByAccountName || "System"}</span>
+             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Created on {formatDisplayDate(campaign.createdAt)} by <span className="font-medium text-gray-700 dark:text-gray-300">{campaign.createdByAccountName || "System"}</span>
             </p>
           </div>
         </div>
@@ -730,7 +725,7 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
               <InfoRow label="Schedule">
                 <span className="text-sm text-gray-800 dark:text-white/90">
                   {campaign.scheduledAt
-                    ? new Date(campaign.scheduledAt).toLocaleString("en-US")
+                    ? formatDisplayDate(campaign.scheduledAt)
                     : campaign.status === "Sent"
                       ? "Sent"
                       : "Not scheduled"}
@@ -739,9 +734,9 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
               {(campaign.validFrom || campaign.validTo) && (
                 <InfoRow label="Valid from / to">
                   <span className="text-sm text-gray-800 dark:text-white/90">
-                    {campaign.validFrom ? new Date(campaign.validFrom).toLocaleString("en-US") : "—"}
+                    {campaign.validFrom ? formatDisplayDate(campaign.validFrom) : "—"}
                     {" → "}
-                    {campaign.validTo ? new Date(campaign.validTo).toLocaleString("en-US") : "—"}
+                    {campaign.validTo ? formatDisplayDate(campaign.validTo) : "—"}
                   </span>
                 </InfoRow>
               )}
@@ -749,7 +744,7 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
                 (campaign.status === "Approved" || campaign.status === "Scheduled") && (
                   <InfoRow label="Approval expires">
                     <span className="text-sm text-amber-700 dark:text-amber-300">
-                      {new Date(campaign.approvedExpireAt).toLocaleString("en-US")}
+                      {formatDisplayDate(campaign.approvedExpireAt)}
                     </span>
                   </InfoRow>
                 )}
@@ -762,7 +757,7 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
               )}
               <InfoRow label="Created Date">
                 <span className="text-sm text-gray-800 dark:text-white/90">
-                  {new Date(campaign.createdAt).toLocaleString("en-US")}
+                  {formatDisplayDate(campaign.createdAt)}
                 </span>
               </InfoRow>
               {campaign.submittedByAccountName && (
@@ -782,7 +777,7 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
               {campaign.updatedAt && (
                 <InfoRow label="Last Updated">
                   <span className="text-sm text-gray-600 dark:text-gray-300">
-                    {new Date(campaign.updatedAt).toLocaleString("en-US")}
+                    {formatDisplayDate(campaign.updatedAt)}
                   </span>
                 </InfoRow>
               )}
@@ -798,14 +793,14 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
                       {campaign.submittedAt && (
                         <InfoRow label="Submitted At">
                           <span className="text-sm text-gray-800 dark:text-white/90">
-                            {new Date(campaign.submittedAt).toLocaleString("en-US")}
+                            {formatDisplayDate(campaign.submittedAt)}
                           </span>
                         </InfoRow>
                       )}
                       {campaign.reviewedAt && (
                         <InfoRow label="Reviewed At">
                           <span className="text-sm text-gray-800 dark:text-white/90">
-                            {new Date(campaign.reviewedAt).toLocaleString("en-US")}
+                            {formatDisplayDate(campaign.reviewedAt)}
                           </span>
                         </InfoRow>
                       )}
