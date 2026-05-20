@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/button/Button";
+import { Dropdown } from "@/components/ui/dropdown/Dropdown";
+import Label from "@/components/form/Label";
+import Select from "@/components/form/Select";
 import { WalletStatus } from "../types/wallet";
 
 interface WalletToolbarProps {
@@ -11,8 +14,17 @@ interface WalletToolbarProps {
   onStatusFilterChange: (value: WalletStatus | "") => void;
 }
 
-const selectClassName =
-  "h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800";
+const FilterIcon = () => (
+  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M2.5 5.83333H17.5M5 10H15M8.33333 14.1667H11.6667"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 const WalletToolbar: React.FC<WalletToolbarProps> = ({
   accountSearch,
@@ -21,6 +33,15 @@ const WalletToolbar: React.FC<WalletToolbarProps> = ({
   statusFilter,
   onStatusFilterChange,
 }) => {
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [localStatusFilter, setLocalStatusFilter] = useState<WalletStatus | "">(statusFilter);
+  const [prevStatusFilter, setPrevStatusFilter] = useState(statusFilter);
+
+  if (prevStatusFilter !== statusFilter) {
+    setPrevStatusFilter(statusFilter);
+    setLocalStatusFilter(statusFilter);
+  }
+
   const handleSearchKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (
     event,
   ) => {
@@ -28,6 +49,17 @@ const WalletToolbar: React.FC<WalletToolbarProps> = ({
       event.preventDefault();
       onSearchSubmit();
     }
+  };
+
+  const clearFilters = () => {
+    setLocalStatusFilter("");
+    onStatusFilterChange("");
+    setIsFilterOpen(false);
+  };
+
+  const applyFilters = () => {
+    onStatusFilterChange(localStatusFilter);
+    setIsFilterOpen(false);
   };
 
   return (
@@ -39,44 +71,68 @@ const WalletToolbar: React.FC<WalletToolbarProps> = ({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-7">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full sm:max-w-xl">
           <p className="mb-1 block text-sm font-medium text-transparent select-none" aria-hidden="true">
             Search
           </p>
-          <div className="flex items-center gap-2">
-            <SearchInput
-              value={accountSearch}
-              onChange={onAccountSearchChange}
-              onKeyDown={handleSearchKeyDown}
-              placeholder="Search by account name, email, or phone"
-            />
-            <Button variant="primary" onClick={onSearchSubmit}>
-              Search
-            </Button>
-          </div>
+          <SearchInput
+            value={accountSearch}
+            onChange={onAccountSearchChange}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Search by account name, email, or phone"
+          />
         </div>
 
-        <div className="lg:col-span-5">
-          <label
-            htmlFor="wallet-status-filter"
-            className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+        <div className="relative">
+          <Button
+            variant="outline"
+            startIcon={<FilterIcon />}
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="dropdown-toggle"
           >
-            Status
-          </label>
-          <select
-            id="wallet-status-filter"
-            className={`${selectClassName} w-full`}
-            value={statusFilter}
-            onChange={(event) =>
-              onStatusFilterChange((event.target.value as WalletStatus | "") ?? "")
-            }
+            Filter
+            {statusFilter && (
+              <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-xs font-bold text-white">
+                !
+              </span>
+            )}
+          </Button>
+
+          <Dropdown
+            isOpen={isFilterOpen}
+            onClose={() => setIsFilterOpen(false)}
+            className="right-0 w-[300px] p-4"
           >
-            <option value="">All Status</option>
-            <option value="Active">Active</option>
-            <option value="Frozen">Frozen</option>
-            <option value="Closed">Closed</option>
-          </select>
+            <div className="flex flex-col gap-4">
+              <h4 className="font-semibold text-gray-800 dark:text-white/90">Filter Wallets</h4>
+
+              <div>
+                <Label>Status</Label>
+                <Select
+                  options={[
+                    { value: "", label: "All Statuses" },
+                    { value: "Active", label: "Active" },
+                    { value: "Frozen", label: "Frozen" },
+                    { value: "Closed", label: "Closed" },
+                  ]}
+                  onChange={(event) =>
+                    setLocalStatusFilter((event.target.value as WalletStatus | "") ?? "")
+                  }
+                  value={localStatusFilter}
+                />
+              </div>
+
+              <div className="mt-2 flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Clear
+                </Button>
+                <Button variant="primary" size="sm" onClick={applyFilters}>
+                  Apply
+                </Button>
+              </div>
+            </div>
+          </Dropdown>
         </div>
       </div>
     </div>
