@@ -63,11 +63,10 @@ export const ReviewStatusModal: React.FC<ReviewStatusModalProps> = ({
           </Label>
           <Select
             options={[
-              { value: "Approved", label: "Approved" },
-              { value: "Pending", label: "Pending" },
-              { value: "ManualReview", label: "Manual Review" },
-              { value: "Rejected", label: "Rejected" },
-            ]}
+              { value: currentStatus, label: currentStatus === "ManualReview" ? "Manual Review" : currentStatus },
+              ...(currentStatus !== "Approved" ? [{ value: "Approved", label: "Approved" }] : []),
+              ...(currentStatus !== "Rejected" ? [{ value: "Rejected", label: "Rejected" }] : []),
+            ].filter((v, i, a) => a.findIndex(t => t.value === v.value) === i)}
             error={!!errors.moderationStatus}
             hint={errors.moderationStatus?.message}
             disabled={isSubmitting}
