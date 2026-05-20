@@ -100,7 +100,13 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
         >
           <ChevronLeftIcon className="w-5 h-5"/> Back to List
         </Button>
-        <Button variant="primary" size="sm" onClick={() => setIsStatusModalOpen(true)}>
+        <Button 
+          variant="primary" 
+          size="sm" 
+          onClick={() => setIsStatusModalOpen(true)}
+          disabled={review.moderationStatus === "Rejected"}
+          title={review.moderationStatus === "Rejected" ? "Cannot change status of a rejected review" : "Change Status"}
+        >
           Change Status
         </Button>
       </div>

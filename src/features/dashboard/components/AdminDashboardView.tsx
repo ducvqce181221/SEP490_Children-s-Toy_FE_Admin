@@ -236,15 +236,21 @@ function MetricCard({ title, value, delta }: MetricCardProps) {
   );
 }
 
-type ProductListCardProps = {
+type ProductListCardProps<T> = {
   title: string;
   className?: string;
   isLoading: boolean;
-  items: DashboardTopSellingProductItem[] | DashboardSlowMovingProductItem[];
-  renderMeta: (item: DashboardTopSellingProductItem | DashboardSlowMovingProductItem) => ReactNode;
+  items: T[];
+  renderMeta: (item: T) => ReactNode;
 };
 
-function ProductListCard({ title, className, isLoading, items, renderMeta }: ProductListCardProps) {
+function ProductListCard<T extends { productId: number; productName: string; imageUrl?: string | null }>({
+  title,
+  className,
+  isLoading,
+  items,
+  renderMeta,
+}: ProductListCardProps<T>) {
   return (
     <article className={`rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] ${className ?? ""}`}>
       <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">{title}</h3>
