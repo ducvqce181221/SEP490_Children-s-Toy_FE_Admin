@@ -155,3 +155,23 @@ export interface BlogReview {
   updatedAt: string | null;
   replies: BlogReviewReply[];
 }
+
+export interface BlogReviewPermission {
+  accountId: number;
+  accountName: string;
+  email: string;
+  accountImageUrl: string | null;
+  violationCount: number;
+  isCommentBanned: boolean;
+  bannedAt: string | null;
+  banExpiresAt: string | null;
+  unbannedAt: string | null;
+  unbannedBy: number | null;
+  unbannedByName: string | null;
+  lastViolatedAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface UpdateBlogReviewPermissionRequest {
+  isCommentBanned: boolean;
+}
