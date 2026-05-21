@@ -1,12 +1,14 @@
 import Button from "@/components/ui/button/Button";
 import DatePicker from "@/components/form/date-picker";
-import { PlusIcon, CalenderIcon } from "@/icons";
+import { PlusIcon, CalenderIcon, CopyIcon } from "@/icons";
 
 interface WorkScheduleToolbarProps {
   dateFilter: string;
   onDateChange: (date: Date[]) => void;
   onTodayClick: () => void;
   onAssignClick: () => void;
+  onCloneWeekClick: () => void;
+  isCloningWeek?: boolean;
 }
 
 const WorkScheduleToolbar: React.FC<WorkScheduleToolbarProps> = ({
@@ -14,6 +16,8 @@ const WorkScheduleToolbar: React.FC<WorkScheduleToolbarProps> = ({
   onDateChange,
   onTodayClick,
   onAssignClick,
+  onCloneWeekClick,
+  isCloningWeek = false,
 }) => {
   return (
     <div className="px-5 py-5 sm:px-6">
@@ -26,18 +30,26 @@ const WorkScheduleToolbar: React.FC<WorkScheduleToolbarProps> = ({
             Manage staff assignments and track shift performance.
           </p>
         </div>
-        <Button
-          variant="primary"
-          startIcon={<PlusIcon className="w-5 h-5" />}
-          onClick={onAssignClick}
-        >
-          Assign Staff
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button
+            variant="outline"
+            startIcon={<CopyIcon className="w-5 h-5" />}
+            onClick={onCloneWeekClick}
+            disabled={isCloningWeek}
+          >
+            {isCloningWeek ? "Copying..." : "Copy Last Week"}
+          </Button>
+          <Button
+            variant="primary"
+            startIcon={<PlusIcon className="w-5 h-5" />}
+            onClick={onAssignClick}
+          >
+            Assign Staff
+          </Button>
+        </div>
       </div>
 
-      {/* Filter row — matches other UI toolbars */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Date picker */}
         <div className="w-full sm:max-w-xs">
           <DatePicker
             id="work-date-filter"
@@ -47,7 +59,6 @@ const WorkScheduleToolbar: React.FC<WorkScheduleToolbarProps> = ({
           />
         </div>
 
-        {/* Today shortcut */}
         <Button
           variant="outline"
           startIcon={<CalenderIcon className="w-6.5 h-6.5" />}

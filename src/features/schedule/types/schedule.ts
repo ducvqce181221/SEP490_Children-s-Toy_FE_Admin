@@ -8,7 +8,7 @@ export interface WorkSchedule {
   shiftTemplateId: number;
   shiftName: string;
   workDate: string; // ISO datetime string from backend
-  status: string;   // "Scheduled", "Completed", "Cancelled"
+  status: string;   // "Scheduled" | "OnDuty" | "Completed" | "Absent" | "Cancelled"
   currentLoad: number;
   maxLoad: number;
   imageUrl?: string;
@@ -27,4 +27,29 @@ export interface WorkScheduleQuery {
   workDate?: string;   // "YYYY-MM-DD" - maps to backend WorkDate
   status?: string;     // "Scheduled" | "Completed" | "Cancelled"
   roleId?: number;     // filter by role
+}
+
+/** Response from POST /api/work-schedules/clone-week */
+export interface CloneWeekResult {
+  cloned: number;
+  skipped: number;
+  reasons: string[];
+}
+
+export interface TransferredOrderItem {
+  orderId: number;
+  orderCode: string;
+  statusName: string;
+  oldAccountId: number;
+  newAccountId: number;
+}
+
+/** Response from PUT /api/work-schedules/{scheduleId} */
+export interface UpdateWorkScheduleResult {
+  schedule: WorkSchedule;
+  transferredCount: number;
+  transferredAt: string;
+  transferredOrders: TransferredOrderItem[];
+  autoAssignReassignedCount: number;
+  autoAssignQueuedCount: number;
 }

@@ -14,8 +14,8 @@ import {
   AssignOrderFormData,
   assignOrderSchema,
 } from "../types/order.schema";
-import { accountApi } from "@/features/account/services/account-api";
-import { AccountListItem } from "@/features/account/types/account";
+import { scheduleApi } from "@/features/schedule/services/schedule-api";
+import { WorkSchedule } from "@/features/schedule/types/schedule";
 import { ORDER_STATUS, ROLE_NAME } from "../types/order";
 import { useAuthContext } from "@/context/AuthContext";
 
@@ -287,8 +287,8 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
   onAssign,
   currentStatusName,
 }) => {
-  const [staffs, setStaffs] = useState<AccountListItem[]>([]);
-  const [isLoadingStaffs, setIsLoadingStaffs] = useState(false);
+  const [schedules, setSchedules] = useState<WorkSchedule[]>([]);
+  const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   const {
@@ -321,26 +321,29 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
       targetRoleId = 4; // Merchandise
     }
 
-    const fetchStaffs = async () => {
-      setIsLoadingStaffs(true);
+    const fetchSchedules = async () => {
+      setIsLoadingSchedules(true);
       try {
-        const res = await accountApi.getAccounts({
-          pageNumber: 1,
-          pageSize: 50,
+        const todayVn = new Date(new Date().getTime() + 7 * 60 * 60 * 1000).toISOString().split("T")[0];
+        const res = await scheduleApi.getWorkSchedules({
+          workDate: todayVn,
+          status: "OnDuty",
           roleId: targetRoleId,
-          searchTerm: searchTerm.length >= 2 ? searchTerm : undefined,
         });
-        setStaffs(res.items);
+        setSchedules(res);
       } catch (err) {
-        console.error("Failed to load staffs", err);
+        console.error("Failed to load schedules", err);
       } finally {
-        setIsLoadingStaffs(false);
+        setIsLoadingSchedules(false);
       }
     };
 
-    const debounceId = setTimeout(fetchStaffs, 300);
-    return () => clearTimeout(debounceId);
-  }, [isOpen, searchTerm, currentStatusName]);
+    fetchSchedules();
+  }, [isOpen, currentStatusName]);
+
+  const filteredSchedules = schedules.filter((schedule) =>
+    schedule.accountName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
@@ -366,7 +369,7 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="targetAccountId">Select Staff {isLoadingStaffs && "(Loading...)"}</Label>
+          <Label htmlFor="targetAccountId">Select Staff {isLoadingSchedules && "(Loading...)"}</Label>
           <select
             id="targetAccountId"
             {...register("targetAccountId")}
@@ -374,12 +377,18 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
               errors.targetAccountId ? "border-error-500" : "border-gray-300 dark:border-gray-700"
             } bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`}
           >
-            <option value="0" disabled>-- Please select a staff member --</option>
-            {staffs.map((staff) => (
-              <option key={staff.accountId} value={staff.accountId}>
-                {staff.accountName} - {staff.email}
-              </option>
-            ))}
+            {filteredSchedules.length === 0 ? (
+              <option value="0" disabled>-- No staff currently on shift --</option>
+            ) : (
+              <>
+                <option value="0" disabled>-- Please select a staff member --</option>
+                {filteredSchedules.map((schedule) => (
+                  <option key={schedule.accountId} value={schedule.accountId}>
+                    {schedule.accountName} (Shift: {schedule.shiftName}, Load: {schedule.currentLoad}/{schedule.maxLoad})
+                  </option>
+                ))}
+              </>
+            )}
           </select>
           {errors.targetAccountId && (
             <p className="mt-1 text-sm text-error-500">{errors.targetAccountId.message}</p>
