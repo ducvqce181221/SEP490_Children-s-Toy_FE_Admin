@@ -101,6 +101,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Product Reviews", path: "/admin/product-reviews" },
       { name: "Blog Reviews", path: "/admin/blog-reviews" },
+      { name: "Blog Review Permissions", path: "/admin/blog-review-permissions" },
     ],
   },
 ];
