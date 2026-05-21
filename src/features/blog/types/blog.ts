@@ -121,9 +121,21 @@ export interface BlogReviewReply {
   replyToAccountName: string | null;
   comment: string;
   status: "Visible" | "Hidden";
+  moderationStatus: BlogReviewModerationStatus;
+  isHidden: boolean;
+  banReasonId: number | null;
+  banReasonContent: string | null;
   createdAt: string;
   updatedAt: string | null;
   replies: BlogReviewReply[];
+}
+
+export type BlogReviewModerationStatus = "ManualReview" | "Approved" | "Rejected";
+
+export interface BlogCommentBanReason {
+  banReasonId: number;
+  content: string;
+  createdAt: string;
 }
 
 export interface BlogReview {
@@ -135,6 +147,10 @@ export interface BlogReview {
   accountImageUrl: string | null;
   comment: string;
   status: "Visible" | "Hidden";
+  moderationStatus: BlogReviewModerationStatus;
+  isHidden: boolean;
+  banReasonId: number | null;
+  banReasonContent: string | null;
   createdAt: string;
   updatedAt: string | null;
   replies: BlogReviewReply[];

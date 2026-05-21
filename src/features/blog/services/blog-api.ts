@@ -2,6 +2,7 @@ import axios from "axios";
 import axiosClient from "@/configs/axios-client";
 import {
   ApproveBlogRequest,
+  BlogCommentBanReason,
   BlogReview,
   BlogReviewReply,
   BlogDetail,
@@ -110,7 +111,7 @@ export const blogApi = {
     pageNumber: number;
     pageSize: number;
     searchTerm?: string;
-    status?: "Visible" | "Hidden";
+    status?: string;
   }): Promise<PaginatedResponse<BlogReview>> => {
     return axiosClient.get<PaginatedResponse<BlogReview>>("/admin/blog-reviews", {
       params,
@@ -129,21 +130,27 @@ export const blogApi = {
 
   updateBlogReviewStatus: async (
     reviewBlogId: number,
-    status: "Visible" | "Hidden",
+    moderationStatus: "ManualReview" | "Approved" | "Rejected",
+    banReasonId?: number,
   ): Promise<BlogReview> => {
-    return axiosClient.patch<BlogReview, { status: "Visible" | "Hidden" }>(
+    return axiosClient.patch<BlogReview, { moderationStatus: "ManualReview" | "Approved" | "Rejected"; banReasonId?: number }>(
       `/admin/blog-reviews/${reviewBlogId}/status`,
-      { status },
+      { moderationStatus, banReasonId },
     );
+  },
+
+  getBlogCommentBanReasons: async (): Promise<BlogCommentBanReason[]> => {
+    return axiosClient.get<BlogCommentBanReason[]>("/admin/blog-review-ban-reasons");
   },
 
   updateBlogReplyStatus: async (
     replyBlogId: number,
-    status: "Visible" | "Hidden",
+    moderationStatus: "ManualReview" | "Approved" | "Rejected",
+    banReasonId?: number,
   ): Promise<BlogReviewReply> => {
-    return axiosClient.patch<BlogReviewReply, { status: "Visible" | "Hidden" }>(
+    return axiosClient.patch<BlogReviewReply, { moderationStatus: "ManualReview" | "Approved" | "Rejected"; banReasonId?: number }>(
       `/admin/blog-review-replies/${replyBlogId}/status`,
-      { status },
+      { moderationStatus, banReasonId },
     );
   },
 };
