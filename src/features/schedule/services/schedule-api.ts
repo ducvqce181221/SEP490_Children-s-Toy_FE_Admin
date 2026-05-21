@@ -1,6 +1,12 @@
 import axiosClient from "@/configs/axios-client";
 import { ShiftTemplate, ShiftTemplateFormData } from "../types/shift";
-import { WorkSchedule, WorkScheduleFormData, WorkScheduleQuery } from "../types/schedule";
+import {
+  CloneWeekResult,
+  UpdateWorkScheduleResult,
+  WorkSchedule,
+  WorkScheduleFormData,
+  WorkScheduleQuery,
+} from "../types/schedule";
 
 export const scheduleApi = {
   // ─── Shift Templates ─────────────────────────────────────────────────────────
@@ -34,8 +40,13 @@ export const scheduleApi = {
     axiosClient.post<WorkSchedule>("/work-schedules", data),
 
   // Backend route: PUT /api/work-schedules/{scheduleId}
-  updateWorkSchedule: (id: number, data: WorkScheduleFormData) =>
-    axiosClient.put<WorkSchedule>(`/work-schedules/${id}`, data),
+  updateWorkSchedule: (
+    id: number,
+    data: WorkScheduleFormData & {
+      expectedUpdatedAt?: string;
+      runAutoAssignFallback?: boolean;
+    }
+  ) => axiosClient.put<UpdateWorkScheduleResult>(`/work-schedules/${id}`, data),
 
   // Backend route: DELETE /api/work-schedules/{scheduleId}
   deleteWorkSchedule: (id: number) =>
@@ -44,6 +55,12 @@ export const scheduleApi = {
   // Backend route: PUT /api/work-schedules/{scheduleId}/absent
   markAbsentWorkSchedule: (id: number) =>
     axiosClient.put(`/work-schedules/${id}/absent`),
+
+  // Backend route: POST /api/work-schedules/clone-week?sourceMonday=&targetMonday=
+  cloneWeek: (sourceMonday: string, targetMonday: string) =>
+    axiosClient.post<CloneWeekResult>("/work-schedules/clone-week", null, {
+      params: { sourceMonday, targetMonday },
+    }),
 
   // ─── Capacity / Monitoring ───────────────────────────────────────────────────
   getStaffCapacity: (date: string) =>

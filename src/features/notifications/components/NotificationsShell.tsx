@@ -28,7 +28,7 @@ export default function NotificationsShell({
   if (!isInitialized || !isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-amber-50/50 dark:bg-gray-950">
-        <p className="text-gray-600 dark:text-gray-400">Đang tải…</p>
+        <p className="text-gray-600 dark:text-gray-400">Loading…</p>
       </div>
     );
   }
@@ -48,7 +48,7 @@ export default function NotificationsShell({
               href="/admin"
               className="hidden text-sm text-gray-600 hover:text-amber-800 dark:text-gray-400 dark:hover:text-amber-200 sm:inline"
             >
-              Quản trị
+              Admin
             </Link>
             <NotificationDropdown variant="customer" />
           </nav>

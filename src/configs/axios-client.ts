@@ -17,9 +17,9 @@ const LOGIN_PATHS = ["/login", "/admin/login"] as const;
 const SILENT_STATUSES = new Set([400, 401, 422]);
 
 const HTTP_ERROR_MESSAGES: Record<number, string> = {
-  403: "Bạn không có quyền thực hiện thao tác này.",
-  404: "Không tìm thấy dữ liệu.",
-  500: "Lỗi máy chủ. Vui lòng thử lại sau.",
+  403: "You do not have permission to perform this action.",
+  404: "Data not found.",
+  500: "Server error. Please try again later.",
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

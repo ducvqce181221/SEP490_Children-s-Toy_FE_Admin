@@ -15,11 +15,11 @@ function formatTime(iso: string): string {
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const m = Math.floor(diffMs / 60_000);
-  if (m < 1) return "Vừa xong";
-  if (m < 60) return `${m} phút trước`;
+  if (m < 1) return "Just now";
+  if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h} giờ trước`;
-  return d.toLocaleDateString("vi-VN");
+  if (h < 24) return `${h}h ago`;
+  return d.toLocaleDateString("en-US");
 }
 
 type Variant = "admin" | "customer";
@@ -109,7 +109,7 @@ export default function NotificationDropdown({
         type="button"
         className={`relative dropdown-toggle flex items-center justify-center transition-colors rounded-full h-11 w-11 ${ring} text-gray-600 dark:text-gray-300`}
         onClick={toggleDropdown}
-        aria-label="Thông báo"
+        aria-label="Notifications"
       >
         {unreadCount > 0 && (
           <span className="absolute right-0.5 top-0.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
@@ -141,13 +141,13 @@ export default function NotificationDropdown({
       >
         <div className="mb-3 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
           <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Thông báo
+            Notifications
           </h5>
           <button
             type="button"
             onClick={closeDropdown}
             className="text-gray-500 transition hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            aria-label="Đóng"
+            aria-label="Close"
           >
             <svg
               className="fill-current"
@@ -167,12 +167,12 @@ export default function NotificationDropdown({
         <ul className="custom-scrollbar flex h-auto flex-col overflow-y-auto">
           {loading && (
             <li className="px-4 py-8 text-center text-sm text-gray-500">
-              Đang tải…
+              Loading…
             </li>
           )}
           {!loading && (!items || items.length === 0) && (
             <li className="px-4 py-8 text-center text-sm text-gray-500">
-              Chưa có thông báo
+              No notifications yet
             </li>
           )}
           {!loading &&
@@ -227,7 +227,7 @@ export default function NotificationDropdown({
               : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
           }`}
         >
-          Xem tất cả
+          View all
         </Link>
       </Dropdown>
     </div>
