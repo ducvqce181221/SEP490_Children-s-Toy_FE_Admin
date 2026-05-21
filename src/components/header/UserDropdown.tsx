@@ -31,7 +31,7 @@ export default function UserDropdown() {
     sessionStorage.setItem("admin_logout", "1");
     clearAuth();
     closeDropdown();
-    toast.success("Đã đăng xuất.");
+    toast.success("Logged out successfully.");
     router.push("/admin/login");
   }
 
