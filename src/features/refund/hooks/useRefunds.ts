@@ -24,7 +24,7 @@ export const useRefunds = (initialQuery?: RefundFilter) => {
       setRefunds(response.items || []);
       setTotalCount(response.totalCount || 0);
     } catch (err: unknown) {
-      setError("Không thể tải danh sách hoàn tiền.");
+      setError("Failed to load refund list.");
       setRefunds([]);
       setTotalCount(0);
     } finally {

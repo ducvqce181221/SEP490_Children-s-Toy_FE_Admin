@@ -3,6 +3,7 @@ import axiosClient from "@/configs/axios-client";
 import {
   ApproveBlogRequest,
   BlogCommentBanReason,
+  BlogReviewPermission,
   BlogReview,
   BlogReviewReply,
   BlogDetail,
@@ -12,6 +13,7 @@ import {
   CreateBlogRequest,
   PaginatedResponse,
   SubmitBlogRequest,
+  UpdateBlogReviewPermissionRequest,
   UpdateBlogRequest,
 } from "../types/blog";
 
@@ -152,5 +154,26 @@ export const blogApi = {
       `/admin/blog-review-replies/${replyBlogId}/status`,
       { moderationStatus, banReasonId },
     );
+  },
+
+  getBlogReviewPermissions: async (params: {
+    pageNumber: number;
+    pageSize: number;
+    searchTerm?: string;
+  }): Promise<PaginatedResponse<BlogReviewPermission>> => {
+    return axiosClient.get<PaginatedResponse<BlogReviewPermission>>(
+      "/admin/blog-review-permissions",
+      { params },
+    );
+  },
+
+  updateBlogReviewPermission: async (
+    accountId: number,
+    payload: UpdateBlogReviewPermissionRequest,
+  ): Promise<BlogReviewPermission> => {
+    return axiosClient.patch<
+      BlogReviewPermission,
+      UpdateBlogReviewPermissionRequest
+    >(`/admin/blog-review-permissions/${accountId}`, payload);
   },
 };

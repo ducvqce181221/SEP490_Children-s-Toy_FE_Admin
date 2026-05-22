@@ -122,7 +122,7 @@ const OrderRowComponent: React.FC<OrderRowProps> = ({ order, rowNumber, onOpenDe
             </span>
           ) : (
             <span className="inline-flex w-max items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
-              Staff: Chưa gán
+              Staff: Unassigned
             </span>
           )}
           
@@ -132,7 +132,7 @@ const OrderRowComponent: React.FC<OrderRowProps> = ({ order, rowNumber, onOpenDe
             </span>
           ) : (
              <span className="inline-flex w-max items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
-              Merch: Chưa gán
+              Merch: Unassigned
             </span>
           )}
         </div>
@@ -161,7 +161,7 @@ const OrderRowComponent: React.FC<OrderRowProps> = ({ order, rowNumber, onOpenDe
           type="button"
           onClick={() => onOpenDetail(order.orderId)}
           className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300 dark:hover:border-brand-700 dark:hover:bg-brand-900/20"
-          title="Xem chi tiết"
+          title="View details"
         >
           <EyeIcon />
         </button>

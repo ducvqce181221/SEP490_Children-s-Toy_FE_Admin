@@ -277,7 +277,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
-                Staff: Chưa gán
+                Staff: Unassigned
               </span>
             )}
             {order.assignedToMerchName ? (
@@ -286,7 +286,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
-                Merch: Chưa gán
+                Merch: Unassigned
               </span>
             )}
             <span className="ml-2 text-gray-400">·</span>
@@ -370,7 +370,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             </Section>
 
             {order.shipping && (
-              <Section title="Thông tin vận chuyển">
+              <Section title="Shipping info">
                 <div className="grid grid-cols-1 gap-1 md:grid-cols-2">
                   <div>
                     <InfoRow label="Carrier" value={order.shipping.provider} />
