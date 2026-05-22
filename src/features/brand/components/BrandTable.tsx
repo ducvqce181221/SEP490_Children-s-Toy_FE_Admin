@@ -142,7 +142,7 @@ const BrandTable = () => {
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
                 <TableCell isHeader className={headerCellClassName}>
-                  No.
+                  #
                 </TableCell>
                 <TableCell isHeader className={headerCellClassName}>
                   Brand Name
