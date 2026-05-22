@@ -19,7 +19,7 @@ export const useRefundDetail = (refundId: number | null) => {
       const data = await refundApi.getById(refundId);
       setRefundDetail(data);
     } catch (err: unknown) {
-      setError("Không thể tải chi tiết hoàn tiền.");
+      setError("Failed to load refund details.");
       setRefundDetail(null);
     } finally {
       setIsLoading(false);

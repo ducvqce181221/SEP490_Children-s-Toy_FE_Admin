@@ -19,7 +19,7 @@ export const useReviewDetail = (reviewId: number | null) => {
       const data = await reviewApi.getById(reviewId);
       setReviewDetail(data);
     } catch (err: unknown) {
-      setError("Không thể tải chi tiết đánh giá.");
+      setError("Failed to load review details.");
       setReviewDetail(null);
     } finally {
       setIsLoading(false);

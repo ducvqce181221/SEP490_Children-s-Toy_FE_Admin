@@ -103,7 +103,7 @@ export function ProductPromotionTable({
                     {index + 1}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                    {field.productName || `Sản phẩm #${field.productId}`}
+                    {field.productName || `Product #${field.productId}`}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                     {field.originalPrice?.toLocaleString("vi-VN")}
@@ -196,7 +196,7 @@ export function ProductPromotionTable({
                         type="button"
                         onClick={() => remove(index)}
                         className="text-gray-400 hover:text-error-500 transition-colors"
-                        title="Xóa sản phẩm"
+                        title="Delete product"
                       >
                         <TrashBinIcon className="w-5 h-5" />
                       </button>

@@ -157,7 +157,7 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
           </p>
           {resolvedReference.promotionType ? (
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Loại: <span className="font-medium text-gray-700 dark:text-gray-300">{resolvedReference.promotionType}</span>
+              Type: <span className="font-medium text-gray-700 dark:text-gray-300">{resolvedReference.promotionType}</span>
             </p>
           ) : null}
           {Object.entries(placeholders).map(([key, val]) => {
@@ -184,7 +184,7 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
           {orderedFlashSlots.length > 0 ? (
             <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10">
               <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-2">
-                Khung giờ flash (giờ VN)
+                Flash timeframe (VN time)
               </p>
               <ul className="space-y-2">
                 {orderedFlashSlots.map((slot) => {
@@ -194,18 +194,18 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
                   const badge =
                     phase === "live"
                       ? {
-                          label: "Đang diễn ra",
+                          label: "Ongoing",
                           className:
                             "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/35 dark:text-emerald-100",
                         }
                       : phase === "upcoming"
                         ? {
-                            label: "Sắp diễn ra",
+                            label: "Upcoming",
                             className:
                               "bg-sky-100 text-sky-900 dark:bg-sky-900/35 dark:text-sky-100",
                           }
                         : {
-                            label: "Đã kết thúc",
+                            label: "Ended",
                             className:
                               "bg-gray-100 text-gray-600 dark:bg-gray-800/80 dark:text-gray-400",
                           };
@@ -231,7 +231,7 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
                         {formatFlashSlotRangeVi(slot.startAtUtc, slot.endAtUtc)}
                       </p>
                       <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                        Mã slot #{slot.timeSlotId}
+                        Slot code #{slot.timeSlotId}
                       </p>
                       {lines.length > 0 ? (
                         <details
@@ -239,19 +239,19 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
                           open
                         >
                           <summary className="cursor-pointer select-none px-2 py-1.5 text-[11px] font-semibold text-gray-600 dark:text-gray-300 list-none [&::-webkit-details-marker]:hidden">
-                            Chi tiết sản phẩm ({lines.length})
+                            Product Details ({lines.length})
                           </summary>
                           <div className="px-2 pb-2">
                             <table className="w-full text-[10px] border-collapse min-w-[300px]">
                               <thead>
                                 <tr className="border-b border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400">
-                                  <th className="py-1 pr-2 font-medium text-left align-bottom">Sản phẩm</th>
-                                  <th className="py-1 pr-2 font-medium text-right align-bottom whitespace-nowrap">Giá flash</th>
+                                  <th className="py-1 pr-2 font-medium text-left align-bottom">Product</th>
+                                  <th className="py-1 pr-2 font-medium text-right align-bottom whitespace-nowrap">Flash price</th>
                                   <th className="py-1 pr-2 font-medium text-right align-bottom whitespace-nowrap">%</th>
                                   <th className="py-1 pr-1 font-medium text-right align-bottom whitespace-nowrap">SL</th>
-                                  <th className="py-1 pr-1 font-medium text-right align-bottom whitespace-nowrap">Bán</th>
-                                  <th className="py-1 pr-1 font-medium text-right align-bottom whitespace-nowrap">Giữ</th>
-                                  <th className="py-1 font-medium text-right align-bottom whitespace-nowrap">Còn</th>
+                                  <th className="py-1 pr-1 font-medium text-right align-bottom whitespace-nowrap">Sold</th>
+                                  <th className="py-1 pr-1 font-medium text-right align-bottom whitespace-nowrap">Reserved</th>
+                                  <th className="py-1 font-medium text-right align-bottom whitespace-nowrap">Remaining</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -266,7 +266,7 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
                                         <span className="line-clamp-2">{line.productName}</span>
                                         <span className="block text-[9px] text-gray-400 font-normal">
                                           SP #{line.productId}
-                                          {!line.isActive ? " · Tạm tắt" : ""}
+                                          {!line.isActive ? " · Paused" : ""}
                                         </span>
                                       </td>
                                       <td className="py-1.5 pr-2 align-top text-right tabular-nums whitespace-nowrap">
@@ -290,7 +290,7 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
                         </details>
                       ) : (
                         <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 italic">
-                          Slot chưa gắn sản phẩm flash trong dữ liệu.
+                          Slot has no flash products.
                         </p>
                       )}
                     </li>
@@ -301,13 +301,13 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
           ) : null}
           {scheduleContextNote && flashSaleTypeMatch && flashSlotsList.length === 0 ? (
             <p className="text-[11px] text-amber-800 dark:text-amber-200/90 mt-2">
-              Chưa có khung giờ flash trong dữ liệu — kiểm tra promotion đã tạo slot chưa hoặc làm mới trang.
+              No flash timeframe found - check if promotion has slots or refresh page.
             </p>
           ) : null}
           {scheduleContextNote && Object.keys(placeholders).some((k) => shouldHighlightScheduleRow(k, resolvedReference)) ? (
             <p className="text-[11px] text-amber-800 dark:text-amber-200/90 leading-relaxed">
-              Gợi ý: chọn <span className="font-medium">giờ gửi</span> nằm trong hiệu lực chương trình; đối chiếu thêm khung
-              “Khoảng được phép” từ server.
+              Hint: select <span className="font-medium">send time</span> within program validity; check timeframe
+              “Allowed range” from server.
             </p>
           ) : null}
           {resolvedReference.defaultActionTarget ? (

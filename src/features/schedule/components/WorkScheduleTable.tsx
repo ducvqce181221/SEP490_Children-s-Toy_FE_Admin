@@ -65,8 +65,8 @@ const ScheduleCard: React.FC<{
   const progressColor = isOverloaded
     ? "bg-error-500"
     : isHeavy
-    ? "bg-warning-500"
-    : "bg-brand-500";
+      ? "bg-warning-500"
+      : "bg-brand-500";
 
   const statusCfg = STATUS_CONFIG[schedule.status as keyof typeof STATUS_CONFIG] ?? {
     dot: "bg-gray-400",
@@ -157,7 +157,7 @@ const ScheduleCard: React.FC<{
       {/* Footer */}
       <div className="mt-auto flex items-center justify-between border-t border-gray-100 dark:border-white/[0.05] pt-3">
         <span className="text-[10px] text-gray-400 font-medium">ID: #{schedule.scheduleId}</span>
-        
+
         <div className="flex items-center gap-1.5">
           {canManageAssignment && (
             <>
@@ -222,11 +222,11 @@ const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
 
   const displayDate = dateFilter
     ? new Date(dateFilter + "T00:00:00").toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : "";
 
   return (
@@ -277,8 +277,8 @@ const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
         ) : schedules.length === 0 ? (
           /* Empty state */
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gray-50 dark:bg-gray-800 mb-5 shadow-sm">
-              <UserCircleIcon className="h-10 w-10 text-gray-300 dark:text-gray-600" />
+            <div className="flex h-15 w-15 items-center justify-center rounded-3xl bg-gray-50 dark:bg-gray-800 mb-5 shadow-sm">
+              <UserCircleIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
             </div>
             <p className="text-lg font-bold text-gray-900 dark:text-white">No Assignments Found</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs">

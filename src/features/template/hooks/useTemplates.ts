@@ -43,7 +43,7 @@ export const useTemplates = () => {
       );
       setData(response);
     } catch (err) {
-      setError(getTemplateListErrorMessage(err, "Tải dữ liệu thất bại"));
+      setError(getTemplateListErrorMessage(err, "Failed to load data"));
     } finally {
       setIsLoading(false);
     }

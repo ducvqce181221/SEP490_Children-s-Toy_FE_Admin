@@ -17,9 +17,9 @@ export const useCategoryMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       const result = await categoryApi.createCategory(data);
-      toast.success("Tạo danh mục thành công");
+      toast.success("Category created successfully");
       onSuccess?.();
-      return { success: true, message: "Tạo danh mục thành công", data: result };
+      return { success: true, message: "Category created successfully", data: result };
     } catch (error) {
       const axiosError = error as AxiosError<ValidationErrorResponse>;
       if (
@@ -28,13 +28,13 @@ export const useCategoryMutations = (onSuccess?: () => void) => {
       ) {
         return {
           success: false,
-          message: "Dữ liệu không hợp lệ",
+          message: "Invalid data",
           validationErrors: axiosError.response.data.errors,
         };
       }
 
       const errorMessage =
-        axiosError.response?.data?.message || "Tạo danh mục thất bại";
+        axiosError.response?.data?.message || "Failed to create category";
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally {
@@ -49,9 +49,9 @@ export const useCategoryMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       const result = await categoryApi.updateCategory(id, data);
-      toast.success("Cập nhật danh mục thành công");
+      toast.success("Category updated successfully");
       onSuccess?.();
-      return { success: true, message: "Cập nhật danh mục thành công", data: result };
+      return { success: true, message: "Category updated successfully", data: result };
     } catch (error) {
       const axiosError = error as AxiosError<ValidationErrorResponse>;
       if (
@@ -60,13 +60,13 @@ export const useCategoryMutations = (onSuccess?: () => void) => {
       ) {
         return {
           success: false,
-          message: "Dữ liệu không hợp lệ",
+          message: "Invalid data",
           validationErrors: axiosError.response.data.errors,
         };
       }
 
       const errorMessage =
-        axiosError.response?.data?.message || "Cập nhật danh mục thất bại";
+        axiosError.response?.data?.message || "Failed to update category";
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally {

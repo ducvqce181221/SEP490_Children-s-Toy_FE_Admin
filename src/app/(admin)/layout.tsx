@@ -30,7 +30,7 @@ export default function AdminLayout({
       if (manualLogout) {
         sessionStorage.removeItem("admin_logout");
       } else {
-        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        toast.error("Session expired. Please log in again.");
       }
       router.replace("/admin/login");
     }

@@ -52,7 +52,7 @@ const navItems: NavItem[] = [
     path: "/admin/refunds",
   },
   {
-    icon: <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="var(--color-current)"><path d="M240-180q-57.92 0-98.96-41.04Q100-262.08 100-320v-320q0-57.92 41.04-98.96Q182.08-780 240-780h480q57.92 0 98.96 41.04Q860-697.92 860-640v320q0 57.92-41.04 98.96Q777.92-180 720-180H240Zm0-450h480q22.77 0 42.96 6.54T800-603.61V-640q0-33-23.5-56.5T720-720H240q-33 0-56.5 23.5T160-640v36.39q16.85-13.31 37.04-19.85Q217.23-630 240-630Zm-76.31 119.62 449.23 109.15q8.23 2 16.66.19 8.42-1.81 15.27-7.42l144-121q-9.85-18.08-28.2-29.31Q742.31-570 720-570H240q-28.31 0-49.15 16.58-20.85 16.57-27.16 43.04Z"/></svg>,
+    icon: <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="var(--color-current)"><path d="M240-180q-57.92 0-98.96-41.04Q100-262.08 100-320v-320q0-57.92 41.04-98.96Q182.08-780 240-780h480q57.92 0 98.96 41.04Q860-697.92 860-640v320q0 57.92-41.04 98.96Q777.92-180 720-180H240Zm0-450h480q22.77 0 42.96 6.54T800-603.61V-640q0-33-23.5-56.5T720-720H240q-33 0-56.5 23.5T160-640v36.39q16.85-13.31 37.04-19.85Q217.23-630 240-630Zm-76.31 119.62 449.23 109.15q8.23 2 16.66.19 8.42-1.81 15.27-7.42l144-121q-9.85-18.08-28.2-29.31Q742.31-570 720-570H240q-28.31 0-49.15 16.58-20.85 16.57-27.16 43.04Z" /></svg>,
     name: "Wallet Management",
     path: "/admin/wallets",
   },
@@ -114,7 +114,7 @@ const othersItems: NavItem[] = [
   },
   {
     icon: <EnvelopeIcon />,
-    name: "Inbox",
+    name: "Notification Center",
     path: "/admin/notifications",
   },
   {
@@ -147,8 +147,8 @@ const AppSidebar: React.FC = () => {
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
               className={`menu-item group  ${openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? "menu-item-active"
-                  : "menu-item-inactive"
+                ? "menu-item-active"
+                : "menu-item-inactive"
                 } cursor-pointer ${!isExpanded && !isHovered
                   ? "lg:justify-center"
                   : "lg:justify-start"
@@ -156,8 +156,8 @@ const AppSidebar: React.FC = () => {
             >
               <span
                 className={` ${openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? "menu-item-icon-active"
-                    : "menu-item-icon-inactive"
+                  ? "menu-item-icon-active"
+                  : "menu-item-icon-inactive"
                   }`}
               >
                 {nav.icon}
@@ -168,9 +168,9 @@ const AppSidebar: React.FC = () => {
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
                   className={`ml-auto w-5 h-5 transition-transform duration-200  ${openSubmenu?.type === menuType &&
-                      openSubmenu?.index === index
-                      ? "rotate-180 text-brand-500"
-                      : ""
+                    openSubmenu?.index === index
+                    ? "rotate-180 text-brand-500"
+                    : ""
                     }`}
                 />
               )}
@@ -184,8 +184,8 @@ const AppSidebar: React.FC = () => {
               >
                 <span
                   className={`${isActive(nav.path)
-                      ? "menu-item-icon-active"
-                      : "menu-item-icon-inactive"
+                    ? "menu-item-icon-active"
+                    : "menu-item-icon-inactive"
                     }`}
                 >
                   {nav.icon}
@@ -215,8 +215,8 @@ const AppSidebar: React.FC = () => {
                     <Link
                       href={subItem.path}
                       className={`menu-dropdown-item ${isActive(subItem.path)
-                          ? "menu-dropdown-item-active"
-                          : "menu-dropdown-item-inactive"
+                        ? "menu-dropdown-item-active"
+                        : "menu-dropdown-item-inactive"
                         }`}
                     >
                       {subItem.name}
@@ -224,8 +224,8 @@ const AppSidebar: React.FC = () => {
                         {subItem.new && (
                           <span
                             className={`ml-auto ${isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
+                              ? "menu-dropdown-badge-active"
+                              : "menu-dropdown-badge-inactive"
                               } menu-dropdown-badge `}
                           >
                             new
@@ -234,8 +234,8 @@ const AppSidebar: React.FC = () => {
                         {subItem.pro && (
                           <span
                             className={`ml-auto ${isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
+                              ? "menu-dropdown-badge-active"
+                              : "menu-dropdown-badge-inactive"
                               } menu-dropdown-badge `}
                           >
                             pro
@@ -369,8 +369,8 @@ const AppSidebar: React.FC = () => {
             <div>
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
+                  ? "lg:justify-center"
+                  : "justify-start"
                   }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
@@ -385,8 +385,8 @@ const AppSidebar: React.FC = () => {
             <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
+                  ? "lg:justify-center"
+                  : "justify-start"
                   }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (

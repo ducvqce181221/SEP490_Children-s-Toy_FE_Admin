@@ -10,11 +10,11 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await voucherApi.createVoucher(data);
-      toast.success("Tạo voucher thành công");
+      toast.success("Voucher created successfully");
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Tạo voucher thất bại");
+      toast.error(error instanceof Error ? error.message : "Failed to create voucher");
       if (process.env.NODE_ENV === "development") {
         console.error("[useVoucherMutations.createVoucher]", error);
       }
@@ -28,11 +28,11 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await voucherApi.updateVoucher(id, data);
-      toast.success("Cập nhật voucher thành công");
+      toast.success("Voucher updated successfully");
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Cập nhật thất bại");
+      toast.error(error instanceof Error ? error.message : "Update failed");
       if (process.env.NODE_ENV === "development") {
         console.error("[useVoucherMutations.updateVoucher]", error);
       }
@@ -46,11 +46,11 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await voucherApi.updateVoucher(id, { status: "Scheduled" });
-      toast.success("Phê duyệt voucher thành công");
+      toast.success("Voucher approved successfully");
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Phê duyệt thất bại");
+      toast.error(error instanceof Error ? error.message : "Approval failed");
       if (process.env.NODE_ENV === "development") {
         console.error("[useVoucherMutations.approveVoucher]", error);
       }
@@ -64,11 +64,11 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await voucherApi.updateVoucher(id, { status: "Rejected", reason });
-      toast.success("Từ chối voucher thành công");
+      toast.success("Voucher rejected successfully");
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Từ chối thất bại");
+      toast.error(error instanceof Error ? error.message : "Rejection failed");
       if (process.env.NODE_ENV === "development") {
         console.error("[useVoucherMutations.rejectVoucher]", error);
       }
@@ -82,11 +82,11 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await voucherApi.updateVoucher(id, { isDeleted: true });
-      toast.success("Xoá voucher thành công");
+      toast.success("Voucher deleted successfully");
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Xoá thất bại");
+      toast.error(error instanceof Error ? error.message : "Deletion failed");
       if (process.env.NODE_ENV === "development") {
         console.error("[useVoucherMutations.deleteVoucher]", error);
       }

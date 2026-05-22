@@ -11,11 +11,11 @@ export const useTemplateMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await templateApi.createTemplate(data);
-      toast.success("Tạo template thành công");
+      toast.success("Template created successfully");
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(getTemplateMutationErrorMessage(error, "Tạo template thất bại"));
+      toast.error(getTemplateMutationErrorMessage(error, "Failed to create template"));
       if (process.env.NODE_ENV === "development") {
         console.error("[useTemplateMutations.createTemplate]", error);
       }
@@ -29,11 +29,11 @@ export const useTemplateMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await templateApi.updateTemplate(id, data);
-      toast.success("Cập nhật template thành công");
+      toast.success("Template updated successfully");
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(getTemplateMutationErrorMessage(error, "Cập nhật thất bại"));
+      toast.error(getTemplateMutationErrorMessage(error, "Update failed"));
       if (process.env.NODE_ENV === "development") {
         console.error("[useTemplateMutations.updateTemplate]", error);
       }
