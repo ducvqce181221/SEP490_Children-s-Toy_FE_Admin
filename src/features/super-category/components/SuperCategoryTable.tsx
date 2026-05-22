@@ -19,7 +19,6 @@ import { SuperCategoryFormData } from "../types/super-category.schema";
 import SuperCategoryFormModal from "./SuperCategoryFormModal";
 import { SuperCategoryRow } from "./SuperCategoryRow";
 import SuperCategoryToolbar from "./SuperCategoryToolbar";
-import SuperCategoryDetailModal from "./SuperCategoryDetailModal";
 
 const SuperCategoryTable = () => {
   const {
@@ -47,9 +46,6 @@ const SuperCategoryTable = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingSuperCategory, setEditingSuperCategory] =
     useState<SuperCategoryListItem | null>(null);
-  const [viewingSuperCategory, setViewingSuperCategory] =
-    useState<SuperCategoryListItem | null>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const hasData = superCategories.length > 0;
   const showInitialLoading = isLoading && !hasData;
@@ -63,16 +59,6 @@ const SuperCategoryTable = () => {
   const handleOpenEditModal = (superCategory: SuperCategoryListItem) => {
     setEditingSuperCategory(superCategory);
     setIsFormModalOpen(true);
-  };
-
-  const handleOpenDetailModal = (superCategory: SuperCategoryListItem) => {
-    setViewingSuperCategory(superCategory);
-    setIsDetailModalOpen(true);
-  };
-
-  const handleCloseDetailModal = () => {
-    setIsDetailModalOpen(false);
-    setViewingSuperCategory(null);
   };
 
   const handleCloseFormModal = () => {
@@ -181,7 +167,6 @@ const SuperCategoryTable = () => {
                     superCategory={superCategory}
                     rowNumber={(pageNumber - 1) * pageSize + index + 1}
                     onEdit={handleOpenEditModal}
-                    onViewDetails={handleOpenDetailModal}
                   />
                 ))
               ) : (
@@ -235,14 +220,6 @@ const SuperCategoryTable = () => {
           isSubmitting={isSubmitting}
           onClose={handleCloseFormModal}
           onSubmit={handleSubmit}
-        />
-      )}
-
-      {isDetailModalOpen && viewingSuperCategory && (
-        <SuperCategoryDetailModal
-          isOpen={isDetailModalOpen}
-          superCategoryId={viewingSuperCategory.superCategoryId}
-          onClose={handleCloseDetailModal}
         />
       )}
     </div>

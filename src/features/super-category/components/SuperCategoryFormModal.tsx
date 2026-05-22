@@ -96,7 +96,7 @@ const SuperCategoryFormModal: React.FC<SuperCategoryFormModalProps> = ({
     >
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
-          {mode === "create" ? "Add Super Category" : "Update Super Category"}
+          {mode === "create" ? "Add Super Category" : "Edit Super Category"}
         </h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {mode === "create"
