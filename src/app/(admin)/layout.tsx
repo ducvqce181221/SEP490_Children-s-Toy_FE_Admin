@@ -30,7 +30,7 @@ export default function AdminLayout({
       if (manualLogout) {
         sessionStorage.removeItem("admin_logout");
       } else {
-        toast.error("Session expired. Please log in again.");
+        toast.error("Session expired. Please sign in again.");
       }
       router.replace("/admin/login");
     }
