@@ -9,7 +9,7 @@ const BASE = "/notifications";
 export const notificationApi = {
   /** List bell notifications for the current user. */
   getNotifications: async (
-    params: { status?: string; page?: number; pageSize?: number } = {},
+    params: { status?: string; type?: string; page?: number; pageSize?: number } = {},
   ): Promise<NotificationListResponse> => {
     const res = await axiosClient.get<{ data: any }>(BASE, { params });
     // Backend returns ApiResponse<PaginatedResponse<NotificationListDto>> 

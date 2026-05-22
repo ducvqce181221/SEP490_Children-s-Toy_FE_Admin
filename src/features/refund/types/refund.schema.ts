@@ -9,7 +9,7 @@ export const UpdateRefundStatusSchema = z.object({
   }
   return true;
 }, {
-  message: "Vui lòng nhập lý do từ chối",
+  message: "Please enter rejection reason",
   path: ["rejectReason"],
 });
 

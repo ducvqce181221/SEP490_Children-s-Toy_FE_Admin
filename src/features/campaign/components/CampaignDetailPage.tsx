@@ -142,8 +142,17 @@ const DELIVERY_STATUS_DISPLAY: Record<string, { label: string; color: string }> 
 // ─── Phone Notification Mockup ────────────────────────────────────────────────
 
 const DesktopPreview: React.FC<{ campaign: Campaign }> = ({ campaign }) => {
-  const title = campaign.resolvedTitle || campaign.titleOverride || "Notification Title";
-  const message = campaign.resolvedMessage || campaign.messageOverride || "Notification content...";
+  let title = campaign.resolvedTitle || campaign.titleOverride || "Notification Title";
+  let message = campaign.resolvedMessage || campaign.messageOverride || "Notification content...";
+
+  if (campaign.resolvedReference?.placeholders) {
+    Object.entries(campaign.resolvedReference.placeholders).forEach(([key, value]) => {
+      const regex = new RegExp(`{{\\s*${key}\\s*}}`, "gi");
+      title = title.replace(regex, value);
+      message = message.replace(regex, value);
+    });
+  }
+
   const imageUrl = campaign.imageUrl;
 
   return (
@@ -574,7 +583,7 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
                 {statusCfg.label}
               </span>
             </div>
-             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Created on {formatDisplayDate(campaign.createdAt)} by <span className="font-medium text-gray-700 dark:text-gray-300">{campaign.createdByAccountName || "System"}</span>
             </p>
           </div>
@@ -674,7 +683,7 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
               </Link>
             </>
           )}
-          
+
           {["Draft", "Approved", "Scheduled"].includes(campaign.status) && (
             <button
               onClick={handleCancelClick}
@@ -697,11 +706,70 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
         </div>
       </div>
 
-      {/* ── 2-Column Layout ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left Column (2/5) */}
-        <div className="lg:col-span-2 space-y-5">
-          {/* Campaign Info Card */}
+      {/* ── Campaign Results (Top Level) ────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5">
+        <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
+          Campaign Results
+        </h3>
+
+        {/* Big 3 numbers */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <StatCard
+            label="Sent"
+            value={sent}
+            icon={
+              <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            }
+            color="border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white/90"
+          />
+          <StatCard
+            label="Read"
+            value={read}
+            total={sent}
+            icon={
+              <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            }
+            color="border-green-200 dark:border-green-800/50 text-green-700 dark:text-green-400"
+          />
+          <StatCard
+            label="Clicked"
+            value={clicked}
+            total={sent}
+            icon={
+              <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              </svg>
+            }
+            color="border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-400"
+          />
+        </div>
+
+        {/* Progress bars */}
+        {sent > 0 && (
+          <div className="space-y-4 mb-5">
+            <ProgressBar label="Read rate" value={read} total={sent} color="bg-green-500" />
+            <ProgressBar label="Click rate" value={clicked} total={sent} color="bg-blue-500" />
+          </div>
+        )}
+
+        {/* Insight */}
+        <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+            💡 {getInsight(readPct, clickPct)}
+          </p>
+        </div>
+      </div>
+
+      {/* ── 3-Column Layout ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Column 1: Metadata */}
+        <div className="space-y-5">
+          {/* Campaign Information Card */}
           <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5">
             <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
               Campaign Information
@@ -781,7 +849,7 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
                   </span>
                 </InfoRow>
               )}
-              
+
               {/* Approval Info Section */}
               {(campaign.submittedAt || campaign.reviewedAt) && (
                 <>
@@ -818,78 +886,26 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
             </ul>
           </div>
 
+        </div>
+
+        {/* Column 2: Content & Targets */}
+        <div className="space-y-5">
           {campaign.referenceType && <CampaignReferenceCardFromCampaign campaign={campaign} />}
 
+
+        </div>
+
+        {/* Column 3: Preview */}
+        <div className="space-y-5">
           {/* Phone Preview */}
-          <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5">
+          <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5 sticky top-6">
             <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4 text-center">
               Notification Preview
             </h3>
-            <DesktopPreview campaign={campaign} />
-          </div>
-        </div>
-
-        {/* Right Column (3/5) */}
-        <div className="lg:col-span-3 space-y-5">
-          {/* Stats Header */}
-          <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5">
-            <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
-              Campaign Results
-            </h3>
-
-            {/* Big 3 numbers */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              <StatCard
-                label="Sent"
-                value={sent}
-                icon={
-                  <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                }
-                color="border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white/90"
-              />
-              <StatCard
-                label="Read"
-                value={read}
-                total={sent}
-                icon={
-                  <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                }
-                color="border-green-200 dark:border-green-800/50 text-green-700 dark:text-green-400"
-              />
-              <StatCard
-                label="Clicked"
-                value={clicked}
-                total={sent}
-                icon={
-                  <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                  </svg>
-                }
-                color="border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-400"
-              />
-            </div>
-
-            {/* Progress bars */}
-            {sent > 0 && (
-              <div className="space-y-4 mb-5">
-                <ProgressBar label="Read rate" value={read} total={sent} color="bg-green-500" />
-                <ProgressBar label="Click rate" value={clicked} total={sent} color="bg-blue-500" />
-              </div>
-            )}
-
-            {/* Insight */}
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                💡 {getInsight(readPct, clickPct)}
-              </p>
+            <div className="flex justify-center">
+              <DesktopPreview campaign={campaign} />
             </div>
           </div>
-
           {/* Targets */}
           {campaign.targets.length > 0 && (
             <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5">

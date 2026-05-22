@@ -37,7 +37,7 @@ export const useVouchers = () => {
       );
       setData(response);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Tải dữ liệu thất bại";
+      const message = err instanceof Error ? err.message : "Failed to load data";
       setError(message);
     } finally {
       setIsLoading(false);

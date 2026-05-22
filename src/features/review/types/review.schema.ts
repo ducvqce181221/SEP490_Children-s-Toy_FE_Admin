@@ -10,8 +10,8 @@ export type UpdateReviewStatusData = z.infer<typeof UpdateReviewStatusSchema>;
 export const ReviewReplySchema = z.object({
   content: z
     .string()
-    .min(1, "Nội dung không được để trống")
-    .max(1000, "Nội dung không được vượt quá 1000 ký tự"),
+    .min(1, "Content cannot be empty")
+    .max(1000, "Content cannot exceed 1000 characters"),
 });
 
 export type ReviewReplyData = z.infer<typeof ReviewReplySchema>;

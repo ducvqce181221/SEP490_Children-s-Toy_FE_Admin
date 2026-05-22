@@ -37,7 +37,7 @@ export const usePromotions = () => {
       setData(response);
     } catch (err: unknown) {
       const axiosError = err as AxiosError<ApiErrorResponse>;
-      const message = axiosError.response?.data?.message || axiosError.message || "Tải danh sách khuyến mãi thất bại";
+      const message = axiosError.response?.data?.message || axiosError.message || "Failed to load promotion list";
       setError(message);
       toast.error(message);
     } finally {
@@ -102,7 +102,7 @@ export const usePromotionDetail = (id?: number) => {
       } catch (err: unknown) {
         if (!cancelled) {
           const axiosError = err as AxiosError<ApiErrorResponse>;
-          const message = axiosError.response?.data?.message || axiosError.message || "Tải thông tin khuyến mãi thất bại";
+          const message = axiosError.response?.data?.message || axiosError.message || "Failed to load promotion info";
           setError(message);
           toast.error(message);
         }

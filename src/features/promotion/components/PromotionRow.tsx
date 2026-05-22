@@ -74,7 +74,7 @@ export const PromotionRow = React.memo(function PromotionRow({
           <Link href={`/admin/promotions/${promotion.promotionId}`}>
             <button 
               className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
-              title="Xem chi tiết khuyến mãi"
+              title="View promotion details"
             >
               <EyeIcon className="w-5 h-5" />
             </button>
@@ -82,7 +82,7 @@ export const PromotionRow = React.memo(function PromotionRow({
           <Link href={`/admin/promotions/${promotion.promotionId}/edit`}>
             <button 
               className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
-              title="Chỉnh sửa khuyến mãi"
+              title="Edit promotion"
             >
               <PencilIcon className="w-5 h-5" />
             </button>
@@ -91,7 +91,7 @@ export const PromotionRow = React.memo(function PromotionRow({
             ref={deleteBtnRef}
             onClick={onDeleteClick}
             className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-error-400 hover:text-error-500 dark:border-gray-700 dark:text-gray-300"
-            title="Xóa khuyến mãi"
+            title="Delete promotion"
           >
             <TrashBinIcon className="w-5 h-5" />
           </button>

@@ -265,16 +265,16 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <button 
             onClick={onBack}
-            className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-brand-500 transition-colors mb-2 group"
+            className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors mb-4 group"
           >
             <ChevronLeftIcon className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Back to Schedule
           </button>
-          <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
             {isEdit ? "Edit Assignment" : "New Assignment"}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -330,11 +330,11 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
 
       {!transferResult && (
       <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Config */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-4">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-3">
                 Shift Settings
               </h3>
               
@@ -378,14 +378,14 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
               </div>
             </div>
 
-            <div className="rounded-3xl bg-brand-500 p-6 text-white shadow-xl shadow-brand-500/20">
-              <div className="flex gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md">
-                  <CalenderIcon className="h-6 w-6" />
+            <div className="rounded-xl border border-brand-100 bg-brand-50 p-5 dark:border-brand-900/30 dark:bg-brand-500/5">
+              <div className="flex gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400">
+                  <CalenderIcon className="h-5 w-5 fill-current" />
                 </div>
                 <div>
-                  <p className="font-bold text-lg leading-tight">Requirement Policy</p>
-                  <p className="text-sm text-white/80 mt-2 leading-relaxed font-medium">
+                  <p className="font-bold text-sm text-brand-800 dark:text-brand-300">Requirement Policy</p>
+                  <p className="text-xs text-brand-700/80 dark:text-brand-400/80 mt-1.5 leading-relaxed">
                     {isEdit
                       ? "You are modifying a specific assignment. Ensure the new staff member is available for this shift."
                       : shiftCoverage.hasStaff && shiftCoverage.hasMerch
@@ -400,16 +400,16 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
           </div>
 
           {/* Right Column: Personnel */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-1 h-8 rounded-full bg-brand-500"></div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-1 h-6 rounded-full bg-brand-500"></div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
                   {isEdit ? "Update Personnel" : "Personnel Selection"}
                 </h3>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {(!isEdit || editData?.roleId === 3) &&
                   (isEdit || needsStaffOnCreate) && (
                   <StaffPicker
@@ -424,8 +424,8 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
                 )}
 
                 {!isEdit && shiftCoverage.hasStaff && (
-                  <div className="flex items-center justify-center p-8 rounded-3xl border-2 border-dashed border-brand-100 bg-brand-50/30 dark:border-brand-900 dark:bg-brand-500/5">
-                    <p className="text-xs text-brand-700 dark:text-brand-300 text-center font-semibold">
+                  <div className="flex items-center justify-center p-6 rounded-xl border border-dashed border-brand-200 bg-brand-50/50 dark:border-brand-900/50 dark:bg-brand-500/5">
+                    <p className="text-xs text-brand-700 dark:text-brand-300 text-center font-medium">
                       Staff is already assigned on this shift.<br />
                       Select only a Merchandiser to fill the open slot.
                     </p>
@@ -446,8 +446,8 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
                 )}
 
                 {!isEdit && shiftCoverage.hasMerch && (
-                  <div className="flex items-center justify-center p-8 rounded-3xl border-2 border-dashed border-warning-100 bg-warning-50/30 dark:border-warning-900 dark:bg-warning-500/5">
-                    <p className="text-xs text-warning-800 dark:text-warning-300 text-center font-semibold">
+                  <div className="flex items-center justify-center p-6 rounded-xl border border-dashed border-warning-200 bg-warning-50/50 dark:border-warning-900/50 dark:bg-warning-500/5">
+                    <p className="text-xs text-warning-800 dark:text-warning-300 text-center font-medium">
                       Merchandiser is already assigned on this shift.<br />
                       Select only Staff to fill the open slot.
                     </p>
@@ -455,8 +455,8 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
                 )}
                 
                 {isEdit && (
-                  <div className="flex items-center justify-center p-8 rounded-3xl border-2 border-dashed border-gray-100 dark:border-gray-800">
-                    <p className="text-xs text-gray-400 text-center font-medium">
+                  <div className="flex items-center justify-center p-6 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                    <p className="text-xs text-gray-500 text-center font-medium">
                       The other role is locked for this edit.<br/>To change both, use the individual edit buttons on each card.
                     </p>
                   </div>
@@ -464,21 +464,21 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-4 p-4">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
               <Button 
                 variant="outline" 
                 onClick={onBack} 
                 disabled={isSubmitting} 
-                className="rounded-2xl px-8 h-12 text-sm font-bold border-gray-200"
+                className="rounded-lg px-6 h-10 text-sm font-medium border-gray-300"
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={isSubmitting || isLoadingAccounts}
-                className="rounded-2xl px-12 h-12 text-sm font-bold shadow-xl shadow-brand-500/30"
+                className="rounded-lg px-8 h-10 text-sm font-medium shadow-sm"
               >
-                {isSubmitting ? "Saving..." : isEdit ? "Save Changes" : "Complete & Save Assignment"}
+                {isSubmitting ? "Saving..." : isEdit ? "Save Changes" : "Complete Assignment"}
               </Button>
             </div>
           </div>
