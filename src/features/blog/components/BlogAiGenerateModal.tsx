@@ -12,6 +12,7 @@ interface BlogAiGenerateModalProps {
   blogPostId?: number | null;
   defaultTitle?: string;
   defaultContent?: string;
+  defaultCategoryId?: number;
   onClose: () => void;
   onGenerated: (result: AiBlogGenerateResult) => void;
 }
@@ -21,6 +22,7 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
   blogPostId,
   defaultTitle = "",
   defaultContent = "",
+  defaultCategoryId = 0,
   onClose,
   onGenerated,
 }) => {
@@ -29,7 +31,6 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
   const [promptStructure, setPromptStructure] = useState("");
   const [tone, setTone] = useState("Friendly");
   const [categoryId, setCategoryId] = useState<number>(0);
-  const [action, setAction] = useState<"Generate" | "Improve" | "Rewrite">("Generate");
   const [categories, setCategories] = useState<BlogCategoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,15 +38,23 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     setTitle(defaultTitle);
-    setPromptStructure(defaultContent ? "Cải thiện bài viết hiện tại theo tone thân thiện cho phụ huynh." : "");
+    setPromptStructure("");
     setError(null);
-    blogApi.getBlogCategories()
+
+    blogApi
+      .getBlogCategories()
       .then((items) => {
         setCategories(items);
-        if (items.length > 0) setCategoryId(items[0].blogCategoryId);
+        if (items.length > 0) {
+          const targetCategory =
+            defaultCategoryId > 0 && items.some((x) => x.blogCategoryId === defaultCategoryId)
+              ? defaultCategoryId
+              : items[0].blogCategoryId;
+          setCategoryId(targetCategory);
+        }
       })
       .catch(() => setError("Unable to load blog categories."));
-  }, [defaultContent, defaultTitle, isOpen]);
+  }, [defaultCategoryId, defaultContent, defaultTitle, isOpen]);
 
   const handleGenerate = async () => {
     if (!title.trim() || !promptStructure.trim() || categoryId <= 0) {
@@ -58,7 +67,7 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
     try {
       const result = await blogApi.generateWithAi({
         blogPostId: blogPostId ?? undefined,
-        action,
+        action: "Generate",
         title: title.trim(),
         description: description.trim() || null,
         promptStructure: promptStructure.trim(),
@@ -80,18 +89,13 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[720px] p-6 lg:p-7">
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-          {blogPostId ? "Improve Blog bằng AI" : "Add Blog bằng AI"}
+          {blogPostId ? "Improve Blog with AI" : "Generate Blog with AI"}
         </h3>
         {error && <p className="text-sm text-error-600">{error}</p>}
         <input className="h-11 w-full rounded-lg border border-gray-300 px-4 text-sm" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title / keyword" />
         <textarea className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" />
         <textarea className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm" rows={4} value={promptStructure} onChange={(e) => setPromptStructure(e.target.value)} placeholder="PromptStructure" />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <select className="h-11 rounded-lg border border-gray-300 px-3 text-sm" value={action} onChange={(e) => setAction(e.target.value as "Generate" | "Improve" | "Rewrite")}>
-            <option value="Generate">Generate</option>
-            <option value="Improve">Improve</option>
-            <option value="Rewrite">Rewrite</option>
-          </select>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input className="h-11 rounded-lg border border-gray-300 px-3 text-sm" value={tone} onChange={(e) => setTone(e.target.value)} placeholder="Tone (default: Friendly)" />
           <select className="h-11 rounded-lg border border-gray-300 px-3 text-sm" value={categoryId} onChange={(e) => setCategoryId(Number(e.target.value))}>
             <option value={0}>Select category</option>

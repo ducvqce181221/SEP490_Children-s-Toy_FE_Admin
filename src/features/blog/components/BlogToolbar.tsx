@@ -19,7 +19,6 @@ interface BlogToolbarProps {
   onSortByChange: (value: BlogSortBy) => void;
   onSortDirectionChange: (value: boolean) => void;
   onAddClick: () => void;
-  onAddAiClick: () => void;
 }
 
 const sortOptions: Array<{ value: BlogSortBy; label: string }> = [
@@ -61,7 +60,6 @@ const BlogToolbar: React.FC<BlogToolbarProps> = ({
   onSortByChange,
   onSortDirectionChange,
   onAddClick,
-  onAddAiClick,
 }) => {
   const handleSearchKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
     if (event.key === "Enter") {
@@ -85,9 +83,6 @@ const BlogToolbar: React.FC<BlogToolbarProps> = ({
           <div className="flex items-center gap-3">
             <Button variant="primary" startIcon={<PlusIcon />} onClick={onAddClick}>
               Add Blog
-            </Button>
-            <Button variant="outline" onClick={onAddAiClick}>
-              Add Blog bằng AI
             </Button>
           </div>
         )}
@@ -213,3 +208,4 @@ const BlogToolbar: React.FC<BlogToolbarProps> = ({
 };
 
 export default BlogToolbar;
+

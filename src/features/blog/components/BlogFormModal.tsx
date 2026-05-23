@@ -8,8 +8,10 @@ import type Quill from "quill";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { blogApi } from "../services/blog-api";
+import BlogAiGenerateModal from "./BlogAiGenerateModal";
 import { BlogFormValues, BlogFormInput, blogFormSchema } from "../types/blog.schema";
 import {
+  AiBlogGenerateResult,
   ApiErrorResponse,
   BlogCategoryItem,
   CreateBlogRequest,
@@ -28,7 +30,7 @@ interface BlogFormModalProps {
     blogPostId: number,
     payload: UpdateBlogRequest,
   ) => Promise<CreateOrUpdateBlogResult>;
-  onOpenAiModal?: (blogPostId: number, title: string, blogContent: string) => void;
+  onAiGenerated?: (result: AiBlogGenerateResult) => void;
   onHideBlog?: (blogPostId: number) => Promise<void>;
   isHidingBlog?: boolean;
 }
@@ -118,7 +120,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
   onClose,
   onCreate,
   onUpdate,
-  onOpenAiModal,
+  onAiGenerated,
   onHideBlog,
   isHidingBlog = false,
 }) => {
@@ -127,6 +129,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [isAiGenerateModalOpen, setIsAiGenerateModalOpen] = useState(false);
   const [isHideConfirmOpen, setIsHideConfirmOpen] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("");
   const editorRef = useRef<HTMLDivElement>(null);
@@ -447,6 +450,14 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
     setIsHideConfirmOpen(true);
   };
 
+  const handleApplyGeneratedResult = (result: AiBlogGenerateResult) => {
+    setValue("blogTitle", result.title, { shouldValidate: true });
+    setValue("blogCategoryId", result.blogCategoryId, { shouldValidate: true });
+    setValue("blogContent", result.blogContent, { shouldValidate: true });
+    setQuillContent(result.blogContent);
+    onAiGenerated?.(result);
+  };
+
   const handleConfirmHideBlog = async () => {
     if (mode !== "edit" || !blogPostId || !onHideBlog) {
       return;
@@ -628,24 +639,6 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
 
           <div className="mt-3 flex items-center justify-end gap-3">
             {mode === "edit" &&
-              typeof onOpenAiModal === "function" &&
-              blogPostId &&
-              (
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    onOpenAiModal(
-                      blogPostId,
-                      getValues("blogTitle") ?? "",
-                      getValues("blogContent") ?? "",
-                    )
-                  }
-                  disabled={isSubmitting || isEditLoading}
-                >
-                  Improve with AI
-                </Button>
-              )}
-            {mode === "edit" &&
               currentStatus.toLowerCase() !== "hidden" &&
               typeof onHideBlog === "function" && (
                 <Button
@@ -660,6 +653,13 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
               Cancel
             </Button>
             <Button
+              variant="outline"
+              onClick={() => setIsAiGenerateModalOpen(true)}
+              disabled={isSubmitting || isEditLoading || isLoadingCategories || blogCategories.length === 0}
+            >
+              Generate with AI
+            </Button>
+            <Button
               type="submit"
               variant="primary"
               disabled={isSubmitting || isUploadingThumbnail || isEditLoading}
@@ -668,6 +668,16 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
             </Button>
           </div>
       </form>
+
+      <BlogAiGenerateModal
+        isOpen={isAiGenerateModalOpen}
+        blogPostId={mode === "edit" ? (blogPostId ?? undefined) : undefined}
+        defaultTitle={getValues("blogTitle") ?? ""}
+        defaultContent={getValues("blogContent") ?? ""}
+        defaultCategoryId={Number(getValues("blogCategoryId")) || blogCategories[0]?.blogCategoryId || 0}
+        onClose={() => setIsAiGenerateModalOpen(false)}
+        onGenerated={handleApplyGeneratedResult}
+      />
 
       <Modal
         isOpen={isHideConfirmOpen}
