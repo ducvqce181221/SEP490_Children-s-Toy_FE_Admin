@@ -38,6 +38,17 @@ export const ReviewDetailModal: React.FC<ReviewDetailModalProps> = ({
     }
   };
 
+  const getModeratorLabel = (log: any) => {
+    if (log.moderatorType !== "AI") {
+      return log.moderatedByName || "System";
+    }
+    const typeSuffix = log.targetType ? ` (${log.targetType})` : "";
+    if (log.aiModelVersion) {
+      return `🤖 AI Moderator${typeSuffix}`;
+    }
+    return `⚙️ Rule Validation${typeSuffix}`;
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[900px] w-[90vw] p-0 overflow-hidden max-h-[90vh]">
       <div className="flex flex-col h-[90vh] max-h-[inherit]">
@@ -51,7 +62,7 @@ export const ReviewDetailModal: React.FC<ReviewDetailModalProps> = ({
         <div className="flex-1 overflow-y-auto p-5 bg-gray-50 dark:bg-gray-900">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
-               <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : error || !review ? (
             <div className="flex justify-center items-center h-40 text-error-500">{error || "Review not found"}</div>
@@ -144,12 +155,17 @@ export const ReviewDetailModal: React.FC<ReviewDetailModalProps> = ({
                         <div key={`${log.logId}-${index}`} className="relative pl-5">
                           <div className="absolute w-2.5 h-2.5 bg-brand-500 rounded-full -left-[5.5px] top-1 ring-2 ring-white dark:ring-gray-800"></div>
                           <div className="text-[10px] text-gray-400 mb-1">{formatDisplayDate(log.createdAt)}</div>
-                          <div className="text-xs font-medium text-gray-800 dark:text-white/90">
-                            {log.moderatorType === "AI" ? "🤖 AI Moderator" : log.moderatedByName}
+                          <div className="text-xs font-semibold text-gray-800 dark:text-white/90">
+                            {getModeratorLabel(log)}
                           </div>
-                          <div className="text-[10px] text-gray-500">
-                            {log.previousStatus} ➡️ {log.newStatus}
+                          <div className="text-[10px] text-gray-500 mb-1">
+                            Result: <span className="font-semibold text-brand-600 dark:text-brand-400">{log.action}</span>
                           </div>
+                          {log.reason && (
+                            <div className="text-[11px] text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 p-2 rounded border border-gray-100 dark:border-gray-700/30">
+                              <span className="font-semibold text-gray-700 dark:text-gray-300">Reason:</span> {log.reason}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
