@@ -28,6 +28,7 @@ interface BlogFormModalProps {
     blogPostId: number,
     payload: UpdateBlogRequest,
   ) => Promise<CreateOrUpdateBlogResult>;
+  onOpenAiModal?: (blogPostId: number, title: string, blogContent: string) => void;
   onHideBlog?: (blogPostId: number) => Promise<void>;
   isHidingBlog?: boolean;
 }
@@ -117,6 +118,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
   onClose,
   onCreate,
   onUpdate,
+  onOpenAiModal,
   onHideBlog,
   isHidingBlog = false,
 }) => {
@@ -144,6 +146,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
   const {
     register,
     handleSubmit,
+    getValues,
     reset,
     setError,
     setValue,
@@ -624,6 +627,24 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
           )}
 
           <div className="mt-3 flex items-center justify-end gap-3">
+            {mode === "edit" &&
+              typeof onOpenAiModal === "function" &&
+              blogPostId &&
+              (
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    onOpenAiModal(
+                      blogPostId,
+                      getValues("blogTitle") ?? "",
+                      getValues("blogContent") ?? "",
+                    )
+                  }
+                  disabled={isSubmitting || isEditLoading}
+                >
+                  Improve with AI
+                </Button>
+              )}
             {mode === "edit" &&
               currentStatus.toLowerCase() !== "hidden" &&
               typeof onHideBlog === "function" && (

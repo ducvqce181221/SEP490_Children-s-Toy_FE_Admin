@@ -8,8 +8,9 @@ import { Modal } from "@/components/ui/modal";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { useBlogMutations } from "../hooks/useBlogMutations";
 import { useBlogs } from "../hooks/useBlogs";
-import { BlogListItem, CreateBlogRequest, UpdateBlogRequest } from "../types/blog";
+import { AiBlogGenerateResult, BlogListItem, CreateBlogRequest, UpdateBlogRequest } from "../types/blog";
 import BlogApprovalModal from "./BlogApprovalModal";
+import BlogAiGenerateModal from "./BlogAiGenerateModal";
 import BlogDetailModal from "./BlogDetailModal";
 import BlogFormModal from "./BlogFormModal";
 import { BlogRow } from "./BlogRow";
@@ -69,6 +70,8 @@ const BlogTable = () => {
   } = useBlogMutations(reloadBlogs);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isAiCreateModalOpen, setIsAiCreateModalOpen] = useState(false);
+  const [aiEditTarget, setAiEditTarget] = useState<{ blogPostId: number; title: string; content: string } | null>(null);
   const [selectedDetailBlogId, setSelectedDetailBlogId] = useState<number | null>(null);
   const [selectedEditBlogId, setSelectedEditBlogId] = useState<number | null>(null);
   const [selectedApprovalBlogId, setSelectedApprovalBlogId] = useState<number | null>(null);
@@ -244,6 +247,11 @@ const BlogTable = () => {
     toast.error(result.message);
   };
 
+  const handleAiGenerated = (result: AiBlogGenerateResult) => {
+    toast.success("AI content generated. You can review and edit before saving.");
+    setSelectedEditBlogId(result.blogPostId);
+  };
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <BlogToolbar
@@ -261,6 +269,7 @@ const BlogTable = () => {
         onSortByChange={handleSortByChange}
         onSortDirectionChange={handleSortDirectionChange}
         onAddClick={() => setIsCreateModalOpen(true)}
+        onAddAiClick={() => setIsAiCreateModalOpen(true)}
       />
 
       <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
@@ -405,6 +414,28 @@ const BlogTable = () => {
           onCreate={handleCreateBlog}
           onUpdate={handleUpdateBlog}
           onHideBlog={handleHideBlogByStaff}
+          onOpenAiModal={(blogPostId, title, blogContent) =>
+            setAiEditTarget({ blogPostId, title, content: blogContent })
+          }
+        />
+      )}
+
+      {(isStaff || isAdmin) && (
+        <BlogAiGenerateModal
+          isOpen={isAiCreateModalOpen}
+          onClose={() => setIsAiCreateModalOpen(false)}
+          onGenerated={handleAiGenerated}
+        />
+      )}
+
+      {(isStaff || isAdmin) && aiEditTarget && (
+        <BlogAiGenerateModal
+          isOpen={aiEditTarget !== null}
+          blogPostId={aiEditTarget.blogPostId}
+          defaultTitle={aiEditTarget.title}
+          defaultContent={aiEditTarget.content}
+          onClose={() => setAiEditTarget(null)}
+          onGenerated={handleAiGenerated}
         />
       )}
 
