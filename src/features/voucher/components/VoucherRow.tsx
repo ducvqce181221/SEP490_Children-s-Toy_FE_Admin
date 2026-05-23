@@ -38,8 +38,10 @@ export const VoucherRow = React.memo(function VoucherRow({
 }: VoucherRowProps) {
   const [isReasonOpen, setIsReasonOpen] = useState(false);
   const [isInactiveOpen, setIsInactiveOpen] = useState(false);
+  const [isApproveOpen, setIsApproveOpen] = useState(false);
   const reasonBtnRef = useRef<HTMLButtonElement>(null);
   const inactiveBtnRef = useRef<HTMLButtonElement>(null);
+  const approveBtnRef = useRef<HTMLButtonElement>(null);
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -153,7 +155,8 @@ export const VoucherRow = React.memo(function VoucherRow({
           {roleName === "Admin" && voucher.status === "Pending" && (
             <>
               <button 
-                onClick={onApprove}
+                ref={approveBtnRef}
+                onClick={() => setIsApproveOpen(true)}
                 className="rounded-lg border border-gray-300 p-2 text-success-500 transition-colors hover:border-success-400 hover:text-success-600 dark:border-gray-700"
                 title="Approve voucher"
               >
@@ -192,15 +195,54 @@ export const VoucherRow = React.memo(function VoucherRow({
             </button>
           )}
 
-          <button 
-            ref={deleteBtnRef}
-            onClick={onDeleteClick}
-            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-error-400 hover:text-error-500 dark:border-gray-700 dark:text-gray-300"
-            title="Delete voucher"
-          >
-            <TrashBinIcon className="w-5 h-5" />
-          </button>
+          {voucher.status !== "Active" && (
+            <button 
+              ref={deleteBtnRef}
+              onClick={onDeleteClick}
+              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-error-400 hover:text-error-500 dark:border-gray-700 dark:text-gray-300"
+              title="Delete voucher"
+            >
+              <TrashBinIcon className="w-5 h-5" />
+            </button>
+          )}
         </div>
+
+        {/* Approve Confirmation Popover */}
+        <Popover
+          isOpen={isApproveOpen}
+          onClose={() => setIsApproveOpen(false)}
+          triggerRef={approveBtnRef}
+          position="top-end"
+          className="p-4"
+        >
+          <div className="w-[220px]">
+            <h4 className="text-sm font-semibold dark:text-white/90 mb-1 text-success-600">Approve Voucher</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Are you sure you want to approve voucher <span className="font-bold">{voucher.voucherCode}</span>?
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsApproveOpen(false)}
+                className="h-8 text-xs px-3"
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="primary" 
+                size="sm" 
+                onClick={() => {
+                  onApprove?.();
+                  setIsApproveOpen(false);
+                }}
+                className="h-8 text-xs px-3 bg-success-500 hover:bg-success-600 border-success-500"
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+        </Popover>
 
         {/* Inactive Confirmation Popover */}
         <Popover
