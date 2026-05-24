@@ -38,7 +38,11 @@ export default function SignInForm() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      const response = await authApi.login(data);
+      const payload: LoginFormValues = {
+        ...data,
+        password: data.password.trim(),
+      };
+      const response = await authApi.login(payload);
 
       if (!ADMIN_ROLE_IDS.includes(response.account.roleId)) {
         toast.error("This account does not have access to the admin system.");

@@ -13,6 +13,7 @@ import Pagination from "@/components/common/Pagination";
 import { usePromotions } from "../hooks/usePromotions";
 import { usePromotionMutations } from "../hooks/usePromotionMutations";
 import { PromotionRow } from "./PromotionRow";
+import { PromotionListDto } from "../types/promotion";
 
 export const PromotionTable = () => {
   const {
@@ -32,7 +33,7 @@ export const PromotionTable = () => {
     refetch
   } = usePromotions();
 
-  const { deletePromotion: apiDeletePromotion } = usePromotionMutations(() => {
+  const { updatePromotion, deletePromotion: apiDeletePromotion } = usePromotionMutations(() => {
     // on success reload list
     refetch();
     setDeletePromotion(null);
@@ -42,6 +43,10 @@ export const PromotionTable = () => {
     if (deletePromotion) {
       await apiDeletePromotion(deletePromotion.promotionId);
     }
+  };
+
+  const handleInactive = async (promotion: PromotionListDto) => {
+    await updatePromotion(promotion.promotionId, { status: "Inactive" });
   };
 
   const paginatedData = data?.items || [];
@@ -124,6 +129,7 @@ export const PromotionTable = () => {
                     onDeleteClick={() => setDeletePromotion(promotion)}
                     onDeleteCancel={() => setDeletePromotion(null)}
                     onDeleteConfirm={handleDeleteConfirm}
+                    onInactive={() => handleInactive(promotion)}
                   />
                 ))
               ) : (

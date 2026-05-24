@@ -8,7 +8,7 @@ import { Modal } from "@/components/ui/modal";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { useBlogMutations } from "../hooks/useBlogMutations";
 import { useBlogs } from "../hooks/useBlogs";
-import { BlogListItem, CreateBlogRequest, UpdateBlogRequest } from "../types/blog";
+import { AiBlogGenerateResult, BlogListItem, CreateBlogRequest, UpdateBlogRequest } from "../types/blog";
 import BlogApprovalModal from "./BlogApprovalModal";
 import BlogDetailModal from "./BlogDetailModal";
 import BlogFormModal from "./BlogFormModal";
@@ -244,6 +244,10 @@ const BlogTable = () => {
     toast.error(result.message);
   };
 
+  const handleAiGenerated = (_result: AiBlogGenerateResult) => {
+    toast.success("AI content generated. You can review and edit before saving.");
+  };
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <BlogToolbar
@@ -385,6 +389,7 @@ const BlogTable = () => {
           onClose={() => setIsCreateModalOpen(false)}
           onCreate={handleCreateBlog}
           onUpdate={handleUpdateBlog}
+          onAiGenerated={handleAiGenerated}
         />
       )}
 
@@ -405,6 +410,7 @@ const BlogTable = () => {
           onCreate={handleCreateBlog}
           onUpdate={handleUpdateBlog}
           onHideBlog={handleHideBlogByStaff}
+          onAiGenerated={handleAiGenerated}
         />
       )}
 

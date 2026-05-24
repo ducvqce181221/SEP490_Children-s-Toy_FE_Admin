@@ -175,3 +175,36 @@ export interface BlogReviewPermission {
 export interface UpdateBlogReviewPermissionRequest {
   isCommentBanned: boolean;
 }
+
+export interface AiPromptTemplateItem {
+  templateId: number;
+  templateName: string;
+  description: string | null;
+  promptStructure: string;
+  defaultTone: string | null;
+  defaultCategoryId: number | null;
+  defaultCategoryName: string | null;
+  isActive: boolean;
+}
+
+export interface AiBlogGenerateRequest {
+  blogPostId?: number;
+  action?: "Generate" | "Improve" | "Rewrite";
+  title: string;
+  description?: string | null;
+  promptStructure: string;
+  defaultTone?: string | null;
+  defaultCategoryId: number;
+  isActive?: boolean;
+}
+
+export interface AiBlogGenerateResult {
+  blogPostId: number;
+  historyId?: number | null;
+  title: string;
+  blogContent: string;
+  blogCategoryId: number;
+  promptData: string;
+  aiStatus: string;
+  aiError?: string | null;
+}

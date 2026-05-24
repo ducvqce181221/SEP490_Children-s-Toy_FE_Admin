@@ -1,7 +1,7 @@
 import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { CategoryListItem } from "../types/category";
-import { PencilIcon, EyeIcon } from "@/icons";
+import { PencilIcon } from "@/icons";
 import { format } from "date-fns";
 import Badge from "@/components/ui/badge/Badge";
 
@@ -9,7 +9,6 @@ interface CategoryRowProps {
   category: CategoryListItem;
   rowNumber: number;
   onEdit: (category: CategoryListItem) => void;
-  onViewDetails: (category: CategoryListItem) => void;
 }
 
 const statusClassNameByValue: Record<CategoryListItem["status"], string> = {
@@ -18,7 +17,7 @@ const statusClassNameByValue: Record<CategoryListItem["status"], string> = {
 };
 
 export const CategoryRow = React.memo(
-  ({ category, rowNumber, onEdit, onViewDetails }: CategoryRowProps) => {
+  ({ category, rowNumber, onEdit }: CategoryRowProps) => {
     const formattedDate = format(new Date(category.createdAt), "dd/MM/yyyy HH:mm");
     const isInactive = category.status === "Inactive";
 
@@ -51,14 +50,6 @@ export const CategoryRow = React.memo(
         </TableCell>
         <TableCell className="px-4 py-3 text-center">
           <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={() => onViewDetails(category)}
-              aria-label={`View details of ${category.categoryName}`}
-              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-500 dark:border-gray-700 dark:text-gray-300"
-              title="View category details"
-            >
-              <EyeIcon className="w-5 h-5" />
-            </button>
             <button
               onClick={() => onEdit(category)}
               aria-label={`Edit category ${category.categoryName}`}

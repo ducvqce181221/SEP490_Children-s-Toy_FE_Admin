@@ -22,7 +22,7 @@ export const usePromotionMutations = (onSuccess?: () => void) => {
     }
   };
 
-  const updatePromotion = async (id: number, data: PromotionFormData) => {
+  const updatePromotion = async (id: number, data: Partial<PromotionFormData & { isDeleted?: boolean }>) => {
     setIsSubmitting(true);
     try {
       await promotionApi.update(id, data);
