@@ -1,6 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { ApexOptions } from "apexcharts";
+import { useTheme } from "@/context/ThemeContext";
+
+const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 interface StaffLoadChartProps {
   data: {
@@ -11,90 +16,177 @@ interface StaffLoadChartProps {
 }
 
 const StaffLoadChart: React.FC<StaffLoadChartProps> = ({ data }) => {
-  if (data.length === 0) return null;
+  const { theme } = useTheme();
+  
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  const globalMax = Math.max(...data.map((d) => d.max), 1);
+  const { series, categories } = useMemo(() => {
+    // Sort by load descending so highest load is at the top
+    const sortedData = [...data].sort((a, b) => b.load - a.load);
+    const cat = sortedData.map(d => d.staffName);
+    
+    // Series 1: Normal Load (up to Max)
+    const normalLoad = sortedData.map(d => Math.min(d.load, d.max));
+    // Series 2: Remaining Capacity (Max - Load, if load < max)
+    const remaining = sortedData.map(d => d.max > d.load ? d.max - d.load : 0);
+    // Series 3: Overload (Load - Max, if load > max)
+    const overload = sortedData.map(d => d.load > d.max ? d.load - d.max : 0);
+
+    return {
+      categories: cat,
+      series: [
+        {
+          name: "Assigned Load",
+          data: normalLoad
+        },
+        {
+          name: "Remaining Capacity",
+          data: remaining
+        },
+        {
+          name: "Overload",
+          data: overload
+        }
+      ]
+    };
+  }, [data]);
+
+  if (!mounted || data.length === 0) return null;
+
+  const isDark = theme === "dark";
+
+  const options: ApexOptions = {
+    chart: {
+      type: "bar",
+      stacked: true,
+      toolbar: {
+        show: false
+      },
+      fontFamily: "inherit",
+      background: "transparent",
+    },
+    theme: {
+      mode: isDark ? "dark" : "light",
+    },
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        barHeight: "50%",
+        borderRadius: 4,
+        borderRadiusApplication: "end", // Round the end of the stack
+      },
+    },
+    colors: ["#F97316", isDark ? "#1E40AF" : "#BFDBFE", "#EF4444"], // Orange, Blue (Remaining), Red
+    stroke: {
+      width: 1,
+      colors: [isDark ? "#1F2937" : "#fff"] // Matches bg to act as gap between stacked bars
+    },
+    xaxis: {
+      categories: categories,
+      labels: {
+        style: {
+          colors: isDark ? "#9CA3AF" : "#6B7280"
+        },
+        formatter: (val) => {
+          const num = Number(val);
+          return isNaN(num) ? val : num.toFixed(0);
+        }
+      },
+      axisBorder: {
+        show: false,
+      },
+      axisTicks: {
+        show: false,
+      },
+      title: {
+         text: "Number of Orders",
+         style: {
+           color: isDark ? "#6B7280" : "#9CA3AF",
+           fontWeight: 500,
+           fontSize: "12px"
+         }
+      }
+    },
+    yaxis: {
+      labels: {
+        style: {
+          colors: isDark ? "#E5E7EB" : "#374151",
+          fontWeight: 600,
+          fontSize: "13px"
+        }
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        return val ? val : ""; // Only show label if value > 0
+      },
+      style: {
+        fontSize: '12px',
+        fontWeight: 'bold',
+        colors: ['#fff']
+      },
+      dropShadow: {
+        enabled: true,
+        top: 1,
+        left: 1,
+        blur: 1,
+        color: '#000',
+        opacity: 0.45
+      }
+    },
+    tooltip: {
+      theme: isDark ? "dark" : "light",
+      y: {
+        formatter: function (val) {
+          return val + " orders";
+        }
+      }
+    },
+    fill: {
+      opacity: 1
+    },
+    legend: {
+      position: "top",
+      horizontalAlign: "center",
+      markers: {
+        size: 6, // controls marker size (optional)
+        shape: "circle", // makes legend markers perfectly circular
+      },
+      labels: {
+        colors: isDark ? "#D1D5DB" : "#4B5563"
+      }
+    },
+    grid: {
+      borderColor: isDark ? "#374151" : "#F3F4F6",
+      strokeDashArray: 4,
+      xaxis: {
+        lines: {
+          show: true
+        }
+      },
+      yaxis: {
+        lines: {
+          show: false
+        }
+      }
+    }
+  };
+
+  // Adjust height based on number of staff members to prevent squishing
+  const chartHeight = Math.max(280, data.length * 60 + 120);
 
   return (
-    <div className="space-y-3">
-      {data.map((item, i) => {
-        const pct = item.max > 0 ? Math.round((item.load / item.max) * 100) : 0;
-        const isOverloaded = pct >= 100;
-        const isHeavy = pct > 80 && !isOverloaded;
-
-        const barColor = isOverloaded
-          ? "bg-error-500"
-          : isHeavy
-          ? "bg-warning-500"
-          : "bg-brand-500";
-
-        const pctColor = isOverloaded
-          ? "text-error-600 dark:text-error-400"
-          : isHeavy
-          ? "text-warning-600 dark:text-warning-400"
-          : "text-brand-600 dark:text-brand-400";
-
-        const barWidth = item.max > 0 ? (item.load / globalMax) * 100 : 0;
-
-        return (
-          <div key={i} className="group">
-            {/* Name + stats row */}
-            <div className="flex items-center justify-between mb-1.5 gap-4">
-              <div className="flex items-center gap-2 min-w-0">
-                {/* Initials avatar */}
-                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-black text-white ${barColor} shadow-sm`}>
-                  {item.staffName?.[0]?.toUpperCase() ?? "?"}
-                </div>
-                <span className="text-sm font-bold text-gray-800 dark:text-gray-200 truncate">
-                  {item.staffName}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="text-xs text-gray-400 font-medium tabular-nums">
-                  {item.load}
-                  <span className="text-gray-300 dark:text-gray-600 mx-0.5">/</span>
-                  {item.max}
-                </span>
-                <span className={`text-xs font-black tabular-nums w-10 text-right ${pctColor}`}>
-                  {pct}%
-                </span>
-              </div>
-            </div>
-
-            {/* Progress bar */}
-            <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-              <div
-                className={`h-full rounded-full transition-all duration-700 ease-out ${barColor}`}
-                style={{ width: `${Math.min(barWidth, 100)}%` }}
-              />
-            </div>
-
-            {/* Threshold marker at max capacity */}
-            {item.load > 0 && item.max > 0 && (
-              <div className="flex justify-end mt-0.5">
-                <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold">
-                  capacity: {item.max} orders
-                </span>
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-2 mt-2 border-t border-gray-100 dark:border-gray-800">
-        {[
-          { color: "bg-brand-500", label: "Normal (≤80%)" },
-          { color: "bg-warning-500", label: "Heavy (81–99%)" },
-          { color: "bg-error-500", label: "Overloaded (≥100%)" },
-        ].map((l) => (
-          <div key={l.label} className="flex items-center gap-1.5">
-            <span className={`inline-block h-2 w-4 rounded-full ${l.color}`} />
-            <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">{l.label}</span>
-          </div>
-        ))}
-      </div>
+    <div className="w-full">
+      <ReactApexChart 
+        options={options} 
+        series={series} 
+        type="bar" 
+        height={chartHeight} 
+      />
     </div>
   );
 };

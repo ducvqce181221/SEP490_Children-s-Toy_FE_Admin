@@ -1,5 +1,6 @@
 import { AxiosError } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuthContext } from "@/context/AuthContext";
 import { orderApi } from "../services/order-api";
 import {
@@ -29,18 +30,58 @@ export const useOrders = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const searchParams = useSearchParams();
+
   // ── Filter state ────────────────────────────────────────────────────────
-  const [keyword, setKeyword] = useState("");
-  const [searchKeyword, setSearchKeyword] = useState("");
+  const [keyword, setKeyword] = useState(searchParams?.get("q") || "");
+  const [searchKeyword, setSearchKeyword] = useState(searchParams?.get("q") || "");
   // "" = dùng default theo role; số = filter cụ thể; 0 = Admin xem tất cả
-  const [statusId, setStatusId] = useState<number | "">("");
-  const [assignedToMe, setAssignedToMe] = useState(false);
-  const [fromDate, setFromDate] = useState<string>("");
-  const [toDate, setToDate] = useState<string>("");
+  const [statusId, setStatusId] = useState<number | "">(
+    searchParams?.has("status") ? Number(searchParams.get("status")) : ""
+  );
+  const [assignedToMe, setAssignedToMe] = useState(searchParams?.get("assigned") === "true");
+  const [fromDate, setFromDate] = useState<string>(searchParams?.get("from") || "");
+  const [toDate, setToDate] = useState<string>(searchParams?.get("to") || "");
 
   // ── Pagination ──────────────────────────────────────────────────────────
-  const [pageNumber, setPageNumber] = useState(DEFAULT_PAGE_NUMBER);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [pageNumber, setPageNumber] = useState(Number(searchParams?.get("page")) || DEFAULT_PAGE_NUMBER);
+  const [pageSize, setPageSize] = useState(Number(searchParams?.get("size")) || DEFAULT_PAGE_SIZE);
+
+  // Sync state to URL silently so that "Back" button restores it
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    const params = new URLSearchParams(window.location.search);
+    let changed = false;
+
+    if (searchKeyword) { params.set("q", searchKeyword); changed = true; }
+    else if (params.has("q")) { params.delete("q"); changed = true; }
+
+    if (statusId !== "") { params.set("status", statusId.toString()); changed = true; }
+    else if (params.has("status")) { params.delete("status"); changed = true; }
+
+    if (assignedToMe) { params.set("assigned", "true"); changed = true; }
+    else if (params.has("assigned")) { params.delete("assigned"); changed = true; }
+
+    if (fromDate) { params.set("from", fromDate); changed = true; }
+    else if (params.has("from")) { params.delete("from"); changed = true; }
+
+    if (toDate) { params.set("to", toDate); changed = true; }
+    else if (params.has("to")) { params.delete("to"); changed = true; }
+
+    if (pageNumber > 1) { params.set("page", pageNumber.toString()); changed = true; }
+    else if (params.has("page")) { params.delete("page"); changed = true; }
+
+    if (pageSize !== DEFAULT_PAGE_SIZE) { params.set("size", pageSize.toString()); changed = true; }
+    else if (params.has("size")) { params.delete("size"); changed = true; }
+
+    if (changed) {
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(null, "", newUrl);
+    } else if (window.location.search) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [searchKeyword, statusId, assignedToMe, fromDate, toDate, pageNumber, pageSize]);
 
   // ── Reload trigger ──────────────────────────────────────────────────────
   const [reloadToken, setReloadToken] = useState(0);

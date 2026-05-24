@@ -31,6 +31,7 @@ export interface ResolvedFlashProductLine {
   slotProductId: number;
   productId: number;
   productName: string;
+  imageUrl?: string | null;
   salePrice: number;
   discountPercent?: number | null;
   saleQuantity: number;
@@ -50,6 +51,7 @@ export interface ResolvedFlashTimeSlot {
 
 export interface ResolvedReference {
   displayName?: string | null;
+  imageUrl?: string | null;
   /** SALE: FLASH_SALE | DISCOUNT | … from API */
   promotionType?: string | null;
   placeholders: Record<string, string>;
@@ -234,6 +236,7 @@ export interface CampaignDelivery {
   status: string; // "Unread" | "Read" | "Archived" | "Deleted"
   readAt?: string | null;
   createdAt: string;
+  isClicked?: boolean;
 }
 
 export interface PaginatedDeliveries {
