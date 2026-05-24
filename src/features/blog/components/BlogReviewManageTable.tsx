@@ -13,6 +13,7 @@ import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import TextArea from "@/components/form/input/TextArea";
 import { ChevronDownIcon, PencilIcon } from "@/icons";
+import { formatDisplayDate } from "@/utils/date-utils";
 import { blogApi } from "../services/blog-api";
 import { BlogCommentBanReason, BlogReview, BlogReviewModerationStatus, BlogReviewReply } from "../types/blog";
 
@@ -42,10 +43,7 @@ const getStatusBadge = (status: BlogReviewModerationStatus) => {
 };
 
 const toDateTimeText = (value: string | null) => {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
+  return formatDisplayDate(value);
 };
 
 const getInitials = (name: string) => {
