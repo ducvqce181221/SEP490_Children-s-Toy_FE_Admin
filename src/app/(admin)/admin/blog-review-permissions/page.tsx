@@ -4,7 +4,7 @@ import { BlogReviewPermissionManagement } from "@/features/blog/components/BlogR
 
 export const metadata: Metadata = {
   title: "Blog Review Permissions | Toy Store Admin",
-  description: "Manage accounts locked from blog comment permissions",
+  description: "Manage blog comment permissions for customer accounts",
 };
 
 export default function BlogReviewPermissionsPage() {
