@@ -38,6 +38,14 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+const getPermissionStatus = (isCommentBanned: boolean) => {
+  if (isCommentBanned) {
+    return { label: "Comment Banned", color: "error" as const };
+  }
+
+  return { label: "Comment Active", color: "success" as const };
+};
+
 export function BlogReviewPermissionManagement() {
   const [items, setItems] = useState<BlogReviewPermission[]>([]);
   const [pageNumber, setPageNumber] = useState(1);
@@ -62,7 +70,7 @@ export function BlogReviewPermissionManagement() {
       setTotalPages(data.totalPages);
       setTotalCount(data.totalCount);
     } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to load locked blog comment accounts."));
+      toast.error(getErrorMessage(error, "Unable to load customer comment permissions."));
     } finally {
       setIsLoading(false);
     }
@@ -73,10 +81,10 @@ export function BlogReviewPermissionManagement() {
   }, [fetchData]);
 
   const pageRangeText = useMemo(() => {
-    if (totalCount === 0) return "No locked accounts";
+    if (totalCount === 0) return "No customer accounts";
     const start = (pageNumber - 1) * pageSize + 1;
     const end = Math.min(pageNumber * pageSize, totalCount);
-    return `Showing ${start} - ${end} / ${totalCount} locked accounts`;
+    return `Showing ${start} - ${end} / ${totalCount} customer accounts`;
   }, [pageNumber, pageSize, totalCount]);
 
   const handleSearchSubmit = () => {
@@ -107,7 +115,7 @@ export function BlogReviewPermissionManagement() {
       <div className="px-5 py-5 sm:px-6">
         <div className="mb-5">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Blog Review Permissions</h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">View, search, and restore accounts locked from blog comments.</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">View, search, and manage comment permissions for all customer accounts.</p>
         </div>
         <div className="w-full sm:max-w-sm">
           <SearchInput
@@ -138,14 +146,14 @@ export function BlogReviewPermissionManagement() {
               {isLoading && (
                 <TableRow>
                   <TableCell colSpan={8} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-                    Loading locked accounts...
+                    Loading customer accounts...
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-                    No locked review accounts found.
+                    No customer accounts found.
                   </TableCell>
                 </TableRow>
               )}
@@ -168,7 +176,7 @@ export function BlogReviewPermissionManagement() {
                   <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{item.email}</TableCell>
                   <TableCell className="px-5 py-4 text-sm font-medium text-gray-700 dark:text-gray-200">{item.violationCount}</TableCell>
                   <TableCell className="px-5 py-4">
-                    <Badge size="sm" color="error">Comment Banned</Badge>
+                    <Badge size="sm" color={getPermissionStatus(item.isCommentBanned).color}>{getPermissionStatus(item.isCommentBanned).label}</Badge>
                   </TableCell>
                   <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{toDateTimeText(item.bannedAt)}</TableCell>
                   <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{toDateTimeText(item.banExpiresAt)}</TableCell>
@@ -176,10 +184,11 @@ export function BlogReviewPermissionManagement() {
                     <div className="flex items-center justify-center">
                       <button
                         type="button"
-                        onClick={() => setEditTarget(item)}
-                        className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
-                        aria-label={`Edit blog review permission for ${item.accountName}`}
-                        title="Edit permission"
+                        onClick={() => item.isCommentBanned && setEditTarget(item)}
+                        disabled={!item.isCommentBanned}
+                        className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300"
+                        aria-label={`Manage blog review permission for ${item.accountName}`}
+                        title={item.isCommentBanned ? "Restore permission" : "No action needed"}
                       >
                         <PencilIcon className="h-5 w-5" />
                       </button>

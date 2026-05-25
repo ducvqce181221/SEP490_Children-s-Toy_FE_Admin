@@ -259,6 +259,38 @@ const ProductDetailModal = ({
                       {product.originName || "N/A"}
                     </dd>
                   </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Weight
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {product.weightGram ? `${product.weightGram} g` : "N/A"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Length
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {product.lengthCm ? `${product.lengthCm} cm` : "N/A"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Width
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {product.widthCm ? `${product.widthCm} cm` : "N/A"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Height
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {product.heightCm ? `${product.heightCm} cm` : "N/A"}
+                    </dd>
+                  </div>
                   {product.launchDate && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
