@@ -254,7 +254,12 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
       startDate: formatLocalToUTC(data.startDate),
       endDate: formatLocalToUTC(data.endDate),
       status: isNew ? "Scheduled" : data.status,
-      productPromotions: data.productPromotions.map(({ ...rest }) => rest),
+      productPromotions: data.productPromotions.map(
+        ({ productName: _pn, originalPrice: _op, stock: _st, saleQuantity, ...rest }) => ({
+          ...rest,
+          saleQuantity: data.promotionType === "DISCOUNT" ? null : saleQuantity,
+        })
+      ),
       promotionTimeSlots: PROMOTION_TYPE_CONFIG[data.promotionType]?.hasTimeSlots
         ? data.promotionTimeSlots.map((ts) => ({
             startAt: formatLocalToUTC(ts.startAt),   // local → UTC ISO string
