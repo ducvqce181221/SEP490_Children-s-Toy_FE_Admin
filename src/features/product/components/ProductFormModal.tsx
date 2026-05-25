@@ -101,6 +101,10 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       ageId: null,
       sexId: null,
       originId: null,
+      weightGram: 1,
+      lengthCm: 1,
+      widthCm: 1,
+      heightCm: 1,
       mainImageUrl: "",
       additionalImageUrls: [],
     },
@@ -118,6 +122,10 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const ageIdValue = useWatch({ control, name: "ageId" });
   const sexIdValue = useWatch({ control, name: "sexId" });
   const originIdValue = useWatch({ control, name: "originId" });
+  const weightGramValue = useWatch({ control, name: "weightGram" });
+  const lengthCmValue = useWatch({ control, name: "lengthCm" });
+  const widthCmValue = useWatch({ control, name: "widthCm" });
+  const heightCmValue = useWatch({ control, name: "heightCm" });
   const descriptionTextLength = getDescriptionTextLength(descriptionValue);
   const isFormDisabled = isSubmitting || isLoadingOptions || isLoadingDetail || isUploading;
 
@@ -310,6 +318,10 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               ageId: detail.ageId,
               sexId: detail.sexId,
               originId: detail.originId,
+              weightGram: detail.weightGram ?? 1,
+              lengthCm: detail.lengthCm ?? 1,
+              widthCm: detail.widthCm ?? 1,
+              heightCm: detail.heightCm ?? 1,
             });
             pendingDescriptionRef.current = normalizeDescriptionHtml(detail.description);
             setDescriptionEditorContent(pendingDescriptionRef.current);
@@ -333,6 +345,10 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
           ageId: null,
           sexId: null,
           originId: null,
+          weightGram: 1,
+          lengthCm: 1,
+          widthCm: 1,
+          heightCm: 1,
           mainImageUrl: "",
           additionalImageUrls: [],
         });
@@ -758,6 +774,82 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               {errors.originId && (
                 <p className="mt-1.5 text-sm text-error-500">{errors.originId.message}</p>
               )}
+            </div>
+
+            <div>
+              <Label>
+                Weight (gram) <span className="text-error-500">*</span>
+              </Label>
+              <Input
+                type="number"
+                value={weightGramValue ?? ""}
+                onChange={(e) =>
+                  setValue("weightGram", Number(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
+                placeholder="1"
+                disabled={isFormDisabled}
+                error={!!errors.weightGram}
+                hint={errors.weightGram?.message}
+              />
+            </div>
+
+            <div>
+              <Label>
+                Length (cm) <span className="text-error-500">*</span>
+              </Label>
+              <Input
+                type="number"
+                value={lengthCmValue ?? ""}
+                onChange={(e) =>
+                  setValue("lengthCm", Number(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
+                placeholder="1"
+                disabled={isFormDisabled}
+                error={!!errors.lengthCm}
+                hint={errors.lengthCm?.message}
+              />
+            </div>
+
+            <div>
+              <Label>
+                Width (cm) <span className="text-error-500">*</span>
+              </Label>
+              <Input
+                type="number"
+                value={widthCmValue ?? ""}
+                onChange={(e) =>
+                  setValue("widthCm", Number(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
+                placeholder="1"
+                disabled={isFormDisabled}
+                error={!!errors.widthCm}
+                hint={errors.widthCm?.message}
+              />
+            </div>
+
+            <div>
+              <Label>
+                Height (cm) <span className="text-error-500">*</span>
+              </Label>
+              <Input
+                type="number"
+                value={heightCmValue ?? ""}
+                onChange={(e) =>
+                  setValue("heightCm", Number(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
+                placeholder="1"
+                disabled={isFormDisabled}
+                error={!!errors.heightCm}
+                hint={errors.heightCm?.message}
+              />
             </div>
 
             <div className="sm:col-span-2">
