@@ -190,7 +190,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
           salePrice: p.salePrice,
           discountPercent: p.discountPercent,
           saleQuantity: p.saleQuantity,
-          isActive: p.isActive,
         })),
         // Map startAt/endAt từ UTC (API) → local (datetime-local input)
         promotionTimeSlots: initialData.promotionTimeSlots?.map((ts) => ({
@@ -206,7 +205,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
             salePrice: ps.salePrice,
             discountPercent: ps.discountPercent,
             saleQuantity: ps.saleQuantity,
-            isActive: ps.isActive,
           })),
         })) ?? [],
       });
@@ -243,7 +241,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
           salePrice: p.price,
           discountPercent: 0,
           saleQuantity: null as number | null,
-          isActive: true,
         }));
         append(newItems);
       }
@@ -257,7 +254,12 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
       startDate: formatLocalToUTC(data.startDate),
       endDate: formatLocalToUTC(data.endDate),
       status: isNew ? "Scheduled" : data.status,
-      productPromotions: data.productPromotions.map(({ ...rest }) => rest),
+      productPromotions: data.productPromotions.map(
+        ({ productName: _pn, originalPrice: _op, stock: _st, saleQuantity, ...rest }) => ({
+          ...rest,
+          saleQuantity: data.promotionType === "DISCOUNT" ? null : saleQuantity,
+        })
+      ),
       promotionTimeSlots: PROMOTION_TYPE_CONFIG[data.promotionType]?.hasTimeSlots
         ? data.promotionTimeSlots.map((ts) => ({
             startAt: formatLocalToUTC(ts.startAt),   // local → UTC ISO string
