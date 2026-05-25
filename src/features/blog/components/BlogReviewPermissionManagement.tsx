@@ -9,16 +9,14 @@ import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { PencilIcon } from "@/icons";
+import { formatDisplayDate } from "@/utils/date-utils";
 import { blogApi } from "../services/blog-api";
 import { BlogReviewPermission } from "../types/blog";
 
 const headerCellClassName = "px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400";
 
 const toDateTimeText = (value: string | null) => {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
+  return formatDisplayDate(value);
 };
 
 const getInitials = (name: string) => {

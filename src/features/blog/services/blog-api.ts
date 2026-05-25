@@ -2,6 +2,8 @@ import axios from "axios";
 import axiosClient from "@/configs/axios-client";
 import {
   ApproveBlogRequest,
+  AiBlogGenerateRequest,
+  AiBlogGenerateResult,
   BlogCommentBanReason,
   BlogReviewPermission,
   BlogReview,
@@ -107,6 +109,14 @@ export const blogApi = {
     );
 
     return response.data;
+  },
+
+  generateWithAi: async (payload: AiBlogGenerateRequest): Promise<AiBlogGenerateResult> => {
+    return axiosClient.post<AiBlogGenerateResult, AiBlogGenerateRequest>(
+      "/admin/ai-blogs/generate",
+      payload,
+      { timeout: 120_000 },
+    );
   },
 
   getBlogReviewsForManagement: async (params: {
