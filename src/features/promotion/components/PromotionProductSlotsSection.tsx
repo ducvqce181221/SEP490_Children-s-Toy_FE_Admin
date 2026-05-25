@@ -57,7 +57,6 @@ function PromotionProductSlotManager({
           salePrice: p.price, // Default to original price (consistent with Discount)
           discountPercent: 0, // Default to 0% discount
           saleQuantity: null as unknown as number, // Keep null to force user input for slot quantity
-          isActive: true,
         }));
         append(newItems);
       }

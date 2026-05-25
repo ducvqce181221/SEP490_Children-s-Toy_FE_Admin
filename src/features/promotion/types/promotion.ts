@@ -55,7 +55,6 @@ export interface ProductPromotion {
   soldQuantity: number;
   reservedQuantity: number;
   stock: number;
-  isActive: boolean;
 }
 
 /** Khung giờ Flash Sale — StartAt/EndAt là UTC ISO 8601 string */
@@ -83,7 +82,6 @@ export interface PromotionProductSlot {
   saleQuantity: number;
   soldQuantity: number;
   reservedQuantity: number;
-  isActive: boolean;
 }
 
 // ─── List DTO ─────────────────────────────────────────────────────────────────
@@ -106,7 +104,6 @@ export interface CreateProductPromotionDto {
   salePrice: number;
   discountPercent: number | null;
   saleQuantity: number | null;
-  isActive: boolean;
 }
 
 /** Gửi kèm trong CreatePromotionTimeSlotDto */
@@ -116,7 +113,6 @@ export interface CreatePromotionProductSlotDto {
   discountPercent: number | null;
   /** Bắt buộc, phải > 0 với FLASH_SALE */
   saleQuantity: number;
-  isActive: boolean;
 }
 
 /** Tạo/cập nhật time slot FLASH_SALE — startAt/endAt là UTC ISO 8601 */

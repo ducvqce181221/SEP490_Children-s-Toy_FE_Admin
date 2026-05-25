@@ -190,7 +190,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
           salePrice: p.salePrice,
           discountPercent: p.discountPercent,
           saleQuantity: p.saleQuantity,
-          isActive: p.isActive,
         })),
         // Map startAt/endAt từ UTC (API) → local (datetime-local input)
         promotionTimeSlots: initialData.promotionTimeSlots?.map((ts) => ({
@@ -206,7 +205,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
             salePrice: ps.salePrice,
             discountPercent: ps.discountPercent,
             saleQuantity: ps.saleQuantity,
-            isActive: ps.isActive,
           })),
         })) ?? [],
       });
@@ -243,7 +241,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
           salePrice: p.price,
           discountPercent: 0,
           saleQuantity: null as number | null,
-          isActive: true,
         }));
         append(newItems);
       }
