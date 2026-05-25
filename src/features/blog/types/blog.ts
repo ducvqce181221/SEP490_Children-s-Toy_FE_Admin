@@ -9,6 +9,7 @@ export const blogStatuses = [
 ] as const;
 
 export type BlogStatus = (typeof blogStatuses)[number];
+export type BlogManagementStatus = "Pending" | "Published" | "Scheduled";
 
 export type BlogSortBy =
   | "blogtitle"
@@ -207,4 +208,14 @@ export interface AiBlogGenerateResult {
   promptData: string;
   aiStatus: string;
   aiError?: string | null;
+}
+
+export type AiBlockedViolationType = "brand_external" | "topic_restricted" | "out_of_scope";
+
+export interface AiBlockedResponse {
+  status: "blocked";
+  violation_type: AiBlockedViolationType;
+  violated_keyword: string;
+  reason: string;
+  suggestions: string[];
 }
