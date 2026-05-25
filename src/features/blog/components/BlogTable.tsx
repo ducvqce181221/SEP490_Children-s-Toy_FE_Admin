@@ -280,7 +280,7 @@ const BlogTable = () => {
                 <TableCell isHeader className={headerCellClassName}>Created At</TableCell>
                 <TableCell
                   isHeader
-                  className="px-5 py-3 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                  className="w-[180px] px-5 py-3 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400"
                 >
                   Actions
                 </TableCell>
