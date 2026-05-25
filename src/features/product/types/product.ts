@@ -45,6 +45,10 @@ export interface ProductDetail {
   sexName: string | null;
   originId: number | null;
   originName: string | null;
+  weightGram: number | null;
+  lengthCm: number | null;
+  widthCm: number | null;
+  heightCm: number | null;
   mainImageUrl: string | null;
   additionalImageUrls: string[];
   createdAt: string;
