@@ -6,6 +6,7 @@ import Pagination from "@/components/common/Pagination";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import { blogApi } from "../services/blog-api";
 import { useBlogMutations } from "../hooks/useBlogMutations";
 import { useBlogs } from "../hooks/useBlogs";
 import { AiBlogGenerateResult, BlogListItem, CreateBlogRequest, UpdateBlogRequest } from "../types/blog";
@@ -31,6 +32,7 @@ const BlogTable = () => {
     error,
     searchTerm,
     statusFilter,
+    availableStatuses,
     featuredFilter,
     sortBy,
     sortDesc,
@@ -138,21 +140,43 @@ const BlogTable = () => {
   };
 
   const handleSubmitBlog = async (blog: BlogListItem) => {
-    const blogAtValue = blog.blogAt?.trim();
-    if (!blogAtValue) {
-      setSelectedEditBlogId(blog.blogPostId);
-      toast.error("Please set Blog At before submitting for admin approval.");
-      return;
+    try {
+      const detail = await blogApi.getBlogById(blog.blogPostId);
+      const missingFields: string[] = [];
+
+      if (!detail.blogThumbnail?.trim()) {
+        missingFields.push("Thumbnail");
+      }
+      if (!detail.blogTitle?.trim()) {
+        missingFields.push("Title");
+      }
+      if (!detail.blogContent?.trim()) {
+        missingFields.push("Content");
+      }
+      if (!detail.blogAt?.trim()) {
+        missingFields.push("BlogAt");
+      }
+      if (!detail.blogCategoryId || detail.blogCategoryId <= 0) {
+        missingFields.push("Category");
+      }
+
+      if (missingFields.length > 0) {
+        setSelectedEditBlogId(blog.blogPostId);
+        toast.error(`Cannot submit to Pending. Missing required fields: ${missingFields.join(", ")}.`);
+        return;
+      }
+
+      const result = await submitBlog(blog.blogPostId);
+
+      if (result.success) {
+        toast.success(result.message);
+        return;
+      }
+
+      toast.error(result.message);
+    } catch {
+      toast.error("Unable to validate blog before submitting. Please try again.");
     }
-
-    const result = await submitBlog(blog.blogPostId);
-
-    if (result.success) {
-      toast.success(result.message);
-      return;
-    }
-
-    toast.error(result.message);
   };
 
   const handleApprovePublishNow = async () => {
@@ -255,6 +279,7 @@ const BlogTable = () => {
         canAdd={isStaff || isAdmin}
         searchTerm={searchTerm}
         statusFilter={statusFilter}
+        statuses={availableStatuses}
         featuredFilter={featuredFilter}
         sortBy={sortBy}
         sortDesc={sortDesc}

@@ -153,6 +153,22 @@ export const ProductFormSchema = z
       })
       .nullable()
       .optional(),
+    weightGram: z
+      .number()
+      .int("Weight must be a whole number")
+      .gt(0, "Weight (gram) must be greater than 0"),
+    lengthCm: z
+      .number()
+      .int("Length must be a whole number")
+      .gt(0, "Length (cm) must be greater than 0"),
+    widthCm: z
+      .number()
+      .int("Width must be a whole number")
+      .gt(0, "Width (cm) must be greater than 0"),
+    heightCm: z
+      .number()
+      .int("Height must be a whole number")
+      .gt(0, "Height (cm) must be greater than 0"),
     mainImageUrl: z
       .string()
       .refine(
