@@ -116,6 +116,14 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
+  const handleBack = () => {
+    if (window.history.length > 2) {
+      router.back();
+    } else {
+      router.push("/admin/orders");
+    }
+  };
+
   const loadOrder = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -570,7 +578,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
       {/* ── Actions footer ─────────────────────────────────────────────────── */}
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-gray-200 pt-6 dark:border-gray-800">
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={() => router.push("/admin/orders")}>
+          <Button variant="outline" onClick={handleBack}>
             Back
           </Button>
           {canCancel && (

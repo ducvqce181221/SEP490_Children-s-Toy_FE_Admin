@@ -55,22 +55,10 @@ export const TemplateToolbar: React.FC<TemplateToolbarProps> = ({
     setLocalFilters({ ...localFilters, isActive });
   };
 
-  const handleScopeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    const usageScope = value === "" ? undefined : (value as "SYSTEM" | "ADMIN");
-    setLocalFilters({ ...localFilters, usageScope });
-  };
 
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalFilters({ ...localFilters, startDate: e.target.value || undefined });
-  };
-
-  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalFilters({ ...localFilters, endDate: e.target.value || undefined });
-  };
 
   const clearFilters = () => {
-    const emptyFilters = { isActive: undefined, usageScope: undefined, startDate: undefined, endDate: undefined };
+    const emptyFilters = { isActive: undefined };
     setLocalFilters(emptyFilters);
     onFilterChange(emptyFilters);
     setIsFilterOpen(false);
@@ -81,11 +69,7 @@ export const TemplateToolbar: React.FC<TemplateToolbarProps> = ({
     setIsFilterOpen(false);
   };
 
-  const hasActiveFilters =
-    filters.isActive !== undefined ||
-    filters.usageScope !== undefined ||
-    filters.startDate ||
-    filters.endDate;
+  const hasActiveFilters = filters.isActive !== undefined;
 
   return (
     <div className="px-5 py-5 sm:px-6">
@@ -94,9 +78,6 @@ export const TemplateToolbar: React.FC<TemplateToolbarProps> = ({
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             Template List
           </h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Template SYSTEM chi de xem, he thong tu gui.
-          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="primary" startIcon={<PlusIcon />} onClick={onAddClick}>
@@ -144,37 +125,6 @@ export const TemplateToolbar: React.FC<TemplateToolbarProps> = ({
                   ]}
                   onChange={handleStatusChange}
                   value={localFilters.isActive === undefined ? "" : localFilters.isActive.toString()}
-                />
-              </div>
-
-              <div>
-                <Label>Scope</Label>
-                <Select
-                  options={[
-                    { value: "", label: "All Scopes" },
-                    { value: "SYSTEM", label: "System" },
-                    { value: "ADMIN", label: "Admin" },
-                  ]}
-                  onChange={handleScopeChange}
-                  value={localFilters.usageScope ?? ""}
-                />
-              </div>
-
-              <div>
-                <Label>Created After</Label>
-                <Input 
-                  type="date"
-                  value={localFilters.startDate || ""}
-                  onChange={handleStartDateChange}
-                />
-              </div>
-
-              <div>
-                <Label>Created Before</Label>
-                <Input 
-                  type="date"
-                  value={localFilters.endDate || ""}
-                  onChange={handleEndDateChange}
                 />
               </div>
 

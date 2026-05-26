@@ -107,15 +107,15 @@ export default function SchedulesPage() {
     } catch (err: unknown) {
       const msg =
         err &&
-        typeof err === "object" &&
-        "response" in err &&
-        err.response &&
-        typeof err.response === "object" &&
-        "data" in err.response &&
-        err.response.data &&
-        typeof err.response.data === "object" &&
-        "message" in err.response.data &&
-        typeof (err.response.data as { message?: string }).message === "string"
+          typeof err === "object" &&
+          "response" in err &&
+          err.response &&
+          typeof err.response === "object" &&
+          "data" in err.response &&
+          err.response.data &&
+          typeof err.response.data === "object" &&
+          "message" in err.response.data &&
+          typeof (err.response.data as { message?: string }).message === "string"
           ? (err.response.data as { message: string }).message
           : "Failed to copy week schedule";
       toast.error(msg);
@@ -152,18 +152,16 @@ export default function SchedulesPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all duration-200 ${
-                    isActive
-                      ? "bg-brand-500 text-white shadow-sm shadow-brand-500/30"
-                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/[0.05]"
-                  }`}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all duration-200 ${isActive
+                    ? "bg-brand-500 text-white shadow-sm shadow-brand-500/30"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/[0.05]"
+                    }`}
                 >
                   {tab.icon}
                   {tab.label}
                   {tab.id === "overview" && schedules.length > 0 && (
-                    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
-                      isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-                    }`}>
+                    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-black ${isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                      }`}>
                       {schedules.length}
                     </span>
                   )}
@@ -252,7 +250,7 @@ export default function SchedulesPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 dark:bg-gray-800 mb-4">
-                      <PieChartIcon className="h-8 w-8 text-gray-300 dark:text-gray-600" />
+                      <PieChartIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
                     </div>
                     <p className="text-base font-bold text-gray-700 dark:text-gray-300">No data to display</p>
                     <p className="text-sm text-gray-500 mt-1">Assign staff to shifts to see the workload chart.</p>

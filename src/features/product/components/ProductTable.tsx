@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Pagination from "@/components/common/Pagination";
 import {
   Table,
@@ -63,9 +64,20 @@ const ProductTable = () => {
   const [lookups, setLookups] = useState<ProductLookupsResponse | null>(null);
   const [isLookupLoading, setIsLookupLoading] = useState(false);
 
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const queryProductId = searchParams.get("productId");
+
   const hasData = products.length > 0;
   const showInitialLoading = isLoading && !hasData;
   const isEditMode = editingProduct !== null;
+
+  useEffect(() => {
+    if (queryProductId) {
+      setIsDetailModalOpen(true);
+    }
+  }, [queryProductId]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -317,11 +329,16 @@ const ProductTable = () => {
         />
       )}
 
-      {isDetailModalOpen && viewingProduct && (
+      {isDetailModalOpen && (viewingProduct || queryProductId) && (
         <ProductDetailModal
           isOpen={isDetailModalOpen}
-          productId={viewingProduct.productId}
-          onClose={handleCloseDetailModal}
+          productId={viewingProduct ? viewingProduct.productId : Number(queryProductId)}
+          onClose={() => {
+            handleCloseDetailModal();
+            if (queryProductId) {
+              router.replace(pathname);
+            }
+          }}
         />
       )}
 

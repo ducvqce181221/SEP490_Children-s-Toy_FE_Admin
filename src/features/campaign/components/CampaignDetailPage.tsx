@@ -129,13 +129,12 @@ const DELIVERY_STATUS_TABS = [
   { id: "", label: "All" },
   { id: "Unread", label: "Unread" },
   { id: "Read", label: "Read" },
-  { id: "Archived", label: "Clicked" },
 ];
 
 const DELIVERY_STATUS_DISPLAY: Record<string, { label: string; color: string }> = {
   Unread: { label: "Unread", color: "text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400" },
   Read: { label: "Read", color: "text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400" },
-  Archived: { label: "Clicked", color: "text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400" },
+  Archived: { label: "Archived", color: "text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400" },
   Deleted: { label: "Deleted", color: "text-red-500 bg-red-50 dark:bg-red-900/20 dark:text-red-400" },
 };
 
@@ -234,21 +233,6 @@ const ProgressBar: React.FC<{ label: string; value: number; total: number; color
       </div>
     </div>
   );
-};
-
-// ─── Insight Text ─────────────────────────────────────────────────────────────
-
-const getInsight = (readPct: number, clickPct: number): string => {
-  if (readPct >= 70) {
-    if (clickPct >= 30) return `${readPct}% people read this notification — excellent! Click rate of ${clickPct}% is also very high.`;
-    return `${readPct}% people read — above average. Consider adding a clearer action button to increase click rate.`;
-  }
-  if (readPct >= 40) {
-    if (clickPct >= 20) return `${readPct}% people read and ${clickPct}% clicked — quite good results.`;
-    return `${readPct}% people read the notification. Click rate is low, consider adjusting content next time.`;
-  }
-  if (readPct > 0) return `Read rate of ${readPct}% is low. Try improving the title to attract more.`;
-  return "No statistical data yet. Check again after the campaign is sent.";
 };
 
 // ─── Recipients Table ─────────────────────────────────────────────────────────
@@ -365,9 +349,18 @@ const RecipientTable: React.FC<{ campaignId: number }> = ({ campaignId }) => {
                       </div>
                     </TableCell>
                     <TableCell className="px-5 py-3.5">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusCfg.color}`}>
-                        {statusCfg.label}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusCfg.color}`}>
+                          {statusCfg.label}
+                        </span>
+                        {delivery.isClicked && (
+                          <span title="User clicked on this notification" className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="px-5 py-3.5 text-sm text-gray-500 dark:text-gray-400">
                       {delivery.readAt ? (
@@ -589,16 +582,16 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {campaign.status === "Draft" && (
+          {(campaign.status === "Draft" || campaign.status === "Rejected") && (
             <button
-              title="Submit for Review"
+              title={campaign.status === "Rejected" ? "Re-submit for Review" : "Submit for Review"}
               onClick={() => setSubmitId(campaign.campaignId)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-green-200 dark:border-green-800/50 text-sm font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
-              Submit
+              {campaign.status === "Rejected" ? "Re-submit" : "Submit"}
             </button>
           )}
 
@@ -749,26 +742,12 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
           />
         </div>
 
-        {/* Progress bars */}
-        {sent > 0 && (
-          <div className="space-y-4 mb-5">
-            <ProgressBar label="Read rate" value={read} total={sent} color="bg-green-500" />
-            <ProgressBar label="Click rate" value={clicked} total={sent} color="bg-blue-500" />
-          </div>
-        )}
-
-        {/* Insight */}
-        <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-            💡 {getInsight(readPct, clickPct)}
-          </p>
-        </div>
       </div>
 
-      {/* ── 3-Column Layout ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* ── 4-8 Layout ────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Column 1: Metadata */}
-        <div className="space-y-5">
+        <div className={campaign.referenceType ? "lg:col-span-4 space-y-5" : "lg:col-span-4 space-y-5"}>
           {/* Campaign Information Card */}
           <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5">
             <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
@@ -853,11 +832,17 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
               {/* Approval Info Section */}
               {(campaign.submittedAt || campaign.reviewedAt) && (
                 <>
-                  <div className="pt-3 mt-3 border-t border-gray-100 dark:border-white/[0.05]">
-                    <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                  <details className="pt-3 mt-3 border-t border-gray-100 dark:border-white/[0.05] group">
+                    <summary className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex justify-between items-center cursor-pointer list-none [&::-webkit-details-marker]:hidden outline-none">
                       Approval Audit
-                    </h4>
-                    <ul className="space-y-3">
+                      <span className="text-brand-500 normal-case font-medium tracking-normal group-open:hidden">
+                        Show details
+                      </span>
+                      <span className="text-brand-500 normal-case font-medium tracking-normal hidden group-open:block">
+                        Hide details
+                      </span>
+                    </summary>
+                    <ul className="space-y-3 pt-4">
                       {campaign.submittedAt && (
                         <InfoRow label="Submitted At">
                           <span className="text-sm text-gray-800 dark:text-white/90">
@@ -880,55 +865,67 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
                         </InfoRow>
                       )}
                     </ul>
-                  </div>
+                  </details>
                 </>
               )}
             </ul>
           </div>
 
-        </div>
-
-        {/* Column 2: Content & Targets */}
-        <div className="space-y-5">
-          {campaign.referenceType && <CampaignReferenceCardFromCampaign campaign={campaign} />}
 
 
         </div>
 
-        {/* Column 3: Preview */}
-        <div className="space-y-5">
-          {/* Phone Preview */}
-          <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5 sticky top-6">
-            <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4 text-center">
-              Notification Preview
-            </h3>
-            <div className="flex justify-center">
-              <DesktopPreview campaign={campaign} />
-            </div>
-          </div>
-          {/* Targets */}
-          {campaign.targets.length > 0 && (
-            <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5">
-              <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-                Target List
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {campaign.targets.map((t) => (
-                  <span
-                    key={t.campaignTargetId}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-brand-50 dark:bg-brand-500/10 text-sm font-medium text-brand-700 dark:text-brand-300 border border-brand-100 dark:border-brand-500/20"
-                  >
-                    {getTargetValueDisplay(t)}
-                  </span>
-                ))}
+        {/* Column 2: Reference Card */}
+        <div className="lg:col-span-8 space-y-6">
+          {campaign.referenceType && (
+            <CampaignReferenceCardFromCampaign campaign={campaign} />
+          )}
+
+          {(!campaign.referenceType || campaign.referenceType === "BLOG") && (
+            <details
+              className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5 group cursor-pointer shadow-sm transition-all duration-200 hover:shadow-md"
+              open={!campaign.referenceType}
+            >
+              <summary className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex justify-between items-center list-none [&::-webkit-details-marker]:hidden outline-none">
+                Notification Preview
+                <span className="text-brand-500 text-xs normal-case font-medium tracking-normal group-open:hidden">
+                  Show preview
+                </span>
+                <span className="text-brand-500 text-xs normal-case font-medium tracking-normal hidden group-open:block">
+                  Hide preview
+                </span>
+              </summary>
+              <div className="pt-6 pb-2 flex justify-center cursor-default">
+                <DesktopPreview campaign={campaign} />
               </div>
-            </div>
+            </details>
           )}
         </div>
       </div>
 
-      {/* ── Recipient Table ─────────────────────────────────────────── */}
-      <RecipientTable campaignId={campaignId} />
+      {/* ── Full Width Section (12 columns) ────────────────────────── */}
+      <div className="mt-6 space-y-6 pb-10">
+        {/* Notification Preview (Accordion Option for Non-Blog/Non-General) */}
+        {campaign.referenceType && campaign.referenceType !== "BLOG" && (
+          <details className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5 group cursor-pointer shadow-sm transition-all duration-200 hover:shadow-md">
+            <summary className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex justify-between items-center list-none [&::-webkit-details-marker]:hidden outline-none">
+              Notification Preview
+              <span className="text-brand-500 text-xs normal-case font-medium tracking-normal group-open:hidden">
+                Show preview
+              </span>
+              <span className="text-brand-500 text-xs normal-case font-medium tracking-normal hidden group-open:block">
+                Hide preview
+              </span>
+            </summary>
+            <div className="pt-6 pb-2 flex justify-center cursor-default">
+              <DesktopPreview campaign={campaign} />
+            </div>
+          </details>
+        )}
+
+        {/* ── Recipient Table ─────────────────────────────────────────── */}
+        <RecipientTable campaignId={campaignId} />
+      </div>
 
       <ConfirmModal
         isOpen={submitId !== null}

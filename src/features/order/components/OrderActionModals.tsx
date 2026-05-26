@@ -179,16 +179,6 @@ export const OrderShipModal: React.FC<ShipModalProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="serviceType">Service Type (Optional)</Label>
-          <Input
-            id="serviceType"
-            {...register("serviceType")}
-            placeholder="Service code (leave empty for default)"
-            className="mt-2"
-          />
-        </div>
-
-        <div>
           <Label htmlFor="ship-note">Note (Optional)</Label>
           <TextArea
             id="ship-note"
