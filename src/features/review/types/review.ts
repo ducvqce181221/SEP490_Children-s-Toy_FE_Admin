@@ -31,13 +31,15 @@ export interface ModerationLog {
   moderatorType: "AI" | "Staff" | "System";
   moderatedById: number | null;
   moderatedByName: string | null;
-  previousStatus: string;
-  newStatus: string;
+  action: string;
+  targetType: "Text" | "Image";
+  imageId: number | null;
   reason: string | null;
   aiModelVersion: string | null;
   aiConfidenceScore: number | null;
   createdAt: string;
 }
+
 
 export interface Review {
   reviewId: number;

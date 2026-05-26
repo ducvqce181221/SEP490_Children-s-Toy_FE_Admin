@@ -31,11 +31,11 @@ export default function UserDropdown() {
     sessionStorage.setItem("admin_logout", "1");
     clearAuth();
     closeDropdown();
-    toast.success("Đã đăng xuất.");
+    toast.success("Logged out successfully.");
     router.push("/admin/login");
   }
 
-  const displayName = account?.accountName ?? "Người dùng";
+  const displayName = account?.accountName ?? "User";
   const displayEmail = account?.email ?? "";
   const initials = displayName
     .split(" ")
@@ -128,7 +128,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Chỉnh sửa hồ sơ
+              Edit Profile
             </DropdownItem>
           </li>
           <li>
@@ -153,7 +153,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Cài đặt tài khoản
+              Account Settings
             </DropdownItem>
           </li>
         </ul>
@@ -177,7 +177,7 @@ export default function UserDropdown() {
               fill=""
             />
           </svg>
-          Đăng xuất
+          Log out
         </button>
       </Dropdown>
     </div>

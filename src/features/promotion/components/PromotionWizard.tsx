@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useId, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray, useWatch } from "react-hook-form";
+import { useForm, useFieldArray, useWatch, type FieldErrors } from "react-hook-form";
 import type Quill from "quill";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { twMerge } from "tailwind-merge";
+import toast from "react-hot-toast";
 
 import { promotionFormSchema, type PromotionFormData } from "../types/promotion.schema";
 import type { Promotion } from "../types/promotion";
@@ -189,7 +190,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
           salePrice: p.salePrice,
           discountPercent: p.discountPercent,
           saleQuantity: p.saleQuantity,
-          isActive: p.isActive,
         })),
         // Map startAt/endAt từ UTC (API) → local (datetime-local input)
         promotionTimeSlots: initialData.promotionTimeSlots?.map((ts) => ({
@@ -205,7 +205,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
             salePrice: ps.salePrice,
             discountPercent: ps.discountPercent,
             saleQuantity: ps.saleQuantity,
-            isActive: ps.isActive,
           })),
         })) ?? [],
       });
@@ -242,7 +241,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
           salePrice: p.price,
           discountPercent: 0,
           saleQuantity: null as number | null,
-          isActive: true,
         }));
         append(newItems);
       }
@@ -256,7 +254,12 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
       startDate: formatLocalToUTC(data.startDate),
       endDate: formatLocalToUTC(data.endDate),
       status: isNew ? "Scheduled" : data.status,
-      productPromotions: data.productPromotions.map(({ ...rest }) => rest),
+      productPromotions: data.productPromotions.map(
+        ({ productName: _pn, originalPrice: _op, stock: _st, saleQuantity, ...rest }) => ({
+          ...rest,
+          saleQuantity: data.promotionType === "DISCOUNT" ? null : saleQuantity,
+        })
+      ),
       promotionTimeSlots: PROMOTION_TYPE_CONFIG[data.promotionType]?.hasTimeSlots
         ? data.promotionTimeSlots.map((ts) => ({
             startAt: formatLocalToUTC(ts.startAt),   // local → UTC ISO string
@@ -276,6 +279,36 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
     }
   };
 
+  const onError = (errors: FieldErrors<PromotionFormData>) => {
+    const step1Fields: (keyof PromotionFormData)[] = [
+      "promotionName",
+      "promotionType",
+      "startDate",
+      "endDate",
+      "status",
+      "priority",
+      "description"
+    ];
+
+    const hasTimeSlotStep1Errors = errors.promotionTimeSlots && (
+      (errors.promotionTimeSlots as any).message || 
+      (Array.isArray(errors.promotionTimeSlots) && errors.promotionTimeSlots.some((slotError: any) => {
+        if (!slotError) return false;
+        return slotError.startAt || slotError.endAt || slotError.status;
+      }))
+    );
+
+    const hasStep1Errors = step1Fields.some(field => field in errors) || !!hasTimeSlotStep1Errors;
+
+    if (hasStep1Errors) {
+      setCurrentStep(1);
+      toast.error("Please correct the validation errors in the General Information step.");
+    } else {
+      setCurrentStep(2);
+      toast.error("Please correct the validation errors in the Select Products step.");
+    }
+  };
+
   const handleNextStep = async () => {
     // Validate Step 1 fields before proceeding
     const isStep1Valid = await trigger([
@@ -285,7 +318,8 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
       "endDate",
       "status",
       "priority",
-      "description"
+      "description",
+      "promotionTimeSlots"
     ]);
 
     if (isStep1Valid) {
@@ -301,7 +335,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
     <div className="space-y-6">
       <WizardProgress steps={WIZARD_STEPS} currentStep={currentStep} />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6">
         {currentStep === 1 && (
           <div className="space-y-6">
             <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">

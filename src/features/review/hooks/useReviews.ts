@@ -24,7 +24,7 @@ export const useReviews = (initialQuery?: ReviewQuery) => {
       setReviews(response.items || []);
       setTotalCount(response.totalCount || 0);
     } catch (err: unknown) {
-      setError("Không thể tải danh sách đánh giá.");
+      setError("Failed to load review list.");
       setReviews([]);
       setTotalCount(0);
     } finally {

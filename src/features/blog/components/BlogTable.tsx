@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import Pagination from "@/components/common/Pagination";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import { blogApi } from "../services/blog-api";
 import { useBlogMutations } from "../hooks/useBlogMutations";
 import { useBlogs } from "../hooks/useBlogs";
-import { BlogListItem, CreateBlogRequest, UpdateBlogRequest } from "../types/blog";
+import { AiBlogGenerateResult, BlogListItem, CreateBlogRequest, UpdateBlogRequest } from "../types/blog";
 import BlogApprovalModal from "./BlogApprovalModal";
 import BlogDetailModal from "./BlogDetailModal";
 import BlogFormModal from "./BlogFormModal";
@@ -31,6 +32,7 @@ const BlogTable = () => {
     error,
     searchTerm,
     statusFilter,
+    availableStatuses,
     featuredFilter,
     sortBy,
     sortDesc,
@@ -80,6 +82,16 @@ const BlogTable = () => {
     null,
   );
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const blogId = params.get("blogId");
+      if (blogId) {
+        setSelectedDetailBlogId(Number(blogId));
+      }
+    }
+  }, []);
+
   const pageRangeText = useMemo(() => {
     if (totalCount === 0) {
       return "No data available";
@@ -128,21 +140,43 @@ const BlogTable = () => {
   };
 
   const handleSubmitBlog = async (blog: BlogListItem) => {
-    const blogAtValue = blog.blogAt?.trim();
-    if (!blogAtValue) {
-      setSelectedEditBlogId(blog.blogPostId);
-      toast.error("Please set Blog At before submitting for admin approval.");
-      return;
+    try {
+      const detail = await blogApi.getBlogById(blog.blogPostId);
+      const missingFields: string[] = [];
+
+      if (!detail.blogThumbnail?.trim()) {
+        missingFields.push("Thumbnail");
+      }
+      if (!detail.blogTitle?.trim()) {
+        missingFields.push("Title");
+      }
+      if (!detail.blogContent?.trim()) {
+        missingFields.push("Content");
+      }
+      if (!detail.blogAt?.trim()) {
+        missingFields.push("BlogAt");
+      }
+      if (!detail.blogCategoryId || detail.blogCategoryId <= 0) {
+        missingFields.push("Category");
+      }
+
+      if (missingFields.length > 0) {
+        setSelectedEditBlogId(blog.blogPostId);
+        toast.error(`Cannot submit to Pending. Missing required fields: ${missingFields.join(", ")}.`);
+        return;
+      }
+
+      const result = await submitBlog(blog.blogPostId);
+
+      if (result.success) {
+        toast.success(result.message);
+        return;
+      }
+
+      toast.error(result.message);
+    } catch {
+      toast.error("Unable to validate blog before submitting. Please try again.");
     }
-
-    const result = await submitBlog(blog.blogPostId);
-
-    if (result.success) {
-      toast.success(result.message);
-      return;
-    }
-
-    toast.error(result.message);
   };
 
   const handleApprovePublishNow = async () => {
@@ -234,6 +268,10 @@ const BlogTable = () => {
     toast.error(result.message);
   };
 
+  const handleAiGenerated = (_result: AiBlogGenerateResult) => {
+    toast.success("AI content generated. You can review and edit before saving.");
+  };
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <BlogToolbar
@@ -241,6 +279,7 @@ const BlogTable = () => {
         canAdd={isStaff || isAdmin}
         searchTerm={searchTerm}
         statusFilter={statusFilter}
+        statuses={availableStatuses}
         featuredFilter={featuredFilter}
         sortBy={sortBy}
         sortDesc={sortDesc}
@@ -266,7 +305,7 @@ const BlogTable = () => {
                 <TableCell isHeader className={headerCellClassName}>Created At</TableCell>
                 <TableCell
                   isHeader
-                  className="px-5 py-3 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                  className="w-[180px] px-5 py-3 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400"
                 >
                   Actions
                 </TableCell>
@@ -375,6 +414,7 @@ const BlogTable = () => {
           onClose={() => setIsCreateModalOpen(false)}
           onCreate={handleCreateBlog}
           onUpdate={handleUpdateBlog}
+          onAiGenerated={handleAiGenerated}
         />
       )}
 
@@ -395,6 +435,7 @@ const BlogTable = () => {
           onCreate={handleCreateBlog}
           onUpdate={handleUpdateBlog}
           onHideBlog={handleHideBlogByStaff}
+          onAiGenerated={handleAiGenerated}
         />
       )}
 

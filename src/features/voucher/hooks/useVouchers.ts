@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Voucher, PaginatedVouchers } from "../types/voucher";
 import { voucherApi } from "../services/voucher-api";
 
@@ -7,6 +8,10 @@ export interface VoucherFilters {
 }
 
 export const useVouchers = () => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<VoucherFilters>({ status: "" });
@@ -37,7 +42,7 @@ export const useVouchers = () => {
       );
       setData(response);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Tải dữ liệu thất bại";
+      const message = err instanceof Error ? err.message : "Failed to load data";
       setError(message);
     } finally {
       setIsLoading(false);
@@ -48,6 +53,44 @@ export const useVouchers = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    const vid = searchParams.get("voucherId");
+    const vcode = searchParams.get("voucherCode");
+    
+    if (vid) {
+      const fetchAndOpenVoucher = async () => {
+        try {
+          const v = await voucherApi.getVoucherById(Number(vid));
+          setViewVoucher(v);
+          const newParams = new URLSearchParams(searchParams.toString());
+          newParams.delete("voucherId");
+          router.replace(`${pathname}${newParams.toString() ? `?${newParams.toString()}` : ""}`, { scroll: false });
+        } catch (err) {
+          console.error("Failed to load voucher detail from URL", err);
+        }
+      };
+      fetchAndOpenVoucher();
+    } else if (vcode) {
+      const fetchAndOpenVoucherByCode = async () => {
+        try {
+          const res = await voucherApi.getVouchers(1, 10, undefined, false, vcode);
+          const v = res.items.find((item) => item.voucherCode.toLowerCase() === vcode.toLowerCase());
+          if (v) {
+            setViewVoucher(v);
+          } else if (res.items.length > 0) {
+            setViewVoucher(res.items[0]);
+          }
+          const newParams = new URLSearchParams(searchParams.toString());
+          newParams.delete("voucherCode");
+          router.replace(`${pathname}${newParams.toString() ? `?${newParams.toString()}` : ""}`, { scroll: false });
+        } catch (err) {
+          console.error("Failed to load voucher detail by code from URL", err);
+        }
+      };
+      fetchAndOpenVoucherByCode();
+    }
+  }, [searchParams, pathname, router]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);

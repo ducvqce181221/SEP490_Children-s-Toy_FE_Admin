@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 export const cancelOrderSchema = z.object({
-  reason: z.string().min(1, "Vui lòng nhập lý do hủy đơn"),
+  reason: z.string().min(1, "Please enter cancellation reason"),
 });
 
 export type CancelOrderFormData = z.infer<typeof cancelOrderSchema>;
 
 export const shipOrderSchema = z.object({
-  provider: z.string().min(1, "Vui lòng chọn đơn vị vận chuyển"),
+  provider: z.string().min(1, "Please select shipping provider"),
   serviceType: z.string().optional(),
   note: z.string().optional(),
 });
@@ -15,7 +15,7 @@ export const shipOrderSchema = z.object({
 export type ShipOrderFormData = z.infer<typeof shipOrderSchema>;
 
 export const assignOrderSchema = z.object({
-  targetAccountId: z.coerce.number().min(1, "Vui lòng chọn nhân viên"),
+  targetAccountId: z.coerce.number().min(1, "Please select staff"),
   note: z.string().optional(),
 });
 

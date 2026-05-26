@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { Template, PaginatedTemplates } from "../types/template";
 import { templateApi } from "../services/template-api";
+import { getTemplateListErrorMessage } from "../utils/template-errors";
 
 export interface TemplateFilters {
   isActive?: boolean;
-  usageScope?: "SYSTEM" | "ADMIN";
-  startDate?: string;
-  endDate?: string;
 }
 
 export const useTemplates = () => {
@@ -36,14 +34,13 @@ export const useTemplates = () => {
         sortDesc,
         searchQuery || undefined,
         filters.isActive,
-        filters.usageScope,
-        filters.startDate || undefined,
-        filters.endDate || undefined
+        "ADMIN", // usageScope
+        undefined, // startDate
+        undefined // endDate
       );
       setData(response);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Tải dữ liệu thất bại";
-      setError(message);
+      setError(getTemplateListErrorMessage(err, "Failed to load data"));
     } finally {
       setIsLoading(false);
     }

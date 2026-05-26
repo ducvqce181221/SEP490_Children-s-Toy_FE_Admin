@@ -28,7 +28,7 @@ const StarRating = ({ rating }: { rating: number }) => (
 export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
   const router = useRouter();
   const { reviewDetail: review, isLoading, error, refetch } = useReviewDetail(reviewId);
-  
+
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyToEdit, setReplyToEdit] = useState<ReviewReply | null>(null);
@@ -48,6 +48,17 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
       case "Rejected": return <Badge size="sm" color="error">Rejected</Badge>;
       default: return <Badge size="sm" color="light">{status}</Badge>;
     }
+  };
+
+  const getModeratorLabel = (log: any) => {
+    if (log.moderatorType !== "AI") {
+      return log.moderatedByName || "System";
+    }
+    const typeSuffix = log.targetType ? ` (${log.targetType})` : "";
+    if (log.aiModelVersion) {
+      return `🤖 AI Moderator${typeSuffix}`;
+    }
+    return `⚙️ Rule Validation${typeSuffix}`;
   };
 
   const handleEditReply = (reply: ReviewReply) => {
@@ -83,8 +94,8 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
 
   return (
     <div className="pb-10">
-      <PageBreadcrumb 
-        pageTitle="Edit Review" 
+      <PageBreadcrumb
+        pageTitle="Edit Review"
         breadcrumbs={[
           { label: "Product Reviews", href: "/admin/product-reviews" },
           { label: "Moderation" }
@@ -92,15 +103,21 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
       />
 
       <div className="flex justify-between items-center mb-6">
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => router.push("/admin/product-reviews")}
           className="gap-2"
         >
-          <ChevronLeftIcon className="w-5 h-5"/> Back to List
+          <ChevronLeftIcon className="w-5 h-5" /> Back to List
         </Button>
-        <Button variant="primary" size="sm" onClick={() => setIsStatusModalOpen(true)}>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => setIsStatusModalOpen(true)}
+          disabled={review.moderationStatus === "Rejected"}
+          title={review.moderationStatus === "Rejected" ? "Cannot change status of a rejected review" : "Change Status"}
+        >
           Change Status
         </Button>
       </div>
@@ -116,7 +133,7 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
                 {getStatusBadge(review.moderationStatus)}
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4 mb-4 dark:bg-gray-700/30 rounded-xl">
               <div className="w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-lg">
                 {review.accountName.charAt(0).toUpperCase()}
@@ -134,7 +151,7 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
               <div className="text-sm text-gray-500 mb-1.5">Rating</div>
               <StarRating rating={review.rating} />
             </div>
-            
+
             <div>
               <div className="text-sm text-gray-500 mb-1.5">Customer Comment</div>
               <div className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/30 p-5 rounded-xl min-h-[120px] whitespace-pre-wrap italic">
@@ -168,7 +185,7 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
         <div className="lg:col-span-4 space-y-6">
           {/* Inline Reply Form */}
           {showReplyForm ? (
-            <ReviewReplyForm 
+            <ReviewReplyForm
               replyToEdit={replyToEdit}
               isSubmitting={isSubmitting}
               onCancel={handleCancelReply}
@@ -188,7 +205,7 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
                   Add Reply
                 </Button>
               </div>
-              
+
               {review.replies.length === 0 ? (
                 <div className="text-center py-10 text-sm text-gray-400 italic bg-gray-50 dark:bg-gray-700/20 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
                   No replies yet. Click &quot;Add Reply&quot; to respond.
@@ -227,7 +244,7 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
           {/* Moderation Logs */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
             <h4 className="font-bold text-gray-800 dark:text-white/90 mb-6">Moderation History</h4>
-            
+
             {review.moderationLogs.length === 0 ? (
               <div className="text-sm text-gray-400 italic">No history available for this review.</div>
             ) : (
@@ -238,12 +255,12 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
                     <div className="flex flex-col gap-1 mb-2">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-gray-800 dark:text-white/90">
-                          {log.moderatorType === "AI" ? "🤖 AI Moderator" : (log.moderatedByName || "System")}
+                          {getModeratorLabel(log)}
                         </span>
                         <span className="text-[10px] text-gray-400 uppercase tracking-widest">{formatDisplayDate(log.createdAt)}</span>
                       </div>
                       <div className="text-xs text-gray-500">
-                        Status: <span className="line-through">{log.previousStatus}</span> → <span className="font-bold text-gray-700 dark:text-gray-300">{log.newStatus}</span>
+                        Result: <span className="font-bold text-brand-600 dark:text-brand-400">{log.action}</span>
                       </div>
                     </div>
                     {log.reason && (

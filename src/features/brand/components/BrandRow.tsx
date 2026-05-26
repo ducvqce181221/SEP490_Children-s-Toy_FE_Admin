@@ -1,14 +1,13 @@
 "use client";
 
 import React, { memo } from "react";
-import { EyeIcon, PencilIcon } from "@/icons/index";
+import { PencilIcon } from "@/icons/index";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { BrandListItem } from "../types/brand";
 
 interface BrandRowProps {
   brand: BrandListItem;
   rowNumber: number;
-  onViewDetails: (brand: BrandListItem) => void;
   onEdit: (brand: BrandListItem) => void;
 }
 
@@ -38,7 +37,6 @@ const statusClassNameByValue: Record<BrandListItem["status"], string> = {
 const BrandRowComponent: React.FC<BrandRowProps> = ({
   brand,
   rowNumber,
-  onViewDetails,
   onEdit,
 }) => {
   return (
@@ -69,14 +67,6 @@ const BrandRowComponent: React.FC<BrandRowProps> = ({
 
       <TableCell className="px-5 py-4 text-center">
         <div className="flex items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => onViewDetails(brand)}
-            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
-            aria-label={`View brand ${brand.brandName} details`}
-          >
-            <EyeIcon />
-          </button>
           <button
             type="button"
             onClick={() => onEdit(brand)}

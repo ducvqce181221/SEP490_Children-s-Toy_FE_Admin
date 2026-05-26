@@ -135,12 +135,12 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
         {formatDateTime(blog.createdAt)}
       </TableCell>
 
-      <TableCell className="px-5 py-4 text-center">
-        <div className="flex flex-wrap items-center justify-center gap-2">
+      <TableCell className="relative w-[180px] px-5 py-4 text-center align-middle">
+        <div className="mx-auto grid w-fit grid-cols-3 grid-rows-2 place-items-center gap-2">
           <button
             type="button"
             onClick={() => onOpenDetail(blog.blogPostId)}
-            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
             aria-label={`View blog details for ${blog.blogTitle}`}
           >
             <EyeIcon />
@@ -150,7 +150,7 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
             <button
               type="button"
               onClick={() => onOpenEdit(blog.blogPostId)}
-              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
               aria-label={`Edit blog ${blog.blogTitle}`}
             >
               <PencilIcon />
@@ -162,7 +162,7 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
               type="button"
               disabled={isSubmitting}
               onClick={() => onSubmitBlog(blog)}
-              className="rounded-lg border border-success-300 p-2 text-success-600 transition-colors hover:border-success-500 hover:text-success-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-success-700 dark:text-success-400"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-success-300 text-success-600 transition-colors hover:border-success-500 hover:text-success-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-success-700 dark:text-success-400"
               aria-label={`Submit blog ${blog.blogTitle}`}
             >
               <CheckLineIcon />
@@ -173,7 +173,7 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
             <button
               type="button"
               onClick={() => onOpenApproval(blog.blogPostId)}
-              className="rounded-lg border border-warning-300 p-2 text-warning-600 transition-colors hover:border-warning-500 hover:text-warning-700 dark:border-warning-700 dark:text-warning-400"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-warning-300 text-warning-600 transition-colors hover:border-warning-500 hover:text-warning-700 dark:border-warning-700 dark:text-warning-400"
               aria-label={`Approve blog ${blog.blogTitle}`}
             >
               <CheckLineIcon />
@@ -185,7 +185,7 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
               type="button"
               disabled={isPublishingNow}
               onClick={() => onPublishNow(blog.blogPostId)}
-              className="rounded-lg border border-brand-300 p-2 text-brand-600 transition-colors hover:border-brand-500 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-brand-700 dark:text-brand-400"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-brand-300 text-brand-600 transition-colors hover:border-brand-500 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-brand-700 dark:text-brand-400"
               aria-label={`Publish blog ${blog.blogTitle} now`}
             >
               <CheckLineIcon />
@@ -197,7 +197,7 @@ const BlogRowComponent: React.FC<BlogRowProps> = ({
               type="button"
               disabled={isHidingBlog}
               onClick={() => onHideBlog(blog.blogPostId, blog.blogTitle)}
-              className="rounded-lg border border-error-300 p-2 text-error-600 transition-colors hover:border-error-500 hover:text-error-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-error-700 dark:text-error-400"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-error-300 text-error-600 transition-colors hover:border-error-500 hover:text-error-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-error-700 dark:text-error-400"
               aria-label={`Hide blog ${blog.blogTitle}`}
               title="Hide Blog"
             >

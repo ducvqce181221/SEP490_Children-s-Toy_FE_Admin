@@ -46,9 +46,9 @@ export const useCampaigns = () => {
       );
       setData(response);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Tải dữ liệu thất bại.";
+      const message = err instanceof Error ? err.message : "Failed to load data.";
       setError(message);
-      // FIX: toast để user biết fetch lỗi
+      // Toast so the user sees fetch errors
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -61,7 +61,7 @@ export const useCampaigns = () => {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  // Reset về trang 1 khi thay đổi search/filter/pageSize
+  // Reset to page 1 when search, filter, or page size changes
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     setCurrentPage(1);

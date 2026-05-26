@@ -134,7 +134,7 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
     >
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
-          {mode === "create" ? "Add Category" : "Update Category"}
+          {mode === "create" ? "Add Category" : "Edit Category"}
         </h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {mode === "create"

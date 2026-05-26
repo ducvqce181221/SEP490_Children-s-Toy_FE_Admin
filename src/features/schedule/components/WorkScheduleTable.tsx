@@ -16,6 +16,8 @@ interface WorkScheduleTableProps {
   onDateChange: (date: Date[]) => void;
   onTodayClick: () => void;
   onAssignClick: () => void;
+  onCloneWeekClick: () => void;
+  isCloningWeek?: boolean;
 }
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -24,6 +26,11 @@ const STATUS_CONFIG = {
     dot: "bg-blue-500",
     label: "Scheduled",
     badge: "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400",
+  },
+  OnDuty: {
+    dot: "bg-success-500 animate-pulse",
+    label: "On Duty",
+    badge: "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-400",
   },
   Completed: {
     dot: "bg-success-500",
@@ -58,8 +65,8 @@ const ScheduleCard: React.FC<{
   const progressColor = isOverloaded
     ? "bg-error-500"
     : isHeavy
-    ? "bg-warning-500"
-    : "bg-brand-500";
+      ? "bg-warning-500"
+      : "bg-brand-500";
 
   const statusCfg = STATUS_CONFIG[schedule.status as keyof typeof STATUS_CONFIG] ?? {
     dot: "bg-gray-400",
@@ -69,6 +76,9 @@ const ScheduleCard: React.FC<{
 
   const isStaff = schedule.roleId === 3;
   const avatarText = schedule.accountName ? schedule.accountName[0].toUpperCase() : "?";
+  /** Backend allows PUT update + mark absent while OnDuty; only Completed/Cancelled/Absent are blocked. */
+  const canManageAssignment =
+    schedule.status === "Scheduled" || schedule.status === "OnDuty";
 
   return (
     <div className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:border-brand-200 dark:border-white/[0.07] dark:bg-white/[0.03] dark:hover:border-brand-500/30">
@@ -147,9 +157,9 @@ const ScheduleCard: React.FC<{
       {/* Footer */}
       <div className="mt-auto flex items-center justify-between border-t border-gray-100 dark:border-white/[0.05] pt-3">
         <span className="text-[10px] text-gray-400 font-medium">ID: #{schedule.scheduleId}</span>
-        
+
         <div className="flex items-center gap-1.5">
-          {schedule.status === "Scheduled" && (
+          {canManageAssignment && (
             <>
               <button
                 onClick={() => onEdit(schedule)}
@@ -158,14 +168,15 @@ const ScheduleCard: React.FC<{
               >
                 <PencilIcon className="w-5 h-5" />
               </button>
-              <button
-                onClick={() => onDelete(schedule.scheduleId)}
-                className="flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 text-gray-400 transition-all hover:border-error-300 hover:bg-error-50 hover:text-error-600 dark:border-gray-700"
-                title="Remove Assignment"
-              >
-                                <TrashBinIcon className="w-4.6 h-4.6" />
-             
-              </button>
+              {schedule.status === "Scheduled" && (
+                <button
+                  onClick={() => onDelete(schedule.scheduleId)}
+                  className="flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 text-gray-400 transition-all hover:border-error-300 hover:bg-error-50 hover:text-error-600 dark:border-gray-700"
+                  title="Remove Assignment"
+                >
+                  <TrashBinIcon className="w-4.6 h-4.6" />
+                </button>
+              )}
               <button
                 onClick={() => onMarkAbsent(schedule.scheduleId)}
                 className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-500 transition-all hover:border-error-300 hover:bg-error-50 hover:text-error-600 dark:border-gray-700"
@@ -174,7 +185,7 @@ const ScheduleCard: React.FC<{
               </button>
             </>
           )}
-          {schedule.status !== "Scheduled" && (
+          {!canManageAssignment && (
             <span className="text-[10px] text-gray-400 italic font-medium uppercase tracking-tighter">
               {schedule.status} - Locked
             </span>
@@ -196,6 +207,8 @@ const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
   onDateChange,
   onTodayClick,
   onAssignClick,
+  onCloneWeekClick,
+  isCloningWeek,
 }) => {
   const showInitialLoading = isLoading && schedules.length === 0;
 
@@ -209,11 +222,11 @@ const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
 
   const displayDate = dateFilter
     ? new Date(dateFilter + "T00:00:00").toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : "";
 
   return (
@@ -223,6 +236,8 @@ const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
         onDateChange={onDateChange}
         onTodayClick={onTodayClick}
         onAssignClick={onAssignClick}
+        onCloneWeekClick={onCloneWeekClick}
+        isCloningWeek={isCloningWeek}
       />
 
       <div className="p-6 border-t border-gray-100 dark:border-white/[0.05]">
@@ -262,19 +277,13 @@ const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
         ) : schedules.length === 0 ? (
           /* Empty state */
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gray-50 dark:bg-gray-800 mb-5 shadow-sm">
-              <UserCircleIcon className="h-10 w-10 text-gray-300 dark:text-gray-600" />
+            <div className="flex h-15 w-15 items-center justify-center rounded-3xl bg-gray-50 dark:bg-gray-800 mb-5 shadow-sm">
+              <UserCircleIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
             </div>
             <p className="text-lg font-bold text-gray-900 dark:text-white">No Assignments Found</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
               No staff assigned on {displayDate}. Assign a new shift to get started.
             </p>
-            <button
-              onClick={onAssignClick}
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-brand-500/25 hover:bg-brand-600 transition-colors"
-            >
-              + Assign Staff
-            </button>
           </div>
         ) : (
           /* Grouped card grid */

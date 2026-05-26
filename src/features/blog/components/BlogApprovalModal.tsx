@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
+import TextArea from "@/components/form/input/TextArea";
 
 interface BlogApprovalModalProps {
   isOpen: boolean;
@@ -12,9 +13,6 @@ interface BlogApprovalModalProps {
   onApproveKeepSchedule: () => Promise<void>;
   onReject: (reason: string) => Promise<void>;
 }
-
-const inputClassName =
-  "w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
 
 const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
   isOpen,
@@ -71,9 +69,8 @@ const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Rejection Reason
           </label>
-          <textarea
+          <TextArea
             rows={4}
-            className={inputClassName}
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             placeholder="Provide reason when rejecting"

@@ -14,7 +14,7 @@ export const blogFormSchema = z.object({
     .string()
     .trim()
     .min(1, "Blog content is required.")
-    .max(3000, "Blog content must not exceed 3000 characters."),
+    .max(10000, "Blog content must not exceed 10000 characters."),
   blogThumbnail: z
     .string()
     .trim()

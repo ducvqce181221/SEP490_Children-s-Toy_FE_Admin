@@ -9,6 +9,7 @@ export const blogStatuses = [
 ] as const;
 
 export type BlogStatus = (typeof blogStatuses)[number];
+export type BlogManagementStatus = "Pending" | "Published" | "Scheduled";
 
 export type BlogSortBy =
   | "blogtitle"
@@ -121,9 +122,21 @@ export interface BlogReviewReply {
   replyToAccountName: string | null;
   comment: string;
   status: "Visible" | "Hidden";
+  moderationStatus: BlogReviewModerationStatus;
+  isHidden: boolean;
+  banReasonId: number | null;
+  banReasonContent: string | null;
   createdAt: string;
   updatedAt: string | null;
   replies: BlogReviewReply[];
+}
+
+export type BlogReviewModerationStatus = "ManualReview" | "Approved" | "Rejected";
+
+export interface BlogCommentBanReason {
+  banReasonId: number;
+  content: string;
+  createdAt: string;
 }
 
 export interface BlogReview {
@@ -135,7 +148,74 @@ export interface BlogReview {
   accountImageUrl: string | null;
   comment: string;
   status: "Visible" | "Hidden";
+  moderationStatus: BlogReviewModerationStatus;
+  isHidden: boolean;
+  banReasonId: number | null;
+  banReasonContent: string | null;
   createdAt: string;
   updatedAt: string | null;
   replies: BlogReviewReply[];
+}
+
+export interface BlogReviewPermission {
+  accountId: number;
+  accountName: string;
+  email: string;
+  accountImageUrl: string | null;
+  violationCount: number;
+  isCommentBanned: boolean;
+  bannedAt: string | null;
+  banExpiresAt: string | null;
+  unbannedAt: string | null;
+  unbannedBy: number | null;
+  unbannedByName: string | null;
+  lastViolatedAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface UpdateBlogReviewPermissionRequest {
+  isCommentBanned: boolean;
+}
+
+export interface AiPromptTemplateItem {
+  templateId: number;
+  templateName: string;
+  description: string | null;
+  promptStructure: string;
+  defaultTone: string | null;
+  defaultCategoryId: number | null;
+  defaultCategoryName: string | null;
+  isActive: boolean;
+}
+
+export interface AiBlogGenerateRequest {
+  blogPostId?: number;
+  action?: "Generate" | "Improve" | "Rewrite";
+  title: string;
+  description?: string | null;
+  promptStructure: string;
+  defaultTone?: string | null;
+  defaultCategoryId: number;
+  isActive?: boolean;
+}
+
+export interface AiBlogGenerateResult {
+  blogPostId: number;
+  historyId?: number | null;
+  title: string;
+  blogContent: string;
+  blogCategoryId: number;
+  promptData: string;
+  aiStatus: string;
+  aiError?: string | null;
+}
+
+export type AiBlockedViolationType = "brand_external" | "topic_restricted" | "out_of_scope";
+
+export interface AiBlockedResponse {
+  status: "blocked";
+  violation_type: AiBlockedViolationType;
+  violated_keyword: string;
+  reason: string;
+  suggestions: string[];
 }

@@ -8,8 +8,10 @@ import type Quill from "quill";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { blogApi } from "../services/blog-api";
+import BlogAiGenerateModal from "./BlogAiGenerateModal";
 import { BlogFormValues, BlogFormInput, blogFormSchema } from "../types/blog.schema";
 import {
+  AiBlogGenerateResult,
   ApiErrorResponse,
   BlogCategoryItem,
   CreateBlogRequest,
@@ -28,6 +30,7 @@ interface BlogFormModalProps {
     blogPostId: number,
     payload: UpdateBlogRequest,
   ) => Promise<CreateOrUpdateBlogResult>;
+  onAiGenerated?: (result: AiBlogGenerateResult) => void;
   onHideBlog?: (blogPostId: number) => Promise<void>;
   isHidingBlog?: boolean;
 }
@@ -42,6 +45,8 @@ const defaultValues: BlogFormInput = {
   blogThumbnail: "",
   blogAt: "",
 };
+const allowedThumbnailMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const allowedThumbnailExtensions = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
 const decodeHtmlEntities = (value: string) => {
   if (typeof window === "undefined") {
@@ -115,6 +120,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
   onClose,
   onCreate,
   onUpdate,
+  onAiGenerated,
   onHideBlog,
   isHidingBlog = false,
 }) => {
@@ -123,6 +129,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [isAiGenerateModalOpen, setIsAiGenerateModalOpen] = useState(false);
   const [isHideConfirmOpen, setIsHideConfirmOpen] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("");
   const editorRef = useRef<HTMLDivElement>(null);
@@ -142,6 +149,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
   const {
     register,
     handleSubmit,
+    getValues,
     reset,
     setError,
     setValue,
@@ -337,6 +345,20 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
       return;
     }
 
+    const lowerName = selectedFile.name.toLowerCase();
+    const extension = lowerName.lastIndexOf(".") >= 0 ? lowerName.slice(lowerName.lastIndexOf(".")) : "";
+    if (!allowedThumbnailExtensions.has(extension)) {
+      setFormError("Only JPG, JPEG, PNG, WEBP are supported.");
+      event.target.value = "";
+      return;
+    }
+
+    if (!allowedThumbnailMimeTypes.has(selectedFile.type)) {
+      setFormError("Only image/jpeg, image/png, image/webp are supported.");
+      event.target.value = "";
+      return;
+    }
+
     setFormError(null);
     setIsUploadingThumbnail(true);
 
@@ -428,6 +450,14 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
     setIsHideConfirmOpen(true);
   };
 
+  const handleApplyGeneratedResult = (result: AiBlogGenerateResult) => {
+    setValue("blogTitle", result.title, { shouldValidate: true });
+    setValue("blogCategoryId", result.blogCategoryId, { shouldValidate: true });
+    setValue("blogContent", result.blogContent, { shouldValidate: true });
+    setQuillContent(result.blogContent);
+    onAiGenerated?.(result);
+  };
+
   const handleConfirmHideBlog = async () => {
     if (mode !== "edit" || !blogPostId || !onHideBlog) {
       return;
@@ -462,7 +492,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
             </label>
             <input
               type="file"
-              accept="image/*"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
               className={`${inputClassName} h-auto cursor-pointer py-2.5 file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-600 hover:file:bg-brand-100 dark:file:bg-brand-500/15 dark:file:text-brand-300`}
               onChange={handleThumbnailFileChange}
               disabled={isUploadingThumbnail || isEditLoading || isSubmitting}
@@ -623,6 +653,13 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
               Cancel
             </Button>
             <Button
+              variant="outline"
+              onClick={() => setIsAiGenerateModalOpen(true)}
+              disabled={isSubmitting || isEditLoading || isLoadingCategories || blogCategories.length === 0}
+            >
+              Generate with AI
+            </Button>
+            <Button
               type="submit"
               variant="primary"
               disabled={isSubmitting || isUploadingThumbnail || isEditLoading}
@@ -631,6 +668,16 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
             </Button>
           </div>
       </form>
+
+      <BlogAiGenerateModal
+        isOpen={isAiGenerateModalOpen}
+        blogPostId={mode === "edit" ? (blogPostId ?? undefined) : undefined}
+        defaultTitle={getValues("blogTitle") ?? ""}
+        defaultContent={getValues("blogContent") ?? ""}
+        defaultCategoryId={Number(getValues("blogCategoryId")) || blogCategories[0]?.blogCategoryId || 0}
+        onClose={() => setIsAiGenerateModalOpen(false)}
+        onGenerated={handleApplyGeneratedResult}
+      />
 
       <Modal
         isOpen={isHideConfirmOpen}

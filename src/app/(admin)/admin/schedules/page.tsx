@@ -12,6 +12,10 @@ import toast from "react-hot-toast";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 import StaffLoadChart from "@/features/schedule/components/StaffLoadChart";
 import { CalenderIcon, PieChartIcon } from "@/icons";
+import {
+  formatWeekRange,
+  getWeekMondaysFromDateFilter,
+} from "@/features/schedule/utils/week-date";
 
 type Tab = "schedule" | "overview";
 
@@ -27,7 +31,11 @@ export default function SchedulesPage() {
 
   const [markAbsentId, setMarkAbsentId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [showCloneWeekConfirm, setShowCloneWeekConfirm] = useState(false);
+  const [isCloningWeek, setIsCloningWeek] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<WorkSchedule | null>(null);
+
+  const weekMondays = getWeekMondaysFromDateFilter(dateFilter);
 
   const handleDateChange = React.useCallback(
     ([date]: Date[]) => {
@@ -81,6 +89,42 @@ export default function SchedulesPage() {
     setViewMode("edit");
   };
 
+  const handleCloneWeek = async () => {
+    setIsCloningWeek(true);
+    try {
+      const result = await scheduleApi.cloneWeek(
+        weekMondays.sourceMonday,
+        weekMondays.targetMonday
+      );
+      const skippedNote =
+        result.skipped > 0
+          ? ` (${result.skipped} skipped: duplicate or past date)`
+          : "";
+      toast.success(
+        `Copied ${result.cloned} shift(s) from last week into this week${skippedNote}`
+      );
+      refetch();
+    } catch (err: unknown) {
+      const msg =
+        err &&
+          typeof err === "object" &&
+          "response" in err &&
+          err.response &&
+          typeof err.response === "object" &&
+          "data" in err.response &&
+          err.response.data &&
+          typeof err.response.data === "object" &&
+          "message" in err.response.data &&
+          typeof (err.response.data as { message?: string }).message === "string"
+          ? (err.response.data as { message: string }).message
+          : "Failed to copy week schedule";
+      toast.error(msg);
+    } finally {
+      setIsCloningWeek(false);
+      setShowCloneWeekConfirm(false);
+    }
+  };
+
   const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
     {
       id: "schedule",
@@ -108,18 +152,16 @@ export default function SchedulesPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all duration-200 ${
-                    isActive
-                      ? "bg-brand-500 text-white shadow-sm shadow-brand-500/30"
-                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/[0.05]"
-                  }`}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all duration-200 ${isActive
+                    ? "bg-brand-500 text-white shadow-sm shadow-brand-500/30"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/[0.05]"
+                    }`}
                 >
                   {tab.icon}
                   {tab.label}
                   {tab.id === "overview" && schedules.length > 0 && (
-                    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
-                      isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-                    }`}>
+                    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-black ${isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                      }`}>
                       {schedules.length}
                     </span>
                   )}
@@ -143,6 +185,8 @@ export default function SchedulesPage() {
                 setEditingSchedule(null);
                 setViewMode("create");
               }}
+              onCloneWeekClick={() => setShowCloneWeekConfirm(true)}
+              isCloningWeek={isCloningWeek}
             />
           )}
 
@@ -206,7 +250,7 @@ export default function SchedulesPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 dark:bg-gray-800 mb-4">
-                      <PieChartIcon className="h-8 w-8 text-gray-300 dark:text-gray-600" />
+                      <PieChartIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
                     </div>
                     <p className="text-base font-bold text-gray-700 dark:text-gray-300">No data to display</p>
                     <p className="text-sm text-gray-500 mt-1">Assign staff to shifts to see the workload chart.</p>
@@ -220,8 +264,10 @@ export default function SchedulesPage() {
         <>
           <PageBreadcrumb pageTitle={viewMode === "edit" ? "Edit Assignment" : "Assign New Shift"} />
           <WorkScheduleForm
+            key={editingSchedule?.scheduleId ?? "new"}
             shifts={shifts}
             initialDate={dateFilter}
+            existingSchedules={schedules}
             editData={editingSchedule}
             onBack={() => setViewMode("list")}
             onSubmitted={() => {
@@ -250,6 +296,19 @@ export default function SchedulesPage() {
         title="Remove Assignment"
         message="Are you sure you want to completely remove this assignment? This will delete the record from the schedule."
         isDestructive
+      />
+
+      {/* Clone week modal */}
+      <ConfirmModal
+        isOpen={showCloneWeekConfirm}
+        onClose={() => !isCloningWeek && setShowCloneWeekConfirm(false)}
+        onConfirm={handleCloneWeek}
+        title="Copy Last Week's Schedule"
+        message={`Copy all shifts from ${formatWeekRange(weekMondays.sourceMonday)} to ${formatWeekRange(weekMondays.targetMonday)}? Duplicate assignments (same staff, date, and shift) will be skipped; past dates will not be created.`}
+        confirmText="Copy"
+        cancelText="Cancel"
+        isLoading={isCloningWeek}
+        isDestructive={false}
       />
     </div>
   );

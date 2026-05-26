@@ -11,26 +11,26 @@ export const usePromotionMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await promotionApi.create(data);
-      toast.success("Tạo chương trình khuyến mãi thành công");
+      toast.success("Promotion created successfully");
       onSuccess?.();
     } catch (err: unknown) {
       const axiosError = err as AxiosError<ValidationErrorResponse>;
-      const message = axiosError.response?.data?.message || axiosError.message || "Tạo thất bại";
+      const message = axiosError.response?.data?.message || axiosError.message || "Creation failed";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const updatePromotion = async (id: number, data: PromotionFormData) => {
+  const updatePromotion = async (id: number, data: Partial<PromotionFormData & { isDeleted?: boolean }>) => {
     setIsSubmitting(true);
     try {
       await promotionApi.update(id, data);
-      toast.success("Cập nhật chương trình khuyến mãi thành công");
+      toast.success("Promotion updated successfully");
       onSuccess?.();
     } catch (err: unknown) {
       const axiosError = err as AxiosError<ValidationErrorResponse>;
-      const message = axiosError.response?.data?.message || axiosError.message || "Cập nhật thất bại";
+      const message = axiosError.response?.data?.message || axiosError.message || "Update failed";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -41,11 +41,11 @@ export const usePromotionMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       await promotionApi.delete(id);
-      toast.success("Xóa chương trình khuyến mãi thành công");
+      toast.success("Promotion deleted successfully");
       onSuccess?.();
     } catch (err: unknown) {
       const axiosError = err as AxiosError<ApiErrorResponse>;
-      const message = axiosError.response?.data?.message || axiosError.message || "Xóa thất bại";
+      const message = axiosError.response?.data?.message || axiosError.message || "Deletion failed";
       toast.error(message);
       throw err; // throw so caller can catch
     } finally {

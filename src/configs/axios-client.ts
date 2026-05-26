@@ -14,7 +14,7 @@ const BASE_URL =
 
 const LOGIN_PATHS = ["/login", "/admin/login"] as const;
 
-const SILENT_STATUSES = new Set([400, 401]);
+const SILENT_STATUSES = new Set([400, 401, 422]);
 
 const HTTP_ERROR_MESSAGES: Record<number, string> = {
   403: "You do not have permission to perform this action.",

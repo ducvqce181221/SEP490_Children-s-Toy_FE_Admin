@@ -38,12 +38,12 @@ export default function EditPromotionPage({ params }: { params: Promise<{ id: st
         <PageBreadcrumb pageTitle="Edit Promotion" />
         <div className="p-6">
           <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-            <p className="text-sm">{error || "Không tìm thấy khuyến mãi"}</p>
+            <p className="text-sm">{error || "Promotion not found"}</p>
             <button
               onClick={() => router.push("/admin/promotions")}
               className="mt-4 text-brand-500 text-sm underline"
             >
-              Quay lại danh sách
+              Back to List
             </button>
           </div>
         </div>

@@ -15,11 +15,11 @@ function formatTime(iso: string): string {
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const m = Math.floor(diffMs / 60_000);
-  if (m < 1) return "Vừa xong";
-  if (m < 60) return `${m} phút trước`;
+  if (m < 1) return "Just now";
+  if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h} giờ trước`;
-  return d.toLocaleDateString("vi-VN");
+  if (h < 24) return `${h}h ago`;
+  return d.toLocaleDateString("en-US");
 }
 
 type Variant = "admin" | "customer";
@@ -109,7 +109,7 @@ export default function NotificationDropdown({
         type="button"
         className={`relative dropdown-toggle flex items-center justify-center transition-colors rounded-full h-11 w-11 ${ring} text-gray-600 dark:text-gray-300`}
         onClick={toggleDropdown}
-        aria-label="Thông báo"
+        aria-label="Notifications"
       >
         {unreadCount > 0 && (
           <span className="absolute right-0.5 top-0.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
@@ -133,21 +133,20 @@ export default function NotificationDropdown({
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className={`absolute mt-[17px] flex h-[480px] w-[350px] flex-col rounded-2xl border bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark sm:w-[361px] lg:right-0 ${
-          variant === "customer"
+        className={`absolute mt-[17px] flex h-[480px] w-[350px] flex-col rounded-2xl border bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark sm:w-[361px] lg:right-0 ${variant === "customer"
             ? "-right-[200px] border-amber-100 dark:border-amber-900/30"
             : "-right-[240px] border-gray-200"
-        }`}
+          }`}
       >
         <div className="mb-3 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
           <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Thông báo
+            Notifications
           </h5>
           <button
             type="button"
             onClick={closeDropdown}
             className="text-gray-500 transition hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            aria-label="Đóng"
+            aria-label="Close"
           >
             <svg
               className="fill-current"
@@ -164,15 +163,15 @@ export default function NotificationDropdown({
             </svg>
           </button>
         </div>
-        <ul className="custom-scrollbar flex h-auto flex-col overflow-y-auto">
+        <ul className="custom-scrollbar flex h-auto flex-col overflow-y-auto gap-2">
           {loading && (
             <li className="px-4 py-8 text-center text-sm text-gray-500">
-              Đang tải…
+              Loading…
             </li>
           )}
           {!loading && (!items || items.length === 0) && (
             <li className="px-4 py-8 text-center text-sm text-gray-500">
-              Chưa có thông báo
+              No notifications yet
             </li>
           )}
           {!loading &&
@@ -180,9 +179,8 @@ export default function NotificationDropdown({
               <li key={item.deliveryId}>
                 <DropdownItem
                   onItemClick={() => void handleItemClick(item)}
-                  className={`flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 ${
-                    item.status === "Unread" ? "bg-brand-50/40 dark:bg-white/[0.02]" : ""
-                  }`}
+                  className={`flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 ${item.status === "Unread" ? "bg-brand-50/40 dark:bg-white/[0.02]" : ""
+                    }`}
                 >
                   <span className="relative z-1 block h-10 w-full max-w-10 shrink-0 overflow-hidden rounded-full">
                     {item.imageUrl ? (
@@ -221,13 +219,12 @@ export default function NotificationDropdown({
         <Link
           href={allNotificationsHref}
           onClick={closeDropdown}
-          className={`mt-3 block rounded-lg border px-4 py-2 text-center text-sm font-medium ${
-            variant === "customer"
+          className={`mt-3 block rounded-lg border px-4 py-2 text-center text-sm font-medium ${variant === "customer"
               ? "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100 dark:hover:bg-amber-900/40"
               : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-          }`}
+            }`}
         >
-          Xem tất cả
+          View all
         </Link>
       </Dropdown>
     </div>

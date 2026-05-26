@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import Input from "@/components/form/input/InputField";
+import TextArea from "@/components/form/input/TextArea";
 import Label from "@/components/form/Label";
 import {
   CancelOrderFormData,
@@ -13,8 +14,8 @@ import {
   AssignOrderFormData,
   assignOrderSchema,
 } from "../types/order.schema";
-import { accountApi } from "@/features/account/services/account-api";
-import { AccountListItem } from "@/features/account/types/account";
+import { scheduleApi } from "@/features/schedule/services/schedule-api";
+import { WorkSchedule } from "@/features/schedule/types/schedule";
 import { ORDER_STATUS, ROLE_NAME } from "../types/order";
 import { useAuthContext } from "@/context/AuthContext";
 
@@ -53,9 +54,9 @@ export const OrderConfirmModal: React.FC<ConfirmModalProps> = ({
 
       <div className="mb-6">
         <Label htmlFor="confirm-note">Note (Optional)</Label>
-        <textarea
+        <TextArea
           id="confirm-note"
-          className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+          className="mt-2"
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -103,9 +104,9 @@ export const OrderProcessModal: React.FC<ProcessModalProps> = ({
 
       <div className="mb-6">
         <Label htmlFor="process-note">Note (Optional)</Label>
-        <textarea
+        <TextArea
           id="process-note"
-          className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+          className="mt-2"
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -169,7 +170,7 @@ export const OrderShipModal: React.FC<ShipModalProps> = ({
             {...register("provider")}
             className="mt-2 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
           >
-            <option value="GHN">Giao Hàng Nhanh (GHN)</option>
+            <option value="GHN">Giao Hang Nhanh (GHN)</option>
             {/* Add more carriers if needed */}
           </select>
           {errors.provider && (
@@ -178,21 +179,11 @@ export const OrderShipModal: React.FC<ShipModalProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="serviceType">Service Type (Optional)</Label>
-          <Input
-            id="serviceType"
-            {...register("serviceType")}
-            placeholder="Service code (leave empty for default)"
-            className="mt-2"
-          />
-        </div>
-
-        <div>
           <Label htmlFor="ship-note">Note (Optional)</Label>
-          <textarea
+          <TextArea
             id="ship-note"
+            className="mt-2"
             {...register("note")}
-            className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
             rows={3}
             placeholder="Example: Inspectable, no try-on..."
           />
@@ -249,18 +240,15 @@ export const OrderCancelModal: React.FC<CancelModalProps> = ({
       <form onSubmit={handleSubmit((data) => onCancel(data))}>
         <div className="mb-6">
           <Label htmlFor="cancel-reason">Reason for Cancellation (Required)</Label>
-          <textarea
+          <TextArea
             id="cancel-reason"
+            className="mt-2"
             {...register("reason")}
-            className={`mt-2 w-full rounded-lg border ${
-              errors.reason ? "border-error-500" : "border-gray-300 dark:border-gray-700"
-            } bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90`}
             rows={3}
             placeholder="Enter reason for cancellation..."
+            error={!!errors.reason}
+            hint={errors.reason?.message}
           />
-          {errors.reason && (
-            <p className="mt-1 text-sm text-error-500">{errors.reason.message}</p>
-          )}
         </div>
 
         <div className="flex items-center justify-end gap-3">
@@ -289,8 +277,8 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
   onAssign,
   currentStatusName,
 }) => {
-  const [staffs, setStaffs] = useState<AccountListItem[]>([]);
-  const [isLoadingStaffs, setIsLoadingStaffs] = useState(false);
+  const [schedules, setSchedules] = useState<WorkSchedule[]>([]);
+  const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   const {
@@ -323,26 +311,29 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
       targetRoleId = 4; // Merchandise
     }
 
-    const fetchStaffs = async () => {
-      setIsLoadingStaffs(true);
+    const fetchSchedules = async () => {
+      setIsLoadingSchedules(true);
       try {
-        const res = await accountApi.getAccounts({
-          pageNumber: 1,
-          pageSize: 50,
+        const todayVn = new Date(new Date().getTime() + 7 * 60 * 60 * 1000).toISOString().split("T")[0];
+        const res = await scheduleApi.getWorkSchedules({
+          workDate: todayVn,
+          status: "OnDuty",
           roleId: targetRoleId,
-          searchTerm: searchTerm.length >= 2 ? searchTerm : undefined,
         });
-        setStaffs(res.items);
+        setSchedules(res);
       } catch (err) {
-        console.error("Failed to load staffs", err);
+        console.error("Failed to load schedules", err);
       } finally {
-        setIsLoadingStaffs(false);
+        setIsLoadingSchedules(false);
       }
     };
 
-    const debounceId = setTimeout(fetchStaffs, 300);
-    return () => clearTimeout(debounceId);
-  }, [isOpen, searchTerm, currentStatusName]);
+    fetchSchedules();
+  }, [isOpen, currentStatusName]);
+
+  const filteredSchedules = schedules.filter((schedule) =>
+    schedule.accountName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
@@ -368,7 +359,7 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="targetAccountId">Select Staff {isLoadingStaffs && "(Loading...)"}</Label>
+          <Label htmlFor="targetAccountId">Select Staff {isLoadingSchedules && "(Loading...)"}</Label>
           <select
             id="targetAccountId"
             {...register("targetAccountId")}
@@ -376,12 +367,18 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
               errors.targetAccountId ? "border-error-500" : "border-gray-300 dark:border-gray-700"
             } bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`}
           >
-            <option value="0" disabled>-- Please select a staff member --</option>
-            {staffs.map((staff) => (
-              <option key={staff.accountId} value={staff.accountId}>
-                {staff.accountName} - {staff.email}
-              </option>
-            ))}
+            {filteredSchedules.length === 0 ? (
+              <option value="0" disabled>-- No staff currently on shift --</option>
+            ) : (
+              <>
+                <option value="0" disabled>-- Please select a staff member --</option>
+                {filteredSchedules.map((schedule) => (
+                  <option key={schedule.accountId} value={schedule.accountId}>
+                    {schedule.accountName} (Shift: {schedule.shiftName}, Load: {schedule.currentLoad}/{schedule.maxLoad})
+                  </option>
+                ))}
+              </>
+            )}
           </select>
           {errors.targetAccountId && (
             <p className="mt-1 text-sm text-error-500">{errors.targetAccountId.message}</p>
@@ -390,10 +387,10 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
 
         <div>
           <Label htmlFor="assign-note">Note (Optional)</Label>
-          <textarea
+          <TextArea
             id="assign-note"
+            className="mt-2"
             {...register("note")}
-            className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
             rows={3}
             placeholder="Example: High priority..."
           />

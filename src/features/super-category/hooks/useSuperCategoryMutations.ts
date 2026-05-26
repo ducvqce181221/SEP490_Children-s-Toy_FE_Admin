@@ -17,9 +17,9 @@ export const useSuperCategoryMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       const result = await superCategoryApi.createSuperCategory(data);
-      toast.success("Tạo danh mục lớn thành công");
+      toast.success("Super category created successfully");
       onSuccess?.();
-      return { success: true, message: "Tạo danh mục lớn thành công", data: result };
+      return { success: true, message: "Super category created successfully", data: result };
     } catch (error) {
       const axiosError = error as AxiosError<ValidationErrorResponse>;
       if (
@@ -28,13 +28,13 @@ export const useSuperCategoryMutations = (onSuccess?: () => void) => {
       ) {
         return {
           success: false,
-          message: "Dữ liệu không hợp lệ",
+          message: "Invalid data",
           validationErrors: axiosError.response.data.errors,
         };
       }
 
       const errorMessage =
-        axiosError.response?.data?.message || "Tạo danh mục lớn thất bại";
+        axiosError.response?.data?.message || "Failed to create super category";
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally {
@@ -49,9 +49,9 @@ export const useSuperCategoryMutations = (onSuccess?: () => void) => {
     setIsSubmitting(true);
     try {
       const result = await superCategoryApi.updateSuperCategory(id, data);
-      toast.success("Cập nhật danh mục lớn thành công");
+      toast.success("Super category updated successfully");
       onSuccess?.();
-      return { success: true, message: "Cập nhật danh mục lớn thành công", data: result };
+      return { success: true, message: "Super category updated successfully", data: result };
     } catch (error) {
       const axiosError = error as AxiosError<ValidationErrorResponse>;
       if (
@@ -60,13 +60,13 @@ export const useSuperCategoryMutations = (onSuccess?: () => void) => {
       ) {
         return {
           success: false,
-          message: "Dữ liệu không hợp lệ",
+          message: "Invalid data",
           validationErrors: axiosError.response.data.errors,
         };
       }
 
       const errorMessage =
-        axiosError.response?.data?.message || "Cập nhật danh mục lớn thất bại";
+        axiosError.response?.data?.message || "Failed to update super category";
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally {

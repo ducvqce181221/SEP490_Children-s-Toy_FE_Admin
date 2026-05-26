@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -16,8 +17,12 @@ import { useCampaignMutations } from "../hooks/useCampaignMutations";
 import { CampaignRow } from "./CampaignRow";
 import { CampaignFormData } from "../types/campaign";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
+import { useAuthContext } from "@/context/AuthContext";
+import { CampaignReviewModal } from "./CampaignReviewModal";
+import { campaignSchedulePath } from "../utils/campaign-navigation";
 
 export const CampaignTable = () => {
+  const router = useRouter();
   const {
     isModalOpen,
     setIsModalOpen,
@@ -29,8 +34,6 @@ export const CampaignTable = () => {
     currentPage,
     setCurrentPage,
     itemsPerPage,
-    viewCampaignId,
-    setViewCampaignId,
     editCampaignId,
     setEditCampaignId,
     data,
@@ -39,12 +42,23 @@ export const CampaignTable = () => {
     refetch,
   } = useCampaigns();
 
-  const { createCampaign, updateCampaign, cancelCampaign, isSubmitting } = useCampaignMutations(() => {
+  const { account } = useAuthContext();
+
+  const [cancelId, setCancelId] = useState<number | null>(null);
+  const [submitId, setSubmitId] = useState<number | null>(null);
+  const [reviewId, setReviewId] = useState<number | null>(null);
+
+  const { createCampaign, updateCampaign, cancelCampaign, submitCampaign, reviewCampaign, isSubmitting } = useCampaignMutations(() => {
     refetch();
     setIsModalOpen(false);
-    setViewCampaignId(null);
     setEditCampaignId(null);
+    setSubmitId(null);
+    setReviewId(null);
   });
+
+  const isFormModalOpen = isModalOpen || editCampaignId !== null;
+  const currentModalMode = editCampaignId ? "edit" : "create";
+  const currentCampaignId = editCampaignId;
 
   const handleSave = async (formData: CampaignFormData) => {
     if (currentModalMode === "edit" && currentCampaignId) {
@@ -53,8 +67,6 @@ export const CampaignTable = () => {
       await createCampaign(formData);
     }
   };
-
-  const [cancelId, setCancelId] = useState<number | null>(null);
 
   const handleCancelClick = (id: number) => {
     setCancelId(id);
@@ -67,13 +79,28 @@ export const CampaignTable = () => {
     }
   };
 
+  const handleConfirmSubmit = async () => {
+    if (submitId) {
+      await submitCampaign(submitId);
+      setSubmitId(null);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (reviewId) {
+      await reviewCampaign(reviewId, { action: "Approved" });
+    }
+  };
+
+  const handleReject = async (reason: string) => {
+    if (reviewId) {
+      await reviewCampaign(reviewId, { action: "Rejected", reviewNote: reason });
+    }
+  };
+
   const paginatedData = data?.items || [];
   const totalItems = data?.totalCount || 0;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-  const isFormModalOpen = isModalOpen || viewCampaignId !== null || editCampaignId !== null;
-  const currentModalMode = viewCampaignId ? "detail" : editCampaignId ? "edit" : "create";
-  const currentCampaignId = viewCampaignId || editCampaignId;
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -120,9 +147,19 @@ export const CampaignTable = () => {
                     key={campaign.campaignId}
                     rowNumber={(currentPage - 1) * itemsPerPage + index + 1}
                     campaign={campaign}
-                    onView={() => setViewCampaignId(campaign.campaignId)}
+                    roleName={account?.roleName}
                     onEdit={() => setEditCampaignId(campaign.campaignId)}
                     onCancel={() => handleCancelClick(campaign.campaignId)}
+                    onSubmit={() => setSubmitId(campaign.campaignId)}
+                    onReview={() => setReviewId(campaign.campaignId)}
+                    onSchedule={() => router.push(campaignSchedulePath(campaign.campaignId, "schedule"))}
+                    onReschedule={
+                      campaign.status === "Scheduled" &&
+                      (campaign.maxRescheduleCount == null ||
+                        (campaign.rescheduleCount ?? 0) < campaign.maxRescheduleCount)
+                        ? () => router.push(campaignSchedulePath(campaign.campaignId, "reschedule"))
+                        : undefined
+                    }
                   />
                 ))
               ) : (
@@ -174,7 +211,6 @@ export const CampaignTable = () => {
         onSave={handleSave}
         onClose={() => {
           setIsModalOpen(false);
-          setViewCampaignId(null);
           setEditCampaignId(null);
         }}
       />
@@ -188,6 +224,25 @@ export const CampaignTable = () => {
         confirmText="Cancel Campaign"
         isDestructive={true}
         isLoading={isSubmitting}
+      />
+
+      <ConfirmModal
+        isOpen={submitId !== null}
+        onClose={() => setSubmitId(null)}
+        onConfirm={handleConfirmSubmit}
+        title="Submit for Approval"
+        message="Are you sure you want to submit this campaign for Admin approval? Once submitted, you will not be able to edit it until it has been reviewed."
+        confirmText="Submit"
+        isDestructive={false}
+        isLoading={isSubmitting}
+      />
+
+      <CampaignReviewModal
+        isOpen={reviewId !== null}
+        onClose={() => setReviewId(null)}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

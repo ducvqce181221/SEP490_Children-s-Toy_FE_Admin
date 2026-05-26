@@ -21,10 +21,10 @@ interface UploadImageResponse {
 
 function validateImageFile(file: File): string | null {
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type as AcceptedImageType)) {
-    return `Chỉ chấp nhận định dạng: ${ACCEPTED_IMAGE_TYPES.join(", ")}.`;
+    return `Only these formats are accepted: ${ACCEPTED_IMAGE_TYPES.join(", ")}.`;
   }
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    return `Kích thước file không được vượt quá ${MAX_FILE_SIZE_MB}MB.`;
+    return `File size must not exceed ${MAX_FILE_SIZE_MB}MB.`;
   }
   return null;
 }
@@ -47,15 +47,15 @@ export const useCampaignImageUpload = () => {
       const formData = new FormData();
       formData.append("file", file);
 
-      // Interceptor đã unwrap response.data → response là UploadImageResponse
+      // Interceptor unwraps response.data → response is UploadImageResponse
       const response = await axiosClient.post<UploadImageResponse, FormData>(
         "/campaigns/upload-image",
         formData,
-        { timeout: 60000 } // Tăng timeout cho file upload
+        { timeout: 60000 } // Longer timeout for file upload
       );
 
       if (!response?.url) {
-        toast.error("Upload thất bại: phản hồi từ server không hợp lệ.");
+        toast.error("Upload failed: invalid server response.");
         return null;
       }
 
@@ -66,10 +66,10 @@ export const useCampaignImageUpload = () => {
         console.error("[useCampaignImageUpload]", error);
       }
 
-      // Chỉ toast lỗi 400 – interceptor đã xử lý 403/404/500
+      // Toast only for 400 – interceptor handles 403/404/500
       const status = (error as AxiosError)?.response?.status;
       if (status === 400) {
-        toast.error("File không hợp lệ. Vui lòng kiểm tra lại.");
+        toast.error("Invalid file. Please check and try again.");
       }
 
       return null;

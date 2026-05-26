@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Label from "@/components/form/Label";
+import TextArea from "@/components/form/input/TextArea";
 
 interface VoucherRejectModalProps {
   isOpen: boolean;
@@ -48,20 +49,19 @@ export const VoucherRejectModal: React.FC<VoucherRejectModalProps> = ({
 
         <div>
           <Label htmlFor="rejectReason">Reason <span className="text-error-500">*</span></Label>
-          <textarea
+          <TextArea
             id="rejectReason"
             rows={4}
-            className={`mt-1 block w-full rounded-lg border ${
-              error ? "border-error-500" : "border-gray-300 dark:border-gray-700"
-            } bg-white dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:text-white/90`}
+            className="mt-1.5"
             placeholder="Enter rejection reason..."
             value={reason}
+            error={!!error}
+            hint={error}
             onChange={(e) => {
               setReason(e.target.value);
               if (e.target.value.trim()) setError("");
             }}
           />
-          {error && <p className="mt-1 text-sm text-error-500">{error}</p>}
         </div>
 
         <div className="flex justify-end gap-3 mt-4">

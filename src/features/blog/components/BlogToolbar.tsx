@@ -2,13 +2,14 @@ import React from "react";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/button/Button";
 import { ChevronDownIcon, PlusIcon } from "@/icons/index";
-import { BlogSortBy, BlogStatus, FeaturedFilter, blogStatuses } from "../types/blog";
+import { BlogSortBy, BlogStatus, FeaturedFilter } from "../types/blog";
 
 interface BlogToolbarProps {
   roleLabel: string;
   canAdd: boolean;
   searchTerm: string;
   statusFilter: BlogStatus | "all";
+  statuses: readonly BlogStatus[];
   featuredFilter: FeaturedFilter;
   sortBy: BlogSortBy;
   sortDesc: boolean;
@@ -50,6 +51,7 @@ const BlogToolbar: React.FC<BlogToolbarProps> = ({
   canAdd,
   searchTerm,
   statusFilter,
+  statuses,
   featuredFilter,
   sortBy,
   sortDesc,
@@ -120,7 +122,7 @@ const BlogToolbar: React.FC<BlogToolbarProps> = ({
                   }
                 >
                   <option value="all">All</option>
-                  {blogStatuses.map((status) => (
+                  {statuses.map((status) => (
                     <option key={status} value={status}>
                       {status}
                     </option>
@@ -208,3 +210,4 @@ const BlogToolbar: React.FC<BlogToolbarProps> = ({
 };
 
 export default BlogToolbar;
+

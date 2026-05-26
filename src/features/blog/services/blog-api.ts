@@ -2,6 +2,10 @@ import axios from "axios";
 import axiosClient from "@/configs/axios-client";
 import {
   ApproveBlogRequest,
+  AiBlogGenerateRequest,
+  AiBlogGenerateResult,
+  BlogCommentBanReason,
+  BlogReviewPermission,
   BlogReview,
   BlogReviewReply,
   BlogDetail,
@@ -11,6 +15,7 @@ import {
   CreateBlogRequest,
   PaginatedResponse,
   SubmitBlogRequest,
+  UpdateBlogReviewPermissionRequest,
   UpdateBlogRequest,
 } from "../types/blog";
 
@@ -106,11 +111,19 @@ export const blogApi = {
     return response.data;
   },
 
+  generateWithAi: async (payload: AiBlogGenerateRequest): Promise<AiBlogGenerateResult> => {
+    return axiosClient.post<AiBlogGenerateResult, AiBlogGenerateRequest>(
+      "/admin/ai-blogs/generate",
+      payload,
+      { timeout: 120_000 },
+    );
+  },
+
   getBlogReviewsForManagement: async (params: {
     pageNumber: number;
     pageSize: number;
     searchTerm?: string;
-    status?: "Visible" | "Hidden";
+    status?: string;
   }): Promise<PaginatedResponse<BlogReview>> => {
     return axiosClient.get<PaginatedResponse<BlogReview>>("/admin/blog-reviews", {
       params,
@@ -129,21 +142,48 @@ export const blogApi = {
 
   updateBlogReviewStatus: async (
     reviewBlogId: number,
-    status: "Visible" | "Hidden",
+    moderationStatus: "ManualReview" | "Approved" | "Rejected",
+    banReasonId?: number,
   ): Promise<BlogReview> => {
-    return axiosClient.patch<BlogReview, { status: "Visible" | "Hidden" }>(
+    return axiosClient.patch<BlogReview, { moderationStatus: "ManualReview" | "Approved" | "Rejected"; banReasonId?: number }>(
       `/admin/blog-reviews/${reviewBlogId}/status`,
-      { status },
+      { moderationStatus, banReasonId },
     );
+  },
+
+  getBlogCommentBanReasons: async (): Promise<BlogCommentBanReason[]> => {
+    return axiosClient.get<BlogCommentBanReason[]>("/admin/blog-review-ban-reasons");
   },
 
   updateBlogReplyStatus: async (
     replyBlogId: number,
-    status: "Visible" | "Hidden",
+    moderationStatus: "ManualReview" | "Approved" | "Rejected",
+    banReasonId?: number,
   ): Promise<BlogReviewReply> => {
-    return axiosClient.patch<BlogReviewReply, { status: "Visible" | "Hidden" }>(
+    return axiosClient.patch<BlogReviewReply, { moderationStatus: "ManualReview" | "Approved" | "Rejected"; banReasonId?: number }>(
       `/admin/blog-review-replies/${replyBlogId}/status`,
-      { status },
+      { moderationStatus, banReasonId },
     );
+  },
+
+  getBlogReviewPermissions: async (params: {
+    pageNumber: number;
+    pageSize: number;
+    searchTerm?: string;
+  }): Promise<PaginatedResponse<BlogReviewPermission>> => {
+    return axiosClient.get<PaginatedResponse<BlogReviewPermission>>(
+      "/admin/blog-review-permissions",
+      { params },
+    );
+  },
+
+  updateBlogReviewPermission: async (
+    accountId: number,
+    payload: UpdateBlogReviewPermissionRequest,
+  ): Promise<BlogReviewPermission> => {
+    return axiosClient.patch<
+      BlogReviewPermission,
+      UpdateBlogReviewPermissionRequest
+    >(`/admin/blog-review-permissions/${accountId}`, payload);
   },
 };

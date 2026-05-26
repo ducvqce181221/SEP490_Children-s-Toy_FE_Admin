@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { AxiosError } from "axios";
 import { ShiftTemplate } from "../types/shift";
-import { WorkSchedule } from "../types/schedule";
+import { UpdateWorkScheduleResult, WorkSchedule } from "../types/schedule";
 import Button from "@/components/ui/button/Button";
 import { accountApi } from "@/features/account/services/account-api";
 import { AccountListItem } from "@/features/account/types/account";
@@ -9,12 +10,61 @@ import toast from "react-hot-toast";
 import StaffPicker from "./StaffPicker";
 import { CalenderIcon, TimeIcon, ChevronLeftIcon } from "@/icons";
 
+function getApiErrorMessage(err: unknown): string {
+  if (err instanceof AxiosError) {
+    const data = err.response?.data as {
+      message?: string;
+      errorMessage?: string;
+      errors?: Record<string, string[]>;
+    } | undefined;
+    if (data?.errors) {
+      const first = Object.values(data.errors).flat().find(Boolean);
+      if (first) return first;
+    }
+    return data?.message ?? data?.errorMessage ?? "Operation failed";
+  }
+  return "Operation failed";
+}
+
+function isActiveScheduleOnShift(s: WorkSchedule) {
+  return s.status !== "Absent" && s.status !== "Cancelled";
+}
+
+function getShiftRoleCoverage(
+  schedules: WorkSchedule[],
+  workDate: string,
+  shiftTemplateId: number
+) {
+  const dateKey = workDate.split("T")[0];
+  const onShift = schedules.filter(
+    (s) =>
+      isActiveScheduleOnShift(s) &&
+      s.workDate.split("T")[0] === dateKey &&
+      s.shiftTemplateId === shiftTemplateId
+  );
+  return {
+    hasStaff: onShift.some((s) => s.roleId === 3),
+    hasMerch: onShift.some((s) => s.roleId === 4),
+  };
+}
+
+function buildEditFormState(edit: WorkSchedule) {
+  return {
+    shiftId: edit.shiftTemplateId,
+    date: edit.workDate.split("T")[0],
+    staffId: edit.roleId === 3 ? edit.accountId : 0,
+    merchId: edit.roleId === 4 ? edit.accountId : 0,
+  };
+}
+
 interface WorkScheduleFormProps {
   onBack: () => void;
   onSubmitted: () => void;
   shifts: ShiftTemplate[];
   initialDate: string;
   editData?: WorkSchedule | null;
+  /** Schedules for the current list date — used to skip roles already on a shift when replenishing. */
+  existingSchedules?: WorkSchedule[];
 }
 
 const inputClassName =
@@ -26,6 +76,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
   shifts,
   initialDate,
   editData = null,
+  existingSchedules = [],
 }) => {
   const isEdit = !!editData;
 
@@ -33,11 +84,29 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
   const [merchList, setMerchList] = useState<AccountListItem[]>([]);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
 
-  const [selectedStaffId, setSelectedStaffId] = useState(0);
-  const [selectedMerchId, setSelectedMerchId] = useState(0);
-  const [selectedShiftId, setSelectedShiftId] = useState(0);
-  const [selectedDate, setSelectedDate] = useState(initialDate);
+  const editInitial = editData ? buildEditFormState(editData) : null;
+
+  const [selectedStaffId, setSelectedStaffId] = useState(editInitial?.staffId ?? 0);
+  const [selectedMerchId, setSelectedMerchId] = useState(editInitial?.merchId ?? 0);
+  const [selectedShiftId, setSelectedShiftId] = useState(editInitial?.shiftId ?? 0);
+  const [selectedDate, setSelectedDate] = useState(editInitial?.date ?? initialDate);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [transferResult, setTransferResult] = useState<UpdateWorkScheduleResult | null>(null);
+  const [showTransferredList, setShowTransferredList] = useState(false);
+  const [syncedEditScheduleId, setSyncedEditScheduleId] = useState<number | null>(
+    editData?.scheduleId ?? null
+  );
+
+  if (editData && editData.scheduleId !== syncedEditScheduleId) {
+    const next = buildEditFormState(editData);
+    setSyncedEditScheduleId(editData.scheduleId);
+    setSelectedShiftId(next.shiftId);
+    setSelectedDate(next.date);
+    setSelectedStaffId(next.staffId);
+    setSelectedMerchId(next.merchId);
+    setTransferResult(null);
+    setShowTransferredList(false);
+  }
 
   const [errors, setErrors] = useState<{
     staffId?: string;
@@ -45,6 +114,17 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
     shiftId?: string;
     date?: string;
   }>({});
+
+  const shiftCoverage = useMemo(
+    () =>
+      !isEdit && selectedShiftId > 0
+        ? getShiftRoleCoverage(existingSchedules, selectedDate, selectedShiftId)
+        : { hasStaff: false, hasMerch: false },
+    [isEdit, existingSchedules, selectedDate, selectedShiftId]
+  );
+
+  const needsStaffOnCreate = !isEdit && !shiftCoverage.hasStaff;
+  const needsMerchOnCreate = !isEdit && !shiftCoverage.hasMerch;
 
   useEffect(() => {
     const fetchAccounts = async () => {
@@ -65,19 +145,6 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
     fetchAccounts();
   }, []);
 
-  // Initialize form if editing
-  useEffect(() => {
-    if (editData) {
-      setSelectedShiftId(editData.shiftTemplateId);
-      setSelectedDate(editData.workDate.split("T")[0]);
-      if (editData.roleId === 3) {
-        setSelectedStaffId(editData.accountId);
-      } else if (editData.roleId === 4) {
-        setSelectedMerchId(editData.accountId);
-      }
-    }
-  }, [editData]);
-
   const validate = () => {
     const newErrors: typeof errors = {};
     
@@ -85,8 +152,16 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
       if (editData?.roleId === 3 && !selectedStaffId) newErrors.staffId = "Please select a Staff member";
       if (editData?.roleId === 4 && !selectedMerchId) newErrors.merchId = "Please select a Merchandiser";
     } else {
-      if (!selectedStaffId) newErrors.staffId = "Please select a Staff member";
-      if (!selectedMerchId) newErrors.merchId = "Please select a Merchandiser";
+      if (needsStaffOnCreate && !selectedStaffId) {
+        newErrors.staffId = "Please select a Staff member";
+      }
+      if (needsMerchOnCreate && !selectedMerchId) {
+        newErrors.merchId = "Please select a Merchandiser";
+      }
+      if (!needsStaffOnCreate && !needsMerchOnCreate) {
+        newErrors.shiftId =
+          "This shift already has Staff and Merchandiser. Edit an assignment or mark someone absent first.";
+      }
     }
     
     if (!selectedShiftId) newErrors.shiftId = "Please select a shift";
@@ -100,70 +175,87 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
     if (!validate()) return;
 
     setIsSubmitting(true);
-    
+    setTransferResult(null);
+    setShowTransferredList(false);
+
     try {
       if (isEdit && editData) {
-        // Handle Update (Single record)
         const accountId = editData.roleId === 3 ? selectedStaffId : selectedMerchId;
-        await scheduleApi.updateWorkSchedule(editData.scheduleId, {
+        const accountChanged = accountId !== editData.accountId;
+
+        const result = await scheduleApi.updateWorkSchedule(editData.scheduleId, {
           accountId,
           shiftTemplateId: selectedShiftId,
           workDate: selectedDate,
         });
-        toast.success("Assignment updated successfully!");
-        onSubmitted();
+
+        const oldName =
+          editData.accountName ||
+          result.transferredOrders[0]?.oldAccountId?.toString() ||
+          String(editData.accountId);
+        const newName =
+          (editData.roleId === 3
+            ? staffList.find((a) => a.accountId === accountId)?.accountName
+            : merchList.find((a) => a.accountId === accountId)?.accountName) ??
+          String(accountId);
+
+        if (accountChanged && result.transferredCount > 0) {
+          setTransferResult(result);
+          toast.success(`Transferred ${result.transferredCount} order(s) (${oldName} → ${newName})`);
+        } else if (accountChanged) {
+          toast.success(`Staff updated (${oldName} → ${newName}). No orders to transfer.`);
+          onSubmitted();
+        } else {
+          toast.success("Assignment updated successfully!");
+          onSubmitted();
+        }
       } else {
-        // Handle Create (Current behavior: assign both)
         const payload = {
           shiftTemplateId: selectedShiftId,
           workDate: selectedDate,
         };
 
-        const results = await Promise.allSettled([
-          scheduleApi.createWorkSchedule({ accountId: selectedStaffId, ...payload }),
-          scheduleApi.createWorkSchedule({ accountId: selectedMerchId, ...payload }),
-        ]);
+        const creates: { label: "Staff" | "Merchandiser"; accountId: number }[] = [];
+        if (needsStaffOnCreate && selectedStaffId) {
+          creates.push({ label: "Staff", accountId: selectedStaffId });
+        }
+        if (needsMerchOnCreate && selectedMerchId) {
+          creates.push({ label: "Merchandiser", accountId: selectedMerchId });
+        }
 
-        const [staffResult, merchResult] = results;
-        let hasSuccess = false;
-        const messages: string[] = [];
-
-        if (staffResult.status === "fulfilled") {
-          hasSuccess = true;
-        } else {
-          const status = (staffResult.reason as { response?: { status?: number } })?.response?.status;
-          messages.push(
-            status === 409
-              ? "Staff is already assigned to this shift on the selected date."
-              : "Failed to assign Staff."
+        if (creates.length === 0) {
+          toast.error(
+            "This shift already has Staff and Merchandiser for the selected date and shift."
           );
+          return;
         }
 
-        if (merchResult.status === "fulfilled") {
-          hasSuccess = true;
-        } else {
-          const status = (merchResult.reason as { response?: { status?: number } })?.response?.status;
-          messages.push(
-            status === 409
-              ? "Merchandiser is already assigned to this shift on the selected date."
-              : "Failed to assign Merchandiser."
-          );
+        for (const { label, accountId } of creates) {
+          try {
+            await scheduleApi.createWorkSchedule({ accountId, ...payload });
+          } catch (roleErr: unknown) {
+            const status =
+              roleErr instanceof AxiosError ? roleErr.response?.status : undefined;
+            if (status === 409) {
+              toast.error(
+                `${label} is already assigned to this shift on the selected date.`
+              );
+            } else {
+              toast.error(`${label}: ${getApiErrorMessage(roleErr)}`);
+            }
+            throw roleErr;
+          }
         }
 
-        if (messages.length === 0) {
-          toast.success("Staff and Merchandiser assigned successfully!");
-          onSubmitted();
-        } else if (hasSuccess) {
-          messages.forEach((m) => toast.error(m));
-          toast.success("One assignment succeeded — other may already exist.");
-          onSubmitted();
-        } else {
-          messages.forEach((m) => toast.error(m));
-        }
+        const roleSummary =
+          creates.length === 2
+            ? "Staff and Merchandiser"
+            : creates[0].label;
+        toast.success(`${roleSummary} assigned successfully!`);
+        onSubmitted();
       }
-    } catch (err: any) {
-      const msg = err.response?.data?.message || "Operation failed";
-      toast.error(msg);
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -173,16 +265,16 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <button 
             onClick={onBack}
-            className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-brand-500 transition-colors mb-2 group"
+            className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors mb-4 group"
           >
             <ChevronLeftIcon className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Back to Schedule
           </button>
-          <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
             {isEdit ? "Edit Assignment" : "New Assignment"}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -193,12 +285,56 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
         </div>
       </div>
 
+      {transferResult && transferResult.transferredCount > 0 && (
+        <div className="mb-8 rounded-3xl border border-brand-200 bg-brand-50/50 p-6 dark:border-brand-900 dark:bg-brand-500/10">
+          <p className="text-sm font-bold text-gray-800 dark:text-white">
+            Transferred {transferResult.transferredCount} order(s) to the new assignee on this shift.
+          </p>
+          {transferResult.autoAssignReassignedCount > 0 || transferResult.autoAssignQueuedCount > 0 ? (
+            <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+              Auto-assign fallback: {transferResult.autoAssignReassignedCount} reassigned,{" "}
+              {transferResult.autoAssignQueuedCount} queued.
+            </p>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setShowTransferredList((v) => !v)}
+            className="mt-3 text-sm font-bold text-brand-600 hover:text-brand-700"
+          >
+            {showTransferredList ? "Hide list" : "View transferred orders"}
+          </button>
+          {showTransferredList && (
+            <ul className="mt-4 max-h-48 overflow-y-auto space-y-2 text-sm text-gray-700 dark:text-gray-300">
+              {transferResult.transferredOrders.map((o) => (
+                <li key={o.orderId} className="rounded-xl bg-white/80 px-3 py-2 dark:bg-gray-900/50">
+                  <span className="font-bold">{o.orderCode}</span>
+                  <span className="text-gray-500"> — {o.statusName}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-6 flex justify-end">
+            <Button
+              type="button"
+              onClick={() => {
+                setTransferResult(null);
+                onSubmitted();
+              }}
+              className="rounded-2xl px-8 h-11 text-sm font-bold"
+            >
+              Done
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!transferResult && (
       <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Config */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-4">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-3">
                 Shift Settings
               </h3>
               
@@ -242,17 +378,21 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
               </div>
             </div>
 
-            <div className="rounded-3xl bg-brand-500 p-6 text-white shadow-xl shadow-brand-500/20">
-              <div className="flex gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md">
-                  <CalenderIcon className="h-6 w-6" />
+            <div className="rounded-xl border border-brand-100 bg-brand-50 p-5 dark:border-brand-900/30 dark:bg-brand-500/5">
+              <div className="flex gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400">
+                  <CalenderIcon className="h-5 w-5 fill-current" />
                 </div>
                 <div>
-                  <p className="font-bold text-lg leading-tight">Requirement Policy</p>
-                  <p className="text-sm text-white/80 mt-2 leading-relaxed font-medium">
-                    {isEdit 
+                  <p className="font-bold text-sm text-brand-800 dark:text-brand-300">Requirement Policy</p>
+                  <p className="text-xs text-brand-700/80 dark:text-brand-400/80 mt-1.5 leading-relaxed">
+                    {isEdit
                       ? "You are modifying a specific assignment. Ensure the new staff member is available for this shift."
-                      : "Each operational shift must have exactly one Staff and one Merchandiser assigned to ensure capacity."}
+                      : shiftCoverage.hasStaff && shiftCoverage.hasMerch
+                        ? "This shift is fully staffed. Use Edit on a card or mark absent before changing personnel."
+                        : shiftCoverage.hasStaff || shiftCoverage.hasMerch
+                          ? "Only the missing role is required — the other person is already on this shift."
+                          : "Each operational shift needs one Staff and one Merchandiser."}
                   </p>
                 </div>
               </div>
@@ -260,17 +400,18 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
           </div>
 
           {/* Right Column: Personnel */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-1 h-8 rounded-full bg-brand-500"></div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-1 h-6 rounded-full bg-brand-500"></div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
                   {isEdit ? "Update Personnel" : "Personnel Selection"}
                 </h3>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                {(!isEdit || editData?.roleId === 3) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {(!isEdit || editData?.roleId === 3) &&
+                  (isEdit || needsStaffOnCreate) && (
                   <StaffPicker
                     label={isEdit ? "Change Staff Member" : "Available Staff (Role: 3)"}
                     accounts={staffList}
@@ -282,7 +423,17 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
                   />
                 )}
 
-                {(!isEdit || editData?.roleId === 4) && (
+                {!isEdit && shiftCoverage.hasStaff && (
+                  <div className="flex items-center justify-center p-6 rounded-xl border border-dashed border-brand-200 bg-brand-50/50 dark:border-brand-900/50 dark:bg-brand-500/5">
+                    <p className="text-xs text-brand-700 dark:text-brand-300 text-center font-medium">
+                      Staff is already assigned on this shift.<br />
+                      Select only a Merchandiser to fill the open slot.
+                    </p>
+                  </div>
+                )}
+
+                {(!isEdit || editData?.roleId === 4) &&
+                  (isEdit || needsMerchOnCreate) && (
                   <StaffPicker
                     label={isEdit ? "Change Merchandiser" : "Available Merchandiser (Role: 4)"}
                     accounts={merchList}
@@ -293,10 +444,19 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
                     accentColor="warning"
                   />
                 )}
+
+                {!isEdit && shiftCoverage.hasMerch && (
+                  <div className="flex items-center justify-center p-6 rounded-xl border border-dashed border-warning-200 bg-warning-50/50 dark:border-warning-900/50 dark:bg-warning-500/5">
+                    <p className="text-xs text-warning-800 dark:text-warning-300 text-center font-medium">
+                      Merchandiser is already assigned on this shift.<br />
+                      Select only Staff to fill the open slot.
+                    </p>
+                  </div>
+                )}
                 
                 {isEdit && (
-                  <div className="flex items-center justify-center p-8 rounded-3xl border-2 border-dashed border-gray-100 dark:border-gray-800">
-                    <p className="text-xs text-gray-400 text-center font-medium">
+                  <div className="flex items-center justify-center p-6 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                    <p className="text-xs text-gray-500 text-center font-medium">
                       The other role is locked for this edit.<br/>To change both, use the individual edit buttons on each card.
                     </p>
                   </div>
@@ -304,26 +464,27 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-4 p-4">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
               <Button 
                 variant="outline" 
                 onClick={onBack} 
                 disabled={isSubmitting} 
-                className="rounded-2xl px-8 h-12 text-sm font-bold border-gray-200"
+                className="rounded-lg px-6 h-10 text-sm font-medium border-gray-300"
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={isSubmitting || isLoadingAccounts}
-                className="rounded-2xl px-12 h-12 text-sm font-bold shadow-xl shadow-brand-500/30"
+                className="rounded-lg px-8 h-10 text-sm font-medium shadow-sm"
               >
-                {isSubmitting ? "Saving..." : isEdit ? "Save Changes" : "Complete & Save Assignment"}
+                {isSubmitting ? "Saving..." : isEdit ? "Save Changes" : "Complete Assignment"}
               </Button>
             </div>
           </div>
         </div>
       </form>
+      )}
     </div>
   );
 };

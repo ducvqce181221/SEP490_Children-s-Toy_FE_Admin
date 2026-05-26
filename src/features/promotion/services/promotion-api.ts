@@ -24,7 +24,7 @@ export const promotionApi = {
   create: (data: PromotionFormData) =>
     axiosClient.post<Promotion>("/promotions", data),
 
-  update: (id: number, data: PromotionFormData) =>
+  update: (id: number, data: Partial<PromotionFormData & { isDeleted?: boolean }>) =>
     axiosClient.put<Promotion>(`/promotions/${id}`, data),
 
   delete: (id: number) =>
