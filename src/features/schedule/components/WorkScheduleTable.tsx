@@ -284,12 +284,6 @@ const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
               No staff assigned on {displayDate}. Assign a new shift to get started.
             </p>
-            <button
-              onClick={onAssignClick}
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-brand-500/25 hover:bg-brand-600 transition-colors"
-            >
-              + Assign Staff
-            </button>
           </div>
         ) : (
           /* Grouped card grid */

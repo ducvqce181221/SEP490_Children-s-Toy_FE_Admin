@@ -273,22 +273,7 @@ const EmptyState: React.FC<{ hasFilter: boolean; onClear: () => void }> = ({
         ? "Try changing your filters or search term."
         : "Start by creating your first notification campaign to reach your customers."}
     </p>
-    {hasFilter ? (
-      <button
-        onClick={onClear}
-        className="text-sm text-brand-500 hover:underline font-medium"
-      >
-        Clear filters
-      </button>
-    ) : (
-      <Link
-        href="/admin/campaigns/new"
-        className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600 transition-colors"
-      >
-        <PlusIcon />
-        Create your first campaign
-      </Link>
-    )}
+
   </div>
 );
 
@@ -633,21 +618,7 @@ export const CampaignListPage: React.FC = () => {
                           <EyeIcon className="w-5 h-5" />
                         </button>
 
-                        {/* Sent → view results */}
-                        {campaign.status === "Sent" && (
-                          <button
-                            type="button"
-                            title="View results"
-                            disabled={resolveCampaignListItemId(campaign) == null}
-                            onClick={() => {
-                              const cid = resolveCampaignListItemId(campaign);
-                              if (cid != null) router.push(campaignDetailPath(cid));
-                            }}
-                            className="rounded-lg border border-gray-300 p-1.5 text-gray-500 transition-colors hover:border-green-400 hover:text-green-500 dark:border-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
-                          >
-                            <PieChartIcon className="w-5.7 h-5.7" />
-                          </button>
-                        )}
+
 
                         {/* Draft/Rejected → edit */}
                         {(campaign.status === "Draft" || campaign.status === "Rejected") && (

@@ -148,53 +148,52 @@ export default function AdminNotificationsPage() {
               </p>
             </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => void markAllRead()}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700 transition-all shadow-sm"
-            >
-              <CheckCircleIcon className="w-5 h-5 fill-current" />
-              Mark all as read
-            </button>
-          </div>
-        </div>
-
-        {/* Tabs & Filters */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 sm:px-6 mb-5">
-          <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800/50 rounded-lg w-fit">
-            <button
-              onClick={() => { setPage(1); setTab("unread"); }}
-              className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${tab === "unread"
-                  ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                }`}
-            >
-              Unread
-            </button>
-            <button
-              onClick={() => { setPage(1); setTab("all"); }}
-              className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${tab === "all"
-                  ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                }`}
-            >
-              All Messages
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => void markAllRead()}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700 transition-all shadow-sm"
+              >
+                <CheckCircleIcon className="w-6 h-6 fill-current" />
+                Mark all as read
+              </button>
+            </div>
           </div>
 
-          <div>
-            <select
-              value={type}
-              onChange={(e) => { setType(e.target.value); setPage(1); }}
-              className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-            >
-              <option value="">All Types</option>
-              <option value="ORDER">Order</option>
-              <option value="PROMOTION">Promotion</option>
-              <option value="SYSTEM">System</option>
-            </select>
+          {/* Tabs & Filters */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 sm:px-6 mb-5">
+            <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800/50 rounded-lg w-fit">
+              <button
+                onClick={() => { setPage(1); setTab("unread"); }}
+                className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${tab === "unread"
+                  ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
+              >
+                Unread
+              </button>
+              <button
+                onClick={() => { setPage(1); setTab("all"); }}
+                className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${tab === "all"
+                  ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
+              >
+                All Messages
+              </button>
+            </div>
+
+            <div>
+              <select
+                value={type}
+                onChange={(e) => { setType(e.target.value); setPage(1); }}
+                className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+              >
+                <option value="">All Types</option>
+                <option value="ORDER">Order</option>
+                <option value="SYSTEM">System</option>
+              </select>
+            </div>
           </div>
-        </div>
         </div>
 
         {/* Content */}
@@ -202,72 +201,72 @@ export default function AdminNotificationsPage() {
           <div className="p-5 sm:p-6 space-y-4">
             {loading ? (
               <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" />
-            ))}
-          </div>
-        ) : items.length === 0 ? (
-          <EmptyState
-            message="All caught up!"
-            description={tab === "unread" ? "You have no unread notifications at the moment." : "Your notification inbox is empty."}
-          />
-        ) : (
-          <div className="grid gap-3">
-            {items.map((item) => (
-              <div
-                key={item.deliveryId}
-                onClick={() => void handleRowClick(item)}
-                className={`group relative flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${item.status === "Unread"
-                    ? "bg-white border-orange-100 shadow-sm hover:shadow-md dark:bg-gray-900/50 dark:border-orange-900/20"
-                    : "bg-gray-50/50 border-gray-100 hover:bg-white hover:border-gray-200 dark:bg-transparent dark:border-gray-800 dark:hover:bg-gray-800/30"
-                  }`}
-              >
-                {/* Status Dot */}
-                {item.status === "Unread" && (
-                  <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-                )}
-
-                {/* Icon Wrapper */}
-                <div className={`p-3 rounded-xl shrink-0 ${item.status === "Unread" ? "bg-orange-50 dark:bg-orange-900/10" : "bg-gray-100 dark:bg-gray-800"
-                  }`}>
-                  {getNotificationIcon(item.notificationType)}
-                </div>
-
-                {/* Text Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <h3 className={`font-semibold truncate ${item.status === "Unread" ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"
-                      }`}>
-                      {item.title}
-                    </h3>
-                    <span className="text-xs text-gray-400 whitespace-nowrap shrink-0">
-                      {formatTime(item.createdAt)}
-                    </span>
-                  </div>
-                  <p className={`text-sm line-clamp-2 leading-relaxed ${item.status === "Unread" ? "text-gray-700 dark:text-gray-300" : "text-gray-500 dark:text-gray-500"
-                    }`}>
-                    {item.message}
-                  </p>
-
-                  <div className="mt-3 flex items-center gap-4">
-                    <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${item.status === "Unread"
-                        ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                        : "bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-500"
-                      }`}>
-                      {item.notificationType}
-                    </span>
-
-                    {item.actionTarget && (
-                      <span className="text-xs font-medium text-orange-600 dark:text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                        View Details →
-                      </span>
-                    )}
-                  </div>
-                </div>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" />
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            ) : items.length === 0 ? (
+              <EmptyState
+                message="All caught up!"
+                description={tab === "unread" ? "You have no unread notifications at the moment." : "Your notification inbox is empty."}
+              />
+            ) : (
+              <div className="grid gap-3">
+                {items.map((item) => (
+                  <div
+                    key={item.deliveryId}
+                    onClick={() => void handleRowClick(item)}
+                    className={`group relative flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${item.status === "Unread"
+                      ? "bg-white border-orange-100 shadow-sm hover:shadow-md dark:bg-gray-900/50 dark:border-orange-900/20"
+                      : "bg-gray-50/50 border-gray-100 hover:bg-white hover:border-gray-200 dark:bg-transparent dark:border-gray-800 dark:hover:bg-gray-800/30"
+                      }`}
+                  >
+                    {/* Status Dot */}
+                    {item.status === "Unread" && (
+                      <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                    )}
+
+                    {/* Icon Wrapper */}
+                    <div className={`p-3 rounded-xl shrink-0 ${item.status === "Unread" ? "bg-orange-50 dark:bg-orange-900/10" : "bg-gray-100 dark:bg-gray-800"
+                      }`}>
+                      {getNotificationIcon(item.notificationType)}
+                    </div>
+
+                    {/* Text Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <h3 className={`font-semibold truncate ${item.status === "Unread" ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"
+                          }`}>
+                          {item.title}
+                        </h3>
+                        <span className="text-xs text-gray-400 whitespace-nowrap shrink-0">
+                          {formatTime(item.createdAt)}
+                        </span>
+                      </div>
+                      <p className={`text-sm line-clamp-2 leading-relaxed ${item.status === "Unread" ? "text-gray-700 dark:text-gray-300" : "text-gray-500 dark:text-gray-500"
+                        }`}>
+                        {item.message}
+                      </p>
+
+                      <div className="mt-3 flex items-center gap-4">
+                        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${item.status === "Unread"
+                          ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                          : "bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-500"
+                          }`}>
+                          {item.notificationType}
+                        </span>
+
+                        {item.actionTarget && (
+                          <span className="text-xs font-medium text-orange-600 dark:text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            View Details →
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Pagination */}
             {!loading && total > 0 && (
