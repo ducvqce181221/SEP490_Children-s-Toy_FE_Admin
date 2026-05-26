@@ -33,10 +33,12 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
   } = useForm<UpdateRefundStatusData>({
     resolver: zodResolver(UpdateRefundStatusSchema),
     defaultValues: {
-      status: (["Approved", "Rejected", "Completed"].includes(currentStatus)
+      status: (["RefundApproved", "RefundRejected", "RefundPickupCreated", "RefundShipping", "RefundReceived", "RefundInspectionPending", "RefundCompleted", "RefundCancelled"].includes(currentStatus)
         ? currentStatus
-        : "Approved") as UpdateRefundStatusData["status"],
+        : "RefundApproved") as UpdateRefundStatusData["status"],
       rejectReason: "",
+      shippingOrderCode: "",
+      adminNote: "",
     },
   });
 
@@ -45,15 +47,35 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
   // Only allow specific transitions based on current status
   const availableOptions = () => {
     switch (currentStatus) {
-      case "Requested":
+      case "RefundRequested":
         return [
-          { value: "Approved", label: "Approve Refund" },
-          { value: "Rejected", label: "Reject Refund" },
+          { value: "RefundApproved", label: "Approve Refund Request" },
+          { value: "RefundRejected", label: "Reject Request" },
         ];
-      case "Approved":
+      case "RefundApproved":
         return [
-          { value: "Completed", label: "Complete Refund" },
-          { value: "Rejected", label: "Reject Refund" },
+          { value: "RefundPickupCreated", label: "Create Return Shipping Order" },
+          { value: "RefundRejected", label: "Reject Request" },
+        ];
+      case "RefundPickupCreated":
+        return [
+          { value: "RefundShipping", label: "Ship Return Package" },
+          { value: "RefundRejected", label: "Reject Request" },
+        ];
+      case "RefundShipping":
+        return [
+          { value: "RefundReceived", label: "Receive Return Package" },
+          { value: "RefundRejected", label: "Reject Request" },
+        ];
+      case "RefundReceived":
+        return [
+          { value: "RefundInspectionPending", label: "Send to Quality Inspection" },
+          { value: "RefundRejected", label: "Reject Request" },
+        ];
+      case "RefundInspectionPending":
+        return [
+          { value: "RefundCompleted", label: "Complete Refund & Disburse" },
+          { value: "RefundRejected", label: "Reject Request" },
         ];
       default:
         return [];
@@ -68,10 +90,12 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
       reset({
         status: options.length > 0
           ? (options[0].value as UpdateRefundStatusData["status"])
-          : (["Approved", "Rejected", "Completed"].includes(currentStatus)
+          : (["RefundApproved", "RefundRejected", "RefundPickupCreated", "RefundShipping", "RefundReceived", "RefundInspectionPending", "RefundCompleted", "RefundCancelled"].includes(currentStatus)
             ? currentStatus as UpdateRefundStatusData["status"]
-            : "Approved"),
-        rejectReason: ""
+            : "RefundApproved"),
+        rejectReason: "",
+        shippingOrderCode: "",
+        adminNote: "",
       });
     }
   }, [isOpen, currentStatus, reset, options.length]);
@@ -106,7 +130,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
               )}
             </div>
 
-            {selectedStatus === "Rejected" && (
+            {selectedStatus === "RefundRejected" && (
               <div>
                 <Label>Reason for Rejection <span className="text-error-500">*</span></Label>
                 <Controller
@@ -123,6 +147,50 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
                 />
                 {errors.rejectReason && (
                   <p className="mt-1 text-sm text-error-500">{errors.rejectReason.message}</p>
+                )}
+              </div>
+            )}
+
+            {selectedStatus === "RefundPickupCreated" && (
+              <div>
+                <Label>Shipping Order Tracking Code</Label>
+                <Controller
+                  name="shippingOrderCode"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      type="text"
+                      placeholder="Enter GHN/Courier tracking code..."
+                      className={errors.shippingOrderCode ? "border-error-500" : ""}
+                    />
+                  )}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Để trống để hệ thống tự động gọi API GHN tạo đơn thu hồi hàng. Nhập mã nếu bạn muốn tự điền mã thủ công.
+                </p>
+                {errors.shippingOrderCode && (
+                  <p className="mt-1 text-sm text-error-500">{errors.shippingOrderCode.message}</p>
+                )}
+              </div>
+            )}
+
+            {(selectedStatus === "RefundInspectionPending" || selectedStatus === "RefundCompleted") && (
+              <div>
+                <Label>Quality Inspection / Warehouse Note</Label>
+                <Controller
+                  name="adminNote"
+                  control={control}
+                  render={({ field }) => (
+                    <textarea
+                      {...field}
+                      placeholder="Enter details about returned items quality check..."
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm resize-none outline-none focus:border-brand-500 h-24"
+                    />
+                  )}
+                />
+                {errors.adminNote && (
+                  <p className="mt-1 text-sm text-error-500">{errors.adminNote.message}</p>
                 )}
               </div>
             )}

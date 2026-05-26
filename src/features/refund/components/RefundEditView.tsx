@@ -28,11 +28,15 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId }) => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "Approved": return <Badge size="sm" color="success">Approved</Badge>;
-      case "Completed": return <Badge size="sm" color="success">Completed</Badge>;
-      case "Requested": return <Badge size="sm" color="warning">Requested</Badge>;
-      case "Rejected": return <Badge size="sm" color="error">Rejected</Badge>;
-      case "Cancelled": return <Badge size="sm" color="light">Cancelled</Badge>;
+      case "RefundApproved": return <Badge size="sm" color="success">Approved</Badge>;
+      case "RefundCompleted": return <Badge size="sm" color="success">Completed</Badge>;
+      case "RefundRequested": return <Badge size="sm" color="warning">Requested</Badge>;
+      case "RefundRejected": return <Badge size="sm" color="error">Rejected</Badge>;
+      case "RefundCancelled": return <Badge size="sm" color="light">Cancelled</Badge>;
+      case "RefundPickupCreated": return <Badge size="sm" color="primary">Pickup Created</Badge>;
+      case "RefundShipping": return <Badge size="sm" color="primary">Shipping</Badge>;
+      case "RefundReceived": return <Badge size="sm" color="primary">Received</Badge>;
+      case "RefundInspectionPending": return <Badge size="sm" color="warning">Inspection Pending</Badge>;
       default: return <Badge size="sm" color="light">{status}</Badge>;
     }
   };
@@ -56,7 +60,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId }) => {
     );
   }
 
-  const canChangeStatus = refund.refundStatus === "Requested" || refund.refundStatus === "Approved";
+  const canChangeStatus = refund.refundStatus !== "RefundCompleted" && refund.refundStatus !== "RefundCancelled" && refund.refundStatus !== "RefundRejected";
 
   return (
     <div className="pb-10">
@@ -68,21 +72,6 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId }) => {
         ]}
       />
 
-      <div className="flex justify-between items-center mb-6">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push("/admin/refunds")}
-          className="gap-2"
-        >
-          <ChevronLeftIcon className="w-5 h-5" /> Back to List
-        </Button>
-        {canChangeStatus && (
-          <Button variant="primary" size="sm" onClick={() => setIsStatusModalOpen(true)}>
-            Change Status
-          </Button>
-        )}
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* L/R Split */}
@@ -113,7 +102,10 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId }) => {
                   </div>
                 </div>
               </div>
-              <div /> {/* Empty cell to skip Order ID */}
+              <div>
+                <div className="text-sm text-gray-500">Refund Code</div>
+                <div className="font-medium text-gray-800 dark:text-gray-200">{refund.refundCode || "N/A"}</div>
+              </div>
               <div>
                 <div className="text-sm text-gray-500">Requested Amount</div>
                 <div className="font-semibold text-brand-500">{formatCurrency(refund.approvedAmount)}</div>
@@ -122,6 +114,20 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId }) => {
                 <div className="text-sm text-gray-500">Date Created</div>
                 <div className="font-medium text-gray-800 dark:text-gray-200">{formatDisplayDate(refund.createdAt)}</div>
               </div>
+              {refund.shippingOrderCode && (
+                <div className="col-span-2">
+                  <div className="text-sm text-gray-500">Tracking Code (Courier)</div>
+                  <div className="font-medium text-[#ff6a00] font-mono">{refund.shippingOrderCode}</div>
+                </div>
+              )}
+              {refund.adminNote && (
+                <div className="col-span-2">
+                  <div className="text-sm text-gray-500">Warehouse Inspection Note</div>
+                  <div className="font-medium text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700 text-sm whitespace-pre-wrap italic">
+                    {refund.adminNote}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
@@ -185,6 +191,57 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId }) => {
               </div>
             </div>
           </div>
+
+          {/* Returned Items */}
+          {refund.details && refund.details.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+              <h4 className="font-bold text-gray-800 dark:text-white/90 mb-4">Returned Items</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead>
+                    <tr className="border-b border-gray-100 dark:border-gray-700 pb-2">
+                      <th className="py-2 text-gray-500 font-medium">Product</th>
+                      <th className="py-2 text-gray-500 font-medium text-center">Qty</th>
+                      <th className="py-2 text-gray-500 font-medium text-right">Price</th>
+                      <th className="py-2 text-gray-500 font-medium text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {refund.details.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="py-2.5 font-medium text-gray-800 dark:text-gray-200">{item.productName}</td>
+                        <td className="py-2.5 text-center text-gray-600 dark:text-gray-400">{item.quantity}</td>
+                        <td className="py-2.5 text-right text-gray-600 dark:text-gray-400">{formatCurrency(item.unitPrice)}</td>
+                        <td className="py-2.5 text-right font-semibold text-brand-500">{formatCurrency(item.refundAmount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Actions footer ─────────────────────────────────────────────────── */}
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-gray-200 pt-6 dark:border-gray-800">
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={() => router.push("/admin/refunds")}>
+            Back to List
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          {!canChangeStatus && !isLoading && (
+            <span className="self-center text-sm text-gray-400 dark:text-gray-500 mr-2">
+              No actions available
+            </span>
+          )}
+          {canChangeStatus && (
+            <Button variant="primary" onClick={() => setIsStatusModalOpen(true)}>
+              Change Status
+            </Button>
+          )}
         </div>
       </div>
 

@@ -73,6 +73,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
   });
 
   const discountType = useWatch({ control, name: "discountType" });
+  const discountTarget = useWatch({ control, name: "discountTarget" });
 
   useEffect(() => {
     if (isOpen) {
@@ -117,12 +118,21 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
     }
   }, [isOpen, voucherId, isEditMode, isDetailMode, reset, onClose]);
 
-  // Tự động xóa Max Discount Cap khi chọn loại giảm giá là FIXED
+  // Tự động xóa Max Discount Cap khi chọn loại giảm giá là FIXED (trừ khi target là FINAL_PRICE)
   useEffect(() => {
-    if (discountType === "FIXED" && !isReadOnly) {
+    if (discountType === "FIXED" && discountTarget !== "FINAL_PRICE" && !isReadOnly) {
       setValue("maxDiscountCap", null);
     }
-  }, [discountType, setValue, isReadOnly]);
+  }, [discountType, discountTarget, setValue, isReadOnly]);
+
+  // Khi chọn discountTarget là FINAL_PRICE thì tự động thiết lập các giá trị mặc định
+  useEffect(() => {
+    if (discountTarget === "FINAL_PRICE" && !isReadOnly) {
+      setValue("discountType", "FIXED");
+      setValue("discountValue", 1000);
+      setValue("maxUsagePerUser", 1);
+    }
+  }, [discountTarget, setValue, isReadOnly]);
 
   const onFormSubmit = (data: VoucherFormData) => {
     if (isReadOnly) return;
@@ -259,22 +269,22 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <Label className={discountType === "FIXED" ? "opacity-50" : ""}>
-                Max Discount Cap (VND) {discountType === "FIXED" && <span className="text-xs italic">(Not applicable for Fixed)</span>}
+              <Label className={(discountType === "FIXED" && discountTarget !== "FINAL_PRICE") ? "opacity-50" : ""}>
+                Max Discount Cap (VND) {(discountType === "FIXED" && discountTarget !== "FINAL_PRICE") && <span className="text-xs italic">(Not applicable for Fixed)</span>}
               </Label>
               <Input 
                 type="number" 
-                placeholder={discountType === "FIXED" ? "Not applicable" : "Limit discount up to..."} 
+                placeholder={(discountType === "FIXED" && discountTarget !== "FINAL_PRICE") ? "Not applicable" : "Limit discount up to..."} 
                 error={!!errors.maxDiscountCap}
                 hint={errors.maxDiscountCap?.message}
-                disabled={isReadOnly || discountType === "FIXED"}
+                disabled={isReadOnly || (discountType === "FIXED" && discountTarget !== "FINAL_PRICE")}
                 {...register("maxDiscountCap", { 
                   setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v) 
                 })}
               />
             </div>
             <div>
-              <Label>Min Order Amount (VND)</Label>
+              <Label>Min Order Amount (VND) {discountTarget === "FINAL_PRICE" && <span className="text-error-500">*</span>}</Label>
               <Input 
                 type="number" 
                 placeholder="Minimum cart value" 
@@ -327,10 +337,10 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <Label>Total Quantity limit</Label>
+              <Label>Total Quantity limit {discountTarget === "FINAL_PRICE" && <span className="text-error-500">*</span>}</Label>
               <Input 
                 type="number" 
-                placeholder="Leave blank for unlimited" 
+                placeholder={discountTarget === "FINAL_PRICE" ? "e.g. 100" : "Leave blank for unlimited"} 
                 error={!!errors.totalQuantity}
                 hint={errors.totalQuantity?.message}
                 disabled={isReadOnly}
@@ -340,7 +350,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               />
             </div>
             <div>
-              <Label>Max Usage Per User</Label>
+              <Label>Max Usage Per User {discountTarget === "FINAL_PRICE" && <span className="text-error-500">*</span>}</Label>
               <Input 
                 type="number" 
                 placeholder="e.g. 1" 

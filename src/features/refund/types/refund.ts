@@ -1,4 +1,21 @@
-export type RefundStatusType = "Requested" | "Approved" | "Completed" | "Rejected" | "Cancelled";
+export type RefundStatusType = 
+  | "RefundRequested" 
+  | "RefundApproved" 
+  | "RefundPickupCreated" 
+  | "RefundShipping" 
+  | "RefundReceived" 
+  | "RefundInspectionPending" 
+  | "RefundCompleted" 
+  | "RefundCancelled" 
+  | "RefundRejected";
+
+export interface RefundDetailItem {
+  productId: number;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  refundAmount: number;
+}
 
 export interface Refund {
   refundId: number;
@@ -21,6 +38,13 @@ export interface Refund {
   createdAt: string;
   updatedAt: string | null;
   images: string[];
+  refundCode?: string | null;
+  shippingOrderCode?: string | null;
+  shippingFee?: number;
+  subTotal?: number;
+  totalAmount?: number;
+  adminNote?: string | null;
+  details?: RefundDetailItem[];
 }
 
 export interface RefundFilter {

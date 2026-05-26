@@ -95,11 +95,11 @@ export const VoucherFormSchema = z.object({
 })
 .refine(data => {
   if (data.discountType === "FIXED" && data.maxDiscountCap !== null && data.maxDiscountCap !== undefined) {
-    return false;
+    return data.discountTarget === "FINAL_PRICE";
   }
   return true;
 }, {
-  message: "Max discount cap is only allowed for percentage vouchers.",
+  message: "Max discount cap is only allowed for percentage vouchers, unless the target is FINAL_PRICE.",
   path: ["maxDiscountCap"]
 })
 .refine(data => {
@@ -140,6 +140,42 @@ export const VoucherFormSchema = z.object({
 }, {
   message: "Max discount cap is required for percentage vouchers.",
   path: ["maxDiscountCap"]
+})
+.refine(data => {
+  if (data.discountTarget === "FINAL_PRICE") {
+    return data.discountType === "FIXED";
+  }
+  return true;
+}, {
+  message: "Discount type must be FIXED for FINAL_PRICE vouchers.",
+  path: ["discountType"]
+})
+.refine(data => {
+  if (data.discountTarget === "FINAL_PRICE") {
+    return data.minOrderAmount !== null && data.minOrderAmount !== undefined && data.minOrderAmount > 0;
+  }
+  return true;
+}, {
+  message: "Minimum order amount is required and must be greater than 0 for FINAL_PRICE vouchers.",
+  path: ["minOrderAmount"]
+})
+.refine(data => {
+  if (data.discountTarget === "FINAL_PRICE") {
+    return data.totalQuantity !== null && data.totalQuantity !== undefined && data.totalQuantity > 0;
+  }
+  return true;
+}, {
+  message: "Total quantity limit is required for FINAL_PRICE vouchers.",
+  path: ["totalQuantity"]
+})
+.refine(data => {
+  if (data.discountTarget === "FINAL_PRICE") {
+    return data.maxUsagePerUser === 1;
+  }
+  return true;
+}, {
+  message: "Max usage per user must be exactly 1 for FINAL_PRICE vouchers.",
+  path: ["maxUsagePerUser"]
 });
 
 export type VoucherFormDataSchema = z.infer<typeof VoucherFormSchema>;
