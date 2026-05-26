@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Metadata } from "next";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { ReviewTable } from "@/features/review/components/ReviewTable";
@@ -13,8 +13,15 @@ export default function ProductReviewsPage() {
     <div>
       <PageBreadcrumb pageTitle="Product Reviews Management" />
       <div className="space-y-6">
-        <ReviewTable />
+        <Suspense fallback={
+          <div className="rounded-xl border border-gray-200 bg-white p-10 text-center text-gray-500 dark:border-white/[0.05] dark:bg-white/[0.03]">
+            Loading reviews...
+          </div>
+        }>
+          <ReviewTable />
+        </Suspense>
       </div>
     </div>
   );
 }
+

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -16,6 +17,11 @@ import { ReviewDetailModal } from "./ReviewDetailModal";
 import { Review, ReviewQuery } from "../types/review";
 
 export const ReviewTable = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const deepLinkReviewId = searchParams.get("reviewId");
+
   const {
     reviews,
     isLoading,
@@ -26,6 +32,26 @@ export const ReviewTable = () => {
   } = useReviews();
 
   const [viewReview, setViewReview] = useState<Review | null>(null);
+  const [activeReviewId, setActiveReviewId] = useState<number | null>(null);
+
+  // Sync deepLinkReviewId into activeReviewId
+  useEffect(() => {
+    if (deepLinkReviewId) {
+      const id = parseInt(deepLinkReviewId, 10);
+      if (!isNaN(id)) {
+        setActiveReviewId(id);
+      }
+    }
+  }, [deepLinkReviewId]);
+
+  const handleCloseDetail = () => {
+    setActiveReviewId(null);
+    setViewReview(null);
+    if (deepLinkReviewId) {
+      // Clear the query parameter in the URL
+      router.replace(pathname);
+    }
+  };
 
   const handleSearch = (searchTerm: string) => updateQuery({ searchTerm, pageNumber: 1 });
   const handleFilters = (filters: Partial<ReviewQuery>) => updateQuery({ ...filters, pageNumber: 1 });
@@ -91,7 +117,10 @@ export const ReviewTable = () => {
                     key={review.reviewId}
                     rowNumber={((query.pageNumber || 1) - 1) * (query.pageSize || 10) + index + 1}
                     review={review}
-                    onView={() => setViewReview(review)}
+                    onView={() => {
+                      setViewReview(review);
+                      setActiveReviewId(review.reviewId);
+                    }}
                   />
                 ))
               ) : (
@@ -134,11 +163,11 @@ export const ReviewTable = () => {
         </div>
       )}
 
-      {viewReview && (
+      {activeReviewId !== null && (
         <ReviewDetailModal 
-          isOpen={!!viewReview}
-          reviewId={viewReview.reviewId}
-          onClose={() => setViewReview(null)}
+          isOpen={activeReviewId !== null}
+          reviewId={activeReviewId}
+          onClose={handleCloseDetail}
         />
       )}
     </div>
