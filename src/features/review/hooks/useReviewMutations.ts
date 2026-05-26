@@ -12,10 +12,10 @@ export const useReviewMutations = (onSuccess?: () => void) => {
       await reviewApi.updateStatus(id, data);
       toast.success("Status updated successfully");
       onSuccess?.();
-    } catch (err: unknown) {
-      // Axios interceptor đã xử lý toast error global, ở đây chỉ catch để không crash app
-      // Nhưng nếu lỗi Validation thì toast có thể không show, có thể log thêm
+    } catch (err: any) {
       console.error("Update Status Error", err);
+      const errMsg = err.response?.data?.message || err.message || "Failed to update status";
+      toast.error(errMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -27,8 +27,10 @@ export const useReviewMutations = (onSuccess?: () => void) => {
       await reviewApi.createReply(id, data);
       toast.success("Reply posted successfully");
       onSuccess?.();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Create Reply Error", err);
+      const errMsg = err.response?.data?.message || err.message || "Failed to post reply";
+      toast.error(errMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -40,8 +42,10 @@ export const useReviewMutations = (onSuccess?: () => void) => {
       await reviewApi.updateReply(id, replyProductId, data);
       toast.success("Reply updated successfully");
       onSuccess?.();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Update Reply Error", err);
+      const errMsg = err.response?.data?.message || err.message || "Failed to update reply";
+      toast.error(errMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -55,8 +59,10 @@ export const useReviewMutations = (onSuccess?: () => void) => {
       await reviewApi.deleteReply(id, replyProductId);
       toast.success("Reply deleted successfully");
       onSuccess?.();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Delete Reply Error", err);
+      const errMsg = err.response?.data?.message || err.message || "Failed to delete reply";
+      toast.error(errMsg);
     } finally {
       setIsSubmitting(false);
     }

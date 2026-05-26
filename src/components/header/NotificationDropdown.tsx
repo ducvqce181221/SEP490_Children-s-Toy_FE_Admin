@@ -133,11 +133,10 @@ export default function NotificationDropdown({
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className={`absolute mt-[17px] flex h-[480px] w-[350px] flex-col rounded-2xl border bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark sm:w-[361px] lg:right-0 ${
-          variant === "customer"
+        className={`absolute mt-[17px] flex h-[480px] w-[350px] flex-col rounded-2xl border bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark sm:w-[361px] lg:right-0 ${variant === "customer"
             ? "-right-[200px] border-amber-100 dark:border-amber-900/30"
             : "-right-[240px] border-gray-200"
-        }`}
+          }`}
       >
         <div className="mb-3 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
           <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
@@ -164,7 +163,7 @@ export default function NotificationDropdown({
             </svg>
           </button>
         </div>
-        <ul className="custom-scrollbar flex h-auto flex-col overflow-y-auto">
+        <ul className="custom-scrollbar flex h-auto flex-col overflow-y-auto gap-2">
           {loading && (
             <li className="px-4 py-8 text-center text-sm text-gray-500">
               Loading…
@@ -180,9 +179,8 @@ export default function NotificationDropdown({
               <li key={item.deliveryId}>
                 <DropdownItem
                   onItemClick={() => void handleItemClick(item)}
-                  className={`flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 ${
-                    item.status === "Unread" ? "bg-brand-50/40 dark:bg-white/[0.02]" : ""
-                  }`}
+                  className={`flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 ${item.status === "Unread" ? "bg-brand-50/40 dark:bg-white/[0.02]" : ""
+                    }`}
                 >
                   <span className="relative z-1 block h-10 w-full max-w-10 shrink-0 overflow-hidden rounded-full">
                     {item.imageUrl ? (
@@ -221,11 +219,10 @@ export default function NotificationDropdown({
         <Link
           href={allNotificationsHref}
           onClick={closeDropdown}
-          className={`mt-3 block rounded-lg border px-4 py-2 text-center text-sm font-medium ${
-            variant === "customer"
+          className={`mt-3 block rounded-lg border px-4 py-2 text-center text-sm font-medium ${variant === "customer"
               ? "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100 dark:hover:bg-amber-900/40"
               : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-          }`}
+            }`}
         >
           View all
         </Link>
