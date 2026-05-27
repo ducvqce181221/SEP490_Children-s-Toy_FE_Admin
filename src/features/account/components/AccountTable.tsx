@@ -46,7 +46,14 @@ const AccountTable = () => {
     reloadAccounts,
   } = useAccounts();
 
-  const { createAccount, updateAccountStatus, isCreating, updatingAccountId } =
+  const {
+    createAccount,
+    updateAccountStatus,
+    updateAccountPassword,
+    isCreating,
+    updatingAccountId,
+    updatingPasswordAccountId,
+  } =
     useAccountMutations(reloadAccounts);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -94,6 +101,20 @@ const AccountTable = () => {
   ): Promise<boolean> => {
     const result = await updateAccountStatus(accountId, isActive);
 
+    if (result.success) {
+      toast.success(result.message);
+      return true;
+    }
+
+    toast.error(result.message);
+    return false;
+  };
+
+  const handleUpdateAccountPassword = async (
+    accountId: number,
+    payload: { newPassword: string; confirmNewPassword: string },
+  ): Promise<boolean> => {
+    const result = await updateAccountPassword(accountId, payload);
     if (result.success) {
       toast.success(result.message);
       return true;
@@ -253,7 +274,12 @@ const AccountTable = () => {
           selectedEditAccountId !== null &&
           updatingAccountId === selectedEditAccountId
         }
+        isSavingPassword={
+          selectedEditAccountId !== null &&
+          updatingPasswordAccountId === selectedEditAccountId
+        }
         onUpdateStatus={handleUpdateAccountStatus}
+        onUpdatePassword={handleUpdateAccountPassword}
         onClose={() => setSelectedEditAccountId(null)}
       />
     </div>

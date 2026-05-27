@@ -64,6 +64,11 @@ export interface UpdateAccountStatusRequest {
   isActive: boolean;
 }
 
+export interface UpdateAccountPasswordRequest {
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
 export interface ApiErrorResponse {
   code: string;
   message: string;
