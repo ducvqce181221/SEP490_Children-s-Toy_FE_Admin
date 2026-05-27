@@ -9,6 +9,8 @@ export const ORDER_STATUS = {
   DELIVERED: "Delivered",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
+  RETURNING: "Returning",
+  RETURN_COMPLETED: "ReturnCompleted",
 } as const;
 
 export type OrderStatusName = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
@@ -22,6 +24,8 @@ export const ORDER_STATUS_ID = {
   DELIVERED: 6,
   COMPLETED: 7,
   CANCELLED: 8,
+  RETURNING: 10,
+  RETURN_COMPLETED: 11,
 } as const;
 
 export const ORDER_STATUS_LABEL: Record<number, string> = {
@@ -33,6 +37,8 @@ export const ORDER_STATUS_LABEL: Record<number, string> = {
   6: "Delivered",
   7: "Completed",
   8: "Cancelled",
+  10: "Returning to warehouse",
+  11: "Returned",
 };
 
 export const PAYMENT_STATUS = {
@@ -73,10 +79,33 @@ export const SHIPPING_STATUS_LABEL: Record<string, string> = {
   delivery_fail: "Delivery Failed",
   waiting_to_return: "Waiting to Return",
   return: "Return",
+  return_transporting: "Return transporting",
+  return_sorting: "Return sorting",
   returning: "Returning",
+  return_fail: "Return failed",
   returned: "Returned",
   cancel: "Cancelled",
 };
+
+export function formatGhnShippingLabel(status: string | null | undefined): string {
+  if (!status) return "";
+  const key = status.toLowerCase();
+  return SHIPPING_STATUS_LABEL[key] ?? status;
+}
+
+export function isGhnReturnFlowStatus(status: string | null | undefined): boolean {
+  if (!status) return false;
+  const key = status.toLowerCase();
+  return [
+    "waiting_to_return",
+    "return",
+    "return_transporting",
+    "return_sorting",
+    "returning",
+    "return_fail",
+    "returned",
+  ].includes(key);
+}
 
 // ─── List ────────────────────────────────────────────────────────────────────
 
@@ -86,6 +115,8 @@ export interface OrderListItem {
   orderCode: string;
   statusId: number;
   statusName: string;
+  fulfillmentLabel?: string;
+  ghnShippingStatus?: string | null;
   customerName: string;
   customerPhone: string;
   totalAmount: number;
@@ -145,6 +176,8 @@ export interface OrderDetail {
   orderCode: string;
   statusId: number;
   statusName: string;
+  fulfillmentLabel?: string;
+  ghnShippingStatus?: string | null;
   orderDate: string;
   confirmedAt: string | null;
   shippedAt: string | null;

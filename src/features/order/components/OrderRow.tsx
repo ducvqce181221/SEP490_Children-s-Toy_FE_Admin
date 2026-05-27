@@ -9,6 +9,8 @@ import {
   ORDER_STATUS_LABEL,
   PAYMENT_STATUS,
   PAYMENT_STATUS_LABEL,
+  formatGhnShippingLabel,
+  isGhnReturnFlowStatus,
   type OrderListItem,
 } from "../types/order";
 
@@ -40,6 +42,10 @@ function getStatusStyle(statusId: number) {
       return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800";
     case ORDER_STATUS_ID.DELIVERING:
       return "bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800";
+    case ORDER_STATUS_ID.RETURNING:
+      return "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800";
+    case ORDER_STATUS_ID.RETURN_COMPLETED:
+      return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
     case ORDER_STATUS_ID.DELIVERED:
       return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
     case ORDER_STATUS_ID.COMPLETED:
@@ -84,9 +90,15 @@ const OrderRowComponent: React.FC<OrderRowProps> = ({ order, rowNumber, onOpenDe
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <span
             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusStyle(order.statusId)}`}
+            title={order.fulfillmentLabel}
           >
-            {ORDER_STATUS_LABEL[order.statusId] ?? order.statusName}
+            {order.fulfillmentLabel ?? ORDER_STATUS_LABEL[order.statusId] ?? order.statusName}
           </span>
+          {order.ghnShippingStatus && isGhnReturnFlowStatus(order.ghnShippingStatus) && (
+            <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
+              GHN: {formatGhnShippingLabel(order.ghnShippingStatus)}
+            </span>
+          )}
           <span
             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs ${getPaymentStyle(order.paymentStatus)}`}
           >

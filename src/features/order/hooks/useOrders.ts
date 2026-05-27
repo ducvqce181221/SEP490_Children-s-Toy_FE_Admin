@@ -143,6 +143,7 @@ export const useOrders = () => {
     fromDate,
     toDate,
     reloadToken,
+    defaultStatusIds,
   ]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
