@@ -5,6 +5,7 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
+import { EyeCloseIcon, EyeIcon } from "@/icons";
 import { accountApi } from "../services/account-api";
 import { AccountDetail, ApiErrorResponse } from "../types/account";
 
@@ -13,7 +14,12 @@ interface AccountDetailModalProps {
   isOpen: boolean;
   mode: "detail" | "edit";
   isSavingStatus?: boolean;
+  isSavingPassword?: boolean;
   onUpdateStatus?: (accountId: number, isActive: boolean) => Promise<boolean>;
+  onUpdatePassword?: (
+    accountId: number,
+    payload: { newPassword: string; confirmNewPassword: string },
+  ) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -41,13 +47,20 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   isOpen,
   mode,
   isSavingStatus = false,
+  isSavingPassword = false,
   onUpdateStatus,
+  onUpdatePassword,
   onClose,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accountDetail, setAccountDetail] = useState<AccountDetail | null>(null);
   const [statusValue, setStatusValue] = useState<"active" | "inactive">("active");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !accountId) {
@@ -66,6 +79,11 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
         if (!isCancelled) {
           setAccountDetail(response);
           setStatusValue(response.isActive ? "active" : "inactive");
+          setNewPassword("");
+          setConfirmNewPassword("");
+          setPasswordError(null);
+          setShowNewPassword(false);
+          setShowConfirmNewPassword(false);
         }
       } catch (error) {
         if (!isCancelled) {
@@ -94,21 +112,54 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
       ? accountDetail.accountName[0].toUpperCase()
       : "?";
 
-  const handleSaveStatus = async () => {
-    if (!accountDetail || !onUpdateStatus) {
+  const handleSave = async () => {
+    if (!accountDetail) {
       return;
     }
 
     const nextIsActive = statusValue === "active";
-    if (nextIsActive === accountDetail.isActive) {
+    const hasStatusChange = nextIsActive !== accountDetail.isActive;
+    const hasPasswordInput =
+      newPassword.trim().length > 0 || confirmNewPassword.trim().length > 0;
+
+    setPasswordError(null);
+
+    if (hasPasswordInput) {
+      if (newPassword.trim().length === 0 || confirmNewPassword.trim().length === 0) {
+        setPasswordError("Please enter both new password fields.");
+        return;
+      }
+
+      if (newPassword !== confirmNewPassword) {
+        setPasswordError("Confirm new password does not match new password.");
+        return;
+      }
+    }
+
+    if (!hasStatusChange && !hasPasswordInput) {
+      onClose();
       return;
     }
 
-    const isSuccess = await onUpdateStatus(accountDetail.accountId, nextIsActive);
-    if (isSuccess) {
+    if (hasStatusChange && onUpdateStatus) {
+      const isStatusUpdated = await onUpdateStatus(accountDetail.accountId, nextIsActive);
+      if (!isStatusUpdated) {
+        return;
+      }
       setAccountDetail((prev) => (prev ? { ...prev, isActive: nextIsActive } : prev));
-      onClose();
     }
+
+    if (hasPasswordInput && onUpdatePassword) {
+      const isPasswordUpdated = await onUpdatePassword(accountDetail.accountId, {
+        newPassword: newPassword.trim(),
+        confirmNewPassword: confirmNewPassword.trim(),
+      });
+      if (!isPasswordUpdated) {
+        return;
+      }
+    }
+
+    onClose();
   };
 
   return (
@@ -243,6 +294,71 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
               />
             )}
           </div>
+          {mode === "edit" && (
+            <>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    className={`${inputClassName} pr-11`}
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    placeholder="Leave empty to keep current password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((prev) => !prev)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white/90"
+                    aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                  >
+                    {showNewPassword ? (
+                      <EyeIcon className="fill-current" />
+                    ) : (
+                      <EyeCloseIcon className="fill-current" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Confirm New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmNewPassword ? "text" : "password"}
+                    className={`${inputClassName} pr-11`}
+                    value={confirmNewPassword}
+                    onChange={(event) => setConfirmNewPassword(event.target.value)}
+                    placeholder="Re-enter new password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmNewPassword((prev) => !prev)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white/90"
+                    aria-label={
+                      showConfirmNewPassword
+                        ? "Hide confirm new password"
+                        : "Show confirm new password"
+                    }
+                  >
+                    {showConfirmNewPassword ? (
+                      <EyeIcon className="fill-current" />
+                    ) : (
+                      <EyeCloseIcon className="fill-current" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              {passwordError && (
+                <div className="sm:col-span-2 rounded-lg border border-error-200 bg-error-50 px-4 py-2 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-300">
+                  {passwordError}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
@@ -250,10 +366,10 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
         {mode === "edit" && (
           <Button
             variant="primary"
-            onClick={handleSaveStatus}
-            disabled={isLoading || !accountDetail || isSavingStatus}
+            onClick={handleSave}
+            disabled={isLoading || !accountDetail || isSavingStatus || isSavingPassword}
           >
-            {isSavingStatus ? "Saving..." : "Save"}
+            {isSavingStatus || isSavingPassword ? "Saving..." : "Save"}
           </Button>
         )}
         <Button variant="primary" onClick={onClose}>
