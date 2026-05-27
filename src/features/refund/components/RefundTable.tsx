@@ -81,19 +81,19 @@ export const RefundTable = () => {
                 <TableCell isHeader className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   #
                 </TableCell>
-                <TableCell isHeader className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <TableCell isHeader className="px-5 py-3 text-xs text-start font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:px-6">
                   Order / Refund Code
                 </TableCell>
-                <TableCell isHeader className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <TableCell isHeader className="px-5 py-3 text-xs text-start font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   Customer
                 </TableCell>
-                <TableCell isHeader className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <TableCell isHeader className="px-5 py-3 text-xs text-start font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   Amount & Date
                 </TableCell>
-                <TableCell isHeader className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <TableCell isHeader className="px-5 py-3 text-xs text-start font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   Assigned
                 </TableCell>
-                <TableCell isHeader className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <TableCell isHeader className="px-5 py-3 text-xs text-start font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   Status
                 </TableCell>
                 <TableCell isHeader className="px-5 py-3 text-center text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
