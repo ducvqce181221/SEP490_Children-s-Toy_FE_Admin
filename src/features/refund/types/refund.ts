@@ -1,4 +1,28 @@
-export type RefundStatusType = "Requested" | "Approved" | "Completed" | "Rejected" | "Cancelled";
+export type RefundStatusType = 
+  | "RefundRequested" 
+  | "RefundApproved" 
+  | "RefundPickupCreated" 
+  | "RefundShipping" 
+  | "RefundReceived" 
+  | "RefundInspectionPending" 
+  | "RefundCompleted" 
+  | "RefundCancelled" 
+  | "RefundRejected";
+
+export interface RefundDetailItem {
+  productId: number;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  refundAmount: number;
+}
+
+export interface RefundStatusHistoryItem {
+  statusName: string;
+  changedByName?: string | null;
+  note?: string | null;
+  createdAt: string;
+}
 
 export interface Refund {
   refundId: number;
@@ -21,6 +45,16 @@ export interface Refund {
   createdAt: string;
   updatedAt: string | null;
   images: string[];
+  refundCode?: string | null;
+  shippingOrderCode?: string | null;
+  shippingFee?: number;
+  subTotal?: number;
+  totalAmount?: number;
+  adminNote?: string | null;
+  details?: RefundDetailItem[];
+  statusHistory?: RefundStatusHistoryItem[];
+  assignedToStaffName?: string | null;
+  assignedToMerchName?: string | null;
 }
 
 export interface RefundFilter {
@@ -34,6 +68,8 @@ export interface RefundFilter {
   sortDir?: "asc" | "desc";
   page?: number;
   pageSize?: number;
+  assignedToMe?: boolean;
+  keyword?: string;
 }
 
 export interface RefundPaginatedResponse {
