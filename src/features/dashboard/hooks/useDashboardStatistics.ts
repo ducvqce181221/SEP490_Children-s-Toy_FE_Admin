@@ -3,15 +3,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { dashboardApi } from "../services/dashboard-api";
 import {
   DASHBOARD_PERIOD,
-  DashboardCompletedOrderStatistics,
+  DashboardGrowthStatistics,
   DashboardNewCustomerStatistics,
-  DashboardOrderRateStatistics,
   DashboardOrderStatusStatistics,
   DashboardPeriod,
-  DashboardRevenueStatistics,
-  DashboardSlowMovingProducts,
   DashboardTimeFilter,
-  DashboardTopSellingProducts,
   DashboardTotalProducts,
 } from "../types/dashboard";
 
@@ -30,13 +26,9 @@ export const useDashboardStatistics = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [revenue, setRevenue] = useState<DashboardRevenueStatistics | null>(null);
   const [orderStatus, setOrderStatus] = useState<DashboardOrderStatusStatistics | null>(null);
   const [newCustomers, setNewCustomers] = useState<DashboardNewCustomerStatistics | null>(null);
-  const [completedOrders, setCompletedOrders] = useState<DashboardCompletedOrderStatistics | null>(null);
-  const [orderRates, setOrderRates] = useState<DashboardOrderRateStatistics | null>(null);
-  const [top5BestSellers, setTop5BestSellers] = useState<DashboardTopSellingProducts | null>(null);
-  const [slowMovingProducts, setSlowMovingProducts] = useState<DashboardSlowMovingProducts | null>(null);
+  const [growthStatistics, setGrowthStatistics] = useState<DashboardGrowthStatistics | null>(null);
   const [totalProducts, setTotalProducts] = useState<DashboardTotalProducts | null>(null);
 
   const filter = useMemo(
@@ -50,32 +42,20 @@ export const useDashboardStatistics = () => {
 
     try {
       const [
-        revenueData,
         orderStatusData,
         newCustomersData,
-        completedOrdersData,
-        orderRatesData,
-        top5Data,
-        slowMovingData,
+        growthStatisticsData,
         totalProductsData,
       ] = await Promise.all([
-        dashboardApi.getRevenueStatistics(filter),
         dashboardApi.getOrderStatusStatistics(filter),
         dashboardApi.getNewCustomerStatistics(filter),
-        dashboardApi.getCompletedOrderStatistics(filter),
-        dashboardApi.getOrderRateStatistics(filter),
-        dashboardApi.getTop5BestSellers(),
-        dashboardApi.getSlowMovingProducts(5),
+        dashboardApi.getGrowthStatistics(filter),
         dashboardApi.getTotalProducts(),
       ]);
 
-      setRevenue(revenueData);
       setOrderStatus(orderStatusData);
       setNewCustomers(newCustomersData);
-      setCompletedOrders(completedOrdersData);
-      setOrderRates(orderRatesData);
-      setTop5BestSellers(top5Data);
-      setSlowMovingProducts(slowMovingData);
+      setGrowthStatistics(growthStatisticsData);
       setTotalProducts(totalProductsData);
     } catch (err) {
       const axiosError = err as AxiosError<DashboardApiError>;
@@ -108,13 +88,9 @@ export const useDashboardStatistics = () => {
     period,
     isLoading,
     error,
-    revenue,
     orderStatus,
     newCustomers,
-    completedOrders,
-    orderRates,
-    top5BestSellers,
-    slowMovingProducts,
+    growthStatistics,
     totalProducts,
     setPeriod,
     reload: loadData,

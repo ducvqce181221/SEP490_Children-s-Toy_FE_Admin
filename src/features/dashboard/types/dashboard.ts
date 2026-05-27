@@ -22,20 +22,6 @@ export interface DashboardTimeFilter {
   groupBy?: "day" | "week" | "month";
 }
 
-export interface DashboardRevenueChartPoint {
-  label: string;
-  value: number;
-  date: string;
-}
-
-export interface DashboardRevenueStatistics {
-  range: DashboardTimeRange;
-  totalRevenue: number;
-  previousPeriodRevenue: number;
-  growthPercentage: number;
-  details: DashboardRevenueChartPoint[];
-}
-
 export interface DashboardOrderStatusItem {
   status: string;
   value: number;
@@ -95,35 +81,6 @@ export interface DashboardOrderRateStatistics {
   cancelledOrders: number;
   refundRatePercentage: number;
   cancellationRatePercentage: number;
-}
-
-export interface DashboardTopSellingProductItem {
-  productId: number;
-  productName: string;
-  imageUrl: string | null;
-  totalSold: number;
-  revenue: number;
-}
-
-export interface DashboardTopSellingProducts {
-  limit: number;
-  totalItems: number;
-  products: DashboardTopSellingProductItem[];
-}
-
-export interface DashboardSlowMovingProductItem {
-  productId: number;
-  productName: string;
-  imageUrl: string | null;
-  quantityInStock: number;
-  stockedAt: string;
-  daysInStock: number;
-}
-
-export interface DashboardSlowMovingProducts {
-  limit: number;
-  totalItems: number;
-  products: DashboardSlowMovingProductItem[];
 }
 
 export interface DashboardTotalProducts {
