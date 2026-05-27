@@ -167,7 +167,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
                   )}
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Để trống để hệ thống tự động gọi API GHN tạo đơn thu hồi hàng. Nhập mã nếu bạn muốn tự điền mã thủ công.
+                  Leave empty to automatically call GHN API to create a return shipping order. Enter a code if you want to fill it manually.
                 </p>
                 {errors.shippingOrderCode && (
                   <p className="mt-1 text-sm text-error-500">{errors.shippingOrderCode.message}</p>

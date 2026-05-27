@@ -17,6 +17,13 @@ export interface RefundDetailItem {
   refundAmount: number;
 }
 
+export interface RefundStatusHistoryItem {
+  statusName: string;
+  changedByName?: string | null;
+  note?: string | null;
+  createdAt: string;
+}
+
 export interface Refund {
   refundId: number;
   orderId: number;
@@ -45,6 +52,9 @@ export interface Refund {
   totalAmount?: number;
   adminNote?: string | null;
   details?: RefundDetailItem[];
+  statusHistory?: RefundStatusHistoryItem[];
+  assignedToStaffName?: string | null;
+  assignedToMerchName?: string | null;
 }
 
 export interface RefundFilter {
@@ -58,6 +68,8 @@ export interface RefundFilter {
   sortDir?: "asc" | "desc";
   page?: number;
   pageSize?: number;
+  assignedToMe?: boolean;
+  keyword?: string;
 }
 
 export interface RefundPaginatedResponse {
