@@ -40,6 +40,7 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
     brand_external: "Thương hiệu bên ngoài",
     topic_restricted: "Chủ đề không phù hợp",
     out_of_scope: "Ngoài phạm vi website",
+    unsafe_content: "Ngôn từ không phù hợp",
   };
 
   const parseBlockedPayload = (value: unknown): AiBlockedResponse | null => {
@@ -60,7 +61,8 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
       candidate.status === "blocked"
       && (candidate.violation_type === "brand_external"
         || candidate.violation_type === "topic_restricted"
-        || candidate.violation_type === "out_of_scope")
+        || candidate.violation_type === "out_of_scope"
+        || candidate.violation_type === "unsafe_content")
       && typeof candidate.violated_keyword === "string"
       && typeof candidate.reason === "string"
       && Array.isArray(candidate.suggestions)
