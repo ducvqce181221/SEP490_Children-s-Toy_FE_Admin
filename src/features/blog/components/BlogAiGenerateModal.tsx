@@ -37,11 +37,24 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
   const [blockedData, setBlockedData] = useState<AiBlockedResponse | null>(null);
 
   const violationLabelMap: Record<AiBlockedResponse["violation_type"], string> = {
-    brand_external: "Thương hiệu bên ngoài",
-    topic_restricted: "Chủ đề không phù hợp",
-    out_of_scope: "Ngoài phạm vi website",
-    unsafe_content: "Ngôn từ không phù hợp",
+    brand_external: "External Brand",
+    topic_restricted: "Restricted Topic",
+    out_of_scope: "Out of Scope",
+    unsafe_content: "Inappropriate Language",
   };
+  const violationReasonMap: Record<AiBlockedResponse["violation_type"], string> = {
+    brand_external: "This request mentions an external brand that is not allowed in this workspace.",
+    topic_restricted: "This topic is restricted and not suitable for this platform.",
+    out_of_scope: "This request is outside the supported content scope.",
+    unsafe_content: "This request contains profanity, insults, or toxic language that is not suitable for a child-friendly environment.",
+  };
+
+  const englishFallbackSuggestions = [
+    "STEM toys for children by age group",
+    "How to choose safe birthday gifts for kids",
+    "Top creative toys loved by children",
+    "Smart online toy-buying tips for parents",
+  ];
 
   const parseBlockedPayload = (value: unknown): AiBlockedResponse | null => {
     const parsed = typeof value === "string" ? (() => {
@@ -79,6 +92,12 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
     }
 
     return null;
+  };
+
+  const isMostlyAscii = (value: string): boolean => {
+    if (!value) return true;
+    const asciiChars = value.split("").filter((ch) => ch.charCodeAt(0) <= 127).length;
+    return asciiChars / value.length >= 0.9;
   };
 
   useEffect(() => {
@@ -190,20 +209,24 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
                 </svg>
               </div>
               <h4 className="text-2xl font-semibold text-gray-900">
-                Không thể tạo nội dung này
+                Unable to Generate This Content
               </h4>
               <span className="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
                 {violationLabelMap[blockedData.violation_type]}
               </span>
               <p className="text-sm leading-7 text-gray-700">
-                Chủ đề yêu cầu đề cập đến <span className="font-semibold text-gray-900">{blockedData.violated_keyword}</span>. {blockedData.reason}
+                Your request includes <span className="font-semibold text-gray-900">{blockedData.violated_keyword}</span>.{" "}
+                {violationReasonMap[blockedData.violation_type]}
               </p>
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                 <p className="mb-3 text-sm font-semibold text-gray-800">
-                  Gợi ý chủ đề thay thế:
+                  Suggested alternatives:
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {blockedData.suggestions.map((item, idx) => (
+                  {(blockedData.suggestions.length > 0 && blockedData.suggestions.every(isMostlyAscii)
+                    ? blockedData.suggestions
+                    : englishFallbackSuggestions
+                  ).map((item, idx) => (
                     <span
                       key={`${item}-${idx}`}
                       className="rounded-full border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700"
@@ -218,10 +241,10 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button variant="outline" onClick={() => setBlockedData(null)} className="border-gray-300 bg-white text-gray-700 hover:bg-gray-100">
-              Đóng
+              Close
             </Button>
             <Button variant="primary" onClick={() => setBlockedData(null)} className="bg-brand-500 text-white hover:bg-brand-600">
-              Nhập chủ đề khác
+              Try Another Topic
             </Button>
           </div>
         </div>
