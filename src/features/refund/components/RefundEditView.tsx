@@ -229,8 +229,16 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                               <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.01]">
                                 <td className="px-5 py-4">
                                   <div className="flex items-center gap-4">
-                                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs text-gray-400 font-bold border border-slate-100">
-                                      📦
+                                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-slate-100">
+                                      {item.productImage ? (
+                                        <img
+                                          src={item.productImage}
+                                          alt={item.productName}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <span className="text-gray-400 text-lg">📦</span>
+                                      )}
                                     </div>
                                     <span className="text-sm font-medium text-gray-800 dark:text-white/90">{item.productName}</span>
                                   </div>
