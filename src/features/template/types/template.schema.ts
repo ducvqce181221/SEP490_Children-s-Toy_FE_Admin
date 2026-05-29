@@ -15,7 +15,7 @@ export const TemplateFormSchema = z.object({
   messageTemplate: z
     .string()
     .min(5, "Message must be at least 5 characters.")
-    .max(500, "Message must not exceed 500 characters."),
+    .max(4000, "Message must not exceed 4000 characters."),
     
   isActive: z.boolean(),
 });

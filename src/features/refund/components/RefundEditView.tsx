@@ -121,16 +121,21 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
   
   const isCurrentStatusInspectionPending = refund.refundStatus === "RefundInspectionPending";
 
+  /** System refund mis-rejected: Admin may Reopen (Rejected → Approved → Complete). */
+  const canReopenSystemRejected =
+    refund.refundStatus === "RefundRejected" &&
+    !!refund.isSystemReturn &&
+    isAdmin;
+
   const canChangeStatus =
     !isViewOnly &&
     refund.refundStatus !== "RefundCompleted" &&
     refund.refundStatus !== "RefundCancelled" &&
-    refund.refundStatus !== "RefundRejected" &&
-    (
-      isAdmin ||
-      (isMerchandise && isCurrentStatusInspectionPending) ||
-      (isStaff && !isCurrentStatusInspectionPending)
-    );
+    (canReopenSystemRejected ||
+      (refund.refundStatus !== "RefundRejected" &&
+        (isAdmin ||
+          (isMerchandise && isCurrentStatusInspectionPending) ||
+          (isStaff && !isCurrentStatusInspectionPending))));
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "overview", label: "Overview" },
@@ -156,6 +161,11 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
             </h2>
             {getStatusBadge(refund.refundStatus)}
             <PaymentBadge status={refund.paymentStatus} />
+            {refund.isSystemReturn && (
+              <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                ⚙ System Return
+              </span>
+            )}
           </div>
           <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-2">
             <span>Linked Order:</span>
@@ -389,7 +399,11 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
         <div className="flex flex-wrap gap-3">
           {!canChangeStatus && !isLoading && (
             <span className="self-center text-sm text-gray-400 dark:text-gray-500 mr-2">
-              No actions available
+              {refund.refundStatus === "RefundRejected" &&
+              refund.isSystemReturn &&
+              !isAdmin
+                ? "System refund was rejected — contact Admin to reopen (Approve → Complete)."
+                : "No actions available"}
             </span>
           )}
           {canChangeStatus && (
@@ -406,6 +420,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
         currentStatus={refund.refundStatus}
         isSubmitting={isSubmitting}
         onSave={(data) => updateStatus(refund.refundId, data)}
+        isSystemReturn={refund.isSystemReturn}
       />
     </div>
   );

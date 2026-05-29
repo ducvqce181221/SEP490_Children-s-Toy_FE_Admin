@@ -15,6 +15,7 @@ interface RefundStatusModalProps {
   currentStatus: string;
   isSubmitting: boolean;
   onSave: (data: UpdateRefundStatusData) => void;
+  isSystemReturn?: boolean;
 }
 
 export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
@@ -23,6 +24,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
   currentStatus,
   isSubmitting,
   onSave,
+  isSystemReturn = false,
 }) => {
   const {
     control,
@@ -48,11 +50,24 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
   const availableOptions = () => {
     switch (currentStatus) {
       case "RefundRequested":
+        if (isSystemReturn) {
+          return [{ value: "RefundApproved", label: "Approve Refund Request" }];
+        }
         return [
           { value: "RefundApproved", label: "Approve Refund Request" },
           { value: "RefundRejected", label: "Reject Request" },
         ];
+      case "RefundRejected":
+        if (isSystemReturn) {
+          return [{ value: "RefundApproved", label: "Reopen — Approve Refund" }];
+        }
+        return [];
       case "RefundApproved":
+        if (isSystemReturn) {
+          return [
+            { value: "RefundCompleted", label: "Complete Refund & Disburse" },
+          ];
+        }
         return [
           { value: "RefundPickupCreated", label: "Create Return Shipping Order" },
           { value: "RefundRejected", label: "Reject Request" },

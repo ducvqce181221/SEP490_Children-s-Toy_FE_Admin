@@ -7,7 +7,6 @@ import axios, {
 } from "axios";
 import toast from "react-hot-toast";
 
-// ─── Constants ───────────────────────────────────────────────────────────────
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:7083/api";
@@ -21,8 +20,6 @@ const HTTP_ERROR_MESSAGES: Record<number, string> = {
   404: "Data not found.",
   500: "Server error. Please try again later.",
 };
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function clearAuthStorage(): void {
   if (typeof window === "undefined") return; // SSR guard
@@ -41,10 +38,6 @@ function redirectToLogin(): void {
     window.location.replace(target);
   }
 }
-
-// ─── Axios instance ───────────────────────────────────────────────────────────
-// Response interceptor returns `response.data`, but axios' typings still describe
-// `AxiosResponse<T>`. This alias matches runtime behavior for callers.
 
 type UnwrappedAxiosInstance = Omit<
   AxiosInstance,
@@ -103,8 +96,6 @@ const axiosClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// ─── Request interceptor ──────────────────────────────────────────────────────
-
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (typeof window !== "undefined") {
@@ -127,13 +118,11 @@ axiosClient.interceptors.request.use(
   (error: unknown) => Promise.reject(error),
 );
 
-// ─── Response interceptor ─────────────────────────────────────────────────────
 
 axiosClient.interceptors.response.use(
   <T>(response: AxiosResponse<T>): T => response.data,
 
   (error: AxiosError) => {
-    // eslint-disable-next-line no-console
     if (process.env.NODE_ENV === "development") {
       console.warn(
         `[axiosClient] ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
