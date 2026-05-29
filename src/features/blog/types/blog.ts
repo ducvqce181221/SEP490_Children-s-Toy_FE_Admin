@@ -210,7 +210,7 @@ export interface AiBlogGenerateResult {
   aiError?: string | null;
 }
 
-export type AiBlockedViolationType = "brand_external" | "topic_restricted" | "out_of_scope";
+export type AiBlockedViolationType = "brand_external" | "topic_restricted" | "out_of_scope" | "unsafe_content";
 
 export interface AiBlockedResponse {
   status: "blocked";

@@ -5,6 +5,7 @@ import {
   AccountQueryParams,
   CreateAccountRequest,
   PaginatedResponse,
+  UpdateAccountPasswordRequest,
   UpdateAccountStatusRequest,
 } from "../types/account";
 
@@ -31,6 +32,16 @@ export const accountApi = {
   ): Promise<AccountDetail> => {
     return axiosClient.put<AccountDetail, UpdateAccountStatusRequest>(
       `/accounts/${accountId}/status`,
+      payload,
+    );
+  },
+
+  updateAccountPassword: async (
+    accountId: number,
+    payload: UpdateAccountPasswordRequest,
+  ): Promise<void> => {
+    return axiosClient.put<void, UpdateAccountPasswordRequest>(
+      `/accounts/${accountId}/password`,
       payload,
     );
   },

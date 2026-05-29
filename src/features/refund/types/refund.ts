@@ -12,6 +12,7 @@ export type RefundStatusType =
 export interface RefundDetailItem {
   productId: number;
   productName: string;
+  productImage?: string | null;
   quantity: number;
   unitPrice: number;
   refundAmount: number;
