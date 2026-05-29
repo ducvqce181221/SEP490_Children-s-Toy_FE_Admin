@@ -10,6 +10,7 @@ export interface Template {
   isActive: boolean;
   createdAt: string;
   updatedAt: string | null;
+  isUsed: boolean;
 }
 
 export type TemplateFormData = z.infer<typeof TemplateFormSchema>;

@@ -26,6 +26,8 @@ export const TemplateRow = React.memo(function TemplateRow({
       : <Badge size="sm" color="error">Inactive</Badge>;
   };
 
+  const canEdit = !template.isUsed;
+
   const formattedCreatedAt = template.createdAt
     ? format(new Date(template.createdAt), "dd/MM/yyyy HH:mm")
     : "-";
@@ -37,13 +39,18 @@ export const TemplateRow = React.memo(function TemplateRow({
       </TableCell>
       <TableCell className="px-5 py-4 sm:px-6">
         <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-gray-800 dark:text-white/90">
               {template.templateCode}
             </span>
             {isSystem && (
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50">
                 SYSTEM
+              </span>
+            )}
+            {template.isUsed && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-700/50">
+                IN USE
               </span>
             )}
           </div>
@@ -75,14 +82,14 @@ export const TemplateRow = React.memo(function TemplateRow({
             <EyeIcon className="w-5 h-5" />
           </button>
           <button
-            onClick={isSystem ? undefined : onEdit}
-            disabled={isSystem}
+            onClick={canEdit ? onEdit : undefined}
+            disabled={!canEdit}
             className={`rounded-lg border p-2 transition-colors ${
-              isSystem
+              !canEdit
                 ? "border-gray-200 text-gray-300 cursor-not-allowed opacity-40 dark:border-gray-700 dark:text-gray-600"
                 : "border-gray-300 text-gray-500 hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
             }`}
-            title={isSystem ? "System templates cannot be edited" : "Edit template"}
+            title={!canEdit ? "This template is currently in use and cannot be edited" : "Edit template"}
           >
             <PencilIcon className="w-5 h-5" />
           </button>

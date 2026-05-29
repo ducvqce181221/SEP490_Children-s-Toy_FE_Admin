@@ -42,22 +42,31 @@ function getStatusStyle(statusId: number) {
       return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800";
     case ORDER_STATUS_ID.DELIVERING:
       return "bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800";
-    case ORDER_STATUS_ID.RETURNING:
-      return "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800";
-    case ORDER_STATUS_ID.RETURN_COMPLETED:
-      return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
     case ORDER_STATUS_ID.DELIVERED:
       return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
     case ORDER_STATUS_ID.COMPLETED:
       return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
+    case ORDER_STATUS_ID.RETURNING:
+      return "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800";
+    case ORDER_STATUS_ID.RETURN_COMPLETED:
+      return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
+    case ORDER_STATUS_ID.REFUNDED:
+      return "bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800";
     case ORDER_STATUS_ID.CANCELLED:
       return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
+    case ORDER_STATUS_ID.DELIVERY_FAILED:
+      return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
+    case ORDER_STATUS_ID.WAITING_RETURN:
+    case ORDER_STATUS_ID.RETURN_FAILED:
+      return "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800";
+    case ORDER_STATUS_ID.LOST:
+    case ORDER_STATUS_ID.DAMAGED:
+      return "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800";
     default:
       return "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
   }
 }
 
-// ─── Payment Status Badge ─────────────────────────────────────────────────────
 function getPaymentStyle(paymentStatus: string) {
   switch (paymentStatus) {
     case PAYMENT_STATUS.PAID:
@@ -65,7 +74,9 @@ function getPaymentStyle(paymentStatus: string) {
     case PAYMENT_STATUS.FAILED:
       return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
     case PAYMENT_STATUS.REFUNDED:
-      return "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+      return "bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800";
+    case PAYMENT_STATUS.PARTIALLY_REFUNDED:
+      return "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800";
     case PAYMENT_STATUS.PENDING:
     default:
       return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800";
@@ -137,13 +148,13 @@ const OrderRowComponent: React.FC<OrderRowProps> = ({ order, rowNumber, onOpenDe
               Staff: Unassigned
             </span>
           )}
-          
+
           {order.assignedToMerchName ? (
             <span className="inline-flex w-max items-center gap-1.5 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
               <span className="font-semibold text-purple-500">M:</span> {order.assignedToMerchName}
             </span>
           ) : (
-             <span className="inline-flex w-max items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
+            <span className="inline-flex w-max items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
               Merch: Unassigned
             </span>
           )}

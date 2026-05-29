@@ -55,6 +55,8 @@ export interface Refund {
   statusHistory?: RefundStatusHistoryItem[];
   assignedToStaffName?: string | null;
   assignedToMerchName?: string | null;
+  refundSource?: string;
+  isSystemReturn?: boolean;
 }
 
 export interface RefundFilter {

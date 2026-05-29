@@ -30,20 +30,42 @@ interface OrderToolbarProps {
 const selectClassName =
   "h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800";
 
-const ALL_STATUS_OPTIONS = [
-  { value: ORDER_STATUS_ID.PENDING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.PENDING] },
-  { value: ORDER_STATUS_ID.CONFIRMED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.CONFIRMED] },
+// ── Nhóm status theo luồng xử lý ──────────────────────────────────────────
+// Nhóm 1: Luồng bình thường
+const NORMAL_FLOW_OPTIONS = [
+  { value: ORDER_STATUS_ID.PENDING,    label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.PENDING] },
+  { value: ORDER_STATUS_ID.CONFIRMED,  label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.CONFIRMED] },
   { value: ORDER_STATUS_ID.PROCESSING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.PROCESSING] },
-  { value: ORDER_STATUS_ID.SHIPPED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.SHIPPED] },
+  { value: ORDER_STATUS_ID.SHIPPED,    label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.SHIPPED] },
   {
     value: ORDER_STATUS_ID.DELIVERING,
-    label: `${ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERING]} (includes return flow)`,
+    label: `${ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERING]}`,
   },
-  { value: ORDER_STATUS_ID.RETURNING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURNING] },
-  { value: ORDER_STATUS_ID.RETURN_COMPLETED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURN_COMPLETED] },
-  { value: ORDER_STATUS_ID.DELIVERED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERED] },
-  { value: ORDER_STATUS_ID.COMPLETED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.COMPLETED] },
+  { value: ORDER_STATUS_ID.DELIVERED,  label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERED] },
+  { value: ORDER_STATUS_ID.COMPLETED,  label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.COMPLETED] },
+];
+
+// Nhóm 2: Luồng trả hàng / sự cố
+const RETURN_FLOW_OPTIONS = [
+  { value: ORDER_STATUS_ID.RETURNING,       label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURNING] },
+  { value: ORDER_STATUS_ID.RETURN_COMPLETED,label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURN_COMPLETED] },
+  { value: ORDER_STATUS_ID.DELIVERY_FAILED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERY_FAILED] },
+  { value: ORDER_STATUS_ID.WAITING_RETURN,  label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.WAITING_RETURN] },
+  { value: ORDER_STATUS_ID.RETURN_FAILED,   label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURN_FAILED] },
+  { value: ORDER_STATUS_ID.LOST,            label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.LOST] },
+  { value: ORDER_STATUS_ID.DAMAGED,         label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DAMAGED] },
+];
+
+// Nhóm 3: Trạng thái kết thúc
+const TERMINAL_OPTIONS = [
   { value: ORDER_STATUS_ID.CANCELLED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.CANCELLED] },
+  { value: ORDER_STATUS_ID.REFUNDED,  label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.REFUNDED] },
+];
+
+const ALL_STATUS_OPTIONS = [
+  ...NORMAL_FLOW_OPTIONS,
+  ...RETURN_FLOW_OPTIONS,
+  ...TERMINAL_OPTIONS,
 ];
 
 function getRoleBadge(roleName: string) {
@@ -106,20 +128,10 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
   const roleBadge = getRoleBadge(roleName);
   const isAdmin = roleName === ROLE_NAME.ADMIN;
 
-  // Tên của preset mặc định theo role (hiển thị trong option "—")
+  // Tên của preset mặc định theo role (hiển thị trong option đầu tiên)
   const defaultLabel = defaultStatusIds.length > 0
     ? `Default (${defaultStatusIds.map((id) => ORDER_STATUS_LABEL[id]).join(", ")})`
     : "All Statuses";
-
-  const statusOptions = isAdmin
-    ? [
-      { value: "", label: "Default (All)" },
-      ...ALL_STATUS_OPTIONS,
-    ]
-    : [
-      { value: "", label: defaultLabel },
-      ...ALL_STATUS_OPTIONS,
-    ];
 
   return (
     <div className="px-5 py-5 sm:px-6">
@@ -183,7 +195,7 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
         {/* Filters */}
         <div className="lg:col-span-8">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {/* Status */}
+            {/* Status — dùng optgroup để chia nhóm rõ ràng */}
             <div className="flex flex-col">
               <label
                 htmlFor="order-status"
@@ -199,11 +211,37 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
                   onStatusChange(e.target.value === "" ? "" : Number(e.target.value))
                 }
               >
-                {statusOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
+                {/* Default option */}
+                <option value="">
+                  {isAdmin ? "Default (All)" : defaultLabel}
+                </option>
+
+                {/* Nhóm 1: Luồng bình thường */}
+                <optgroup label="── Normal Flow ──">
+                  {NORMAL_FLOW_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </optgroup>
+
+                {/* Nhóm 2: Trả hàng / Sự cố */}
+                <optgroup label="── Return & Issue Flow ──">
+                  {RETURN_FLOW_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </optgroup>
+
+                {/* Nhóm 3: Trạng thái kết thúc */}
+                <optgroup label="── Terminal ──">
+                  {TERMINAL_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
 

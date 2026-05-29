@@ -18,6 +18,7 @@ import {
   ORDER_STATUS_LABEL,
   PAYMENT_STATUS,
   PAYMENT_STATUS_LABEL,
+  isPaidCancelledAnomaly,
   ROLE_NAME,
   formatGhnShippingLabel,
   isGhnReturnFlowStatus,
@@ -242,10 +243,17 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     order?.statusName === ORDER_STATUS.PROCESSING &&
     (role === ROLE_NAME.MERCHANDISE || role === ROLE_NAME.ADMIN);
 
+  const isTerminalStatus =
+    order?.statusName === ORDER_STATUS.CANCELLED ||
+    order?.statusName === ORDER_STATUS.REFUNDED ||
+    order?.statusName === ORDER_STATUS.COMPLETED;
+
   const canCancel =
-    (order?.statusName === ORDER_STATUS.PENDING ||
-      order?.statusName === ORDER_STATUS.CONFIRMED) &&
-    (role === ROLE_NAME.STAFF || role === ROLE_NAME.ADMIN);
+    role === ROLE_NAME.ADMIN
+      ? !isTerminalStatus && !!order
+      : (order?.statusName === ORDER_STATUS.PENDING ||
+          order?.statusName === ORDER_STATUS.CONFIRMED) &&
+        role === ROLE_NAME.STAFF;
 
   const canAssign =
     role === ROLE_NAME.ADMIN &&
@@ -303,6 +311,12 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             )}
             <PaymentBadge status={order.paymentStatus} />
           </div>
+          {isPaidCancelledAnomaly(order.paymentStatus, order.statusId) && (
+            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
+              Order is cancelled but payment still shows PAID. Check for an open system refund
+              (Approve → Complete) or wallet credit from order cancellation.
+            </div>
+          )}
           <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-2">
             <span>Assigned:</span>
             {order.assignedToStaffName ? (
