@@ -8,7 +8,7 @@ import { AccountListItem } from "@/features/account/types/account";
 import { scheduleApi } from "../services/schedule-api";
 import toast from "react-hot-toast";
 import StaffPicker from "./StaffPicker";
-import { CalenderIcon, TimeIcon, ChevronLeftIcon } from "@/icons";
+import { CalenderIcon, TimeIcon, ChevronLeftIcon, UserCircleIcon } from "@/icons";
 
 function getApiErrorMessage(err: unknown): string {
   if (err instanceof AxiosError) {
@@ -26,28 +26,6 @@ function getApiErrorMessage(err: unknown): string {
   return "Operation failed";
 }
 
-function isActiveScheduleOnShift(s: WorkSchedule) {
-  return s.status !== "Absent" && s.status !== "Cancelled";
-}
-
-function getShiftRoleCoverage(
-  schedules: WorkSchedule[],
-  workDate: string,
-  shiftTemplateId: number
-) {
-  const dateKey = workDate.split("T")[0];
-  const onShift = schedules.filter(
-    (s) =>
-      isActiveScheduleOnShift(s) &&
-      s.workDate.split("T")[0] === dateKey &&
-      s.shiftTemplateId === shiftTemplateId
-  );
-  return {
-    hasStaff: onShift.some((s) => s.roleId === 3),
-    hasMerch: onShift.some((s) => s.roleId === 4),
-  };
-}
-
 function buildEditFormState(edit: WorkSchedule) {
   return {
     shiftId: edit.shiftTemplateId,
@@ -63,7 +41,7 @@ interface WorkScheduleFormProps {
   shifts: ShiftTemplate[];
   initialDate: string;
   editData?: WorkSchedule | null;
-  /** Schedules for the current list date — used to skip roles already on a shift when replenishing. */
+  /** Schedules for the current list date — used to skip already-assigned staff. */
   existingSchedules?: WorkSchedule[];
 }
 
@@ -113,18 +91,8 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
     merchId?: string;
     shiftId?: string;
     date?: string;
+    general?: string;
   }>({});
-
-  const shiftCoverage = useMemo(
-    () =>
-      !isEdit && selectedShiftId > 0
-        ? getShiftRoleCoverage(existingSchedules, selectedDate, selectedShiftId)
-        : { hasStaff: false, hasMerch: false },
-    [isEdit, existingSchedules, selectedDate, selectedShiftId]
-  );
-
-  const needsStaffOnCreate = !isEdit && !shiftCoverage.hasStaff;
-  const needsMerchOnCreate = !isEdit && !shiftCoverage.hasMerch;
 
   useEffect(() => {
     const fetchAccounts = async () => {
@@ -145,25 +113,62 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
     fetchAccounts();
   }, []);
 
+  // When date or shift changes in Create mode, reset pickers to avoid stale selections
+  const prevShiftRef = React.useRef(selectedShiftId);
+  const prevDateRef = React.useRef(selectedDate);
+  useEffect(() => {
+    if (!isEdit) {
+      if (prevShiftRef.current !== selectedShiftId || prevDateRef.current !== selectedDate) {
+        setSelectedStaffId(0);
+        setSelectedMerchId(0);
+        setErrors({});
+      }
+    }
+    prevShiftRef.current = selectedShiftId;
+    prevDateRef.current = selectedDate;
+  }, [selectedShiftId, selectedDate, isEdit]);
+
+  /**
+   * People who are actively scheduled on the selected shift/date.
+   * Used to (a) display a "Currently Assigned" badge and (b) filter pickers.
+   */
+  const assignedOnShift = useMemo(() => {
+    if (!selectedShiftId || !selectedDate || isEdit) return [];
+    const dateKey = selectedDate.split("T")[0];
+    return existingSchedules.filter(
+      (s) =>
+        s.shiftTemplateId === selectedShiftId &&
+        s.workDate.split("T")[0] === dateKey &&
+        s.status !== "Absent" &&
+        s.status !== "Cancelled"
+    );
+  }, [existingSchedules, selectedShiftId, selectedDate, isEdit]);
+
+  const assignedStaffIds = useMemo(() => new Set(assignedOnShift.filter((s) => s.roleId === 3).map((s) => s.accountId)), [assignedOnShift]);
+  const assignedMerchIds = useMemo(() => new Set(assignedOnShift.filter((s) => s.roleId === 4).map((s) => s.accountId)), [assignedOnShift]);
+
+  // Available staff = full list minus those already assigned on this shift/date
+  const availableStaff = useMemo(
+    () => staffList.filter((a) => !assignedStaffIds.has(a.accountId)),
+    [staffList, assignedStaffIds]
+  );
+  const availableMerch = useMemo(
+    () => merchList.filter((a) => !assignedMerchIds.has(a.accountId)),
+    [merchList, assignedMerchIds]
+  );
+
   const validate = () => {
     const newErrors: typeof errors = {};
-    
+
     if (isEdit) {
       if (editData?.roleId === 3 && !selectedStaffId) newErrors.staffId = "Please select a Staff member";
       if (editData?.roleId === 4 && !selectedMerchId) newErrors.merchId = "Please select a Merchandiser";
     } else {
-      if (needsStaffOnCreate && !selectedStaffId) {
-        newErrors.staffId = "Please select a Staff member";
-      }
-      if (needsMerchOnCreate && !selectedMerchId) {
-        newErrors.merchId = "Please select a Merchandiser";
-      }
-      if (!needsStaffOnCreate && !needsMerchOnCreate) {
-        newErrors.shiftId =
-          "This shift already has Staff and Merchandiser. Edit an assignment or mark someone absent first.";
+      if (!selectedStaffId && !selectedMerchId) {
+        newErrors.general = "Please select at least one Staff or Merchandiser to assign.";
       }
     }
-    
+
     if (!selectedShiftId) newErrors.shiftId = "Please select a shift";
     if (!selectedDate) newErrors.date = "Please select a work date";
     setErrors(newErrors);
@@ -216,17 +221,15 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
         };
 
         const creates: { label: "Staff" | "Merchandiser"; accountId: number }[] = [];
-        if (needsStaffOnCreate && selectedStaffId) {
+        if (selectedStaffId) {
           creates.push({ label: "Staff", accountId: selectedStaffId });
         }
-        if (needsMerchOnCreate && selectedMerchId) {
+        if (selectedMerchId) {
           creates.push({ label: "Merchandiser", accountId: selectedMerchId });
         }
 
         if (creates.length === 0) {
-          toast.error(
-            "This shift already has Staff and Merchandiser for the selected date and shift."
-          );
+          toast.error("Please select at least one Staff or Merchandiser.");
           return;
         }
 
@@ -267,7 +270,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <button 
+          <button
             onClick={onBack}
             className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors mb-4 group"
           >
@@ -278,7 +281,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
             {isEdit ? "Edit Assignment" : "New Assignment"}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {isEdit 
+            {isEdit
               ? `Updating assignment for ${editData.accountName}.`
               : "Configure shift and personnel details for operational fulfillment."}
           </p>
@@ -329,161 +332,177 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
       )}
 
       {!transferResult && (
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column: Config */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
-              <h3 className="text-base font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-3">
-                Shift Settings
-              </h3>
-              
-              <div>
-                <label className="mb-2 block text-xs font-black text-gray-400 uppercase tracking-widest">
-                  Shift Template <span className="text-error-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedShiftId}
-                    onChange={(e) => setSelectedShiftId(Number(e.target.value))}
-                    className={`${inputClassName} appearance-none pr-10`}
-                  >
-                    <option value="0">-- Choose Shift --</option>
-                    {activeShifts.map((shift) => (
-                      <option key={shift.shiftTemplateId} value={shift.shiftTemplateId}>
-                        {shift.shiftName}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                    <TimeIcon className="w-5 h-5" />
-                  </div>
-                </div>
-                {errors.shiftId && <p className="mt-2 text-xs text-error-500 font-bold">{errors.shiftId}</p>}
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-black text-gray-400 uppercase tracking-widest">
-                  Assignment Date <span className="text-error-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className={inputClassName}
-                  />
-                </div>
-                {errors.date && <p className="mt-2 text-xs text-error-500 font-bold">{errors.date}</p>}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-brand-100 bg-brand-50 p-5 dark:border-brand-900/30 dark:bg-brand-500/5">
-              <div className="flex gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400">
-                  <CalenderIcon className="h-5 w-5 fill-current" />
-                </div>
-                <div>
-                  <p className="font-bold text-sm text-brand-800 dark:text-brand-300">Requirement Policy</p>
-                  <p className="text-xs text-brand-700/80 dark:text-brand-400/80 mt-1.5 leading-relaxed">
-                    {isEdit
-                      ? "You are modifying a specific assignment. Ensure the new staff member is available for this shift."
-                      : shiftCoverage.hasStaff && shiftCoverage.hasMerch
-                        ? "This shift is fully staffed. Use Edit on a card or mark absent before changing personnel."
-                        : shiftCoverage.hasStaff || shiftCoverage.hasMerch
-                          ? "Only the missing role is required — the other person is already on this shift."
-                          : "Each operational shift needs one Staff and one Merchandiser."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Personnel */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-1 h-6 rounded-full bg-brand-500"></div>
-                <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                  {isEdit ? "Update Personnel" : "Personnel Selection"}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column: Config */}
+            <div className="lg:col-span-1 space-y-6">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-3">
+                  Shift Settings
                 </h3>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black text-gray-400 uppercase tracking-widest">
+                    Shift Template <span className="text-error-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedShiftId}
+                      onChange={(e) => setSelectedShiftId(Number(e.target.value))}
+                      className={`${inputClassName} appearance-none pr-10`}
+                    >
+                      <option value="0">-- Choose Shift --</option>
+                      {activeShifts.map((shift) => (
+                        <option key={shift.shiftTemplateId} value={shift.shiftTemplateId}>
+                          {shift.shiftName}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                      <TimeIcon className="w-5 h-5" />
+                    </div>
+                  </div>
+                  {errors.shiftId && <p className="mt-2 text-xs text-error-500 font-bold">{errors.shiftId}</p>}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black text-gray-400 uppercase tracking-widest">
+                    Assignment Date <span className="text-error-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      min={new Date().toLocaleDateString("en-CA")}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className={inputClassName}
+                    />
+                  </div>
+                  {errors.date && <p className="mt-2 text-xs text-error-500 font-bold">{errors.date}</p>}
+                </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {(!isEdit || editData?.roleId === 3) &&
-                  (isEdit || needsStaffOnCreate) && (
-                  <StaffPicker
-                    label={isEdit ? "Change Staff Member" : "Available Staff (Role: 3)"}
-                    accounts={staffList}
-                    selectedId={selectedStaffId}
-                    onSelect={setSelectedStaffId}
-                    isLoading={isLoadingAccounts}
-                    error={errors.staffId}
-                    accentColor="brand"
-                  />
-                )}
 
-                {!isEdit && shiftCoverage.hasStaff && (
-                  <div className="flex items-center justify-center p-6 rounded-xl border border-dashed border-brand-200 bg-brand-50/50 dark:border-brand-900/50 dark:bg-brand-500/5">
-                    <p className="text-xs text-brand-700 dark:text-brand-300 text-center font-medium">
-                      Staff is already assigned on this shift.<br />
-                      Select only a Merchandiser to fill the open slot.
+              {/* Policy info box */}
+              <div className="rounded-xl border border-brand-100 bg-brand-50 p-5 dark:border-brand-900/30 dark:bg-brand-500/5">
+                <div className="flex gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400">
+                    <CalenderIcon className="h-5 w-5 fill-current" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-brand-800 dark:text-brand-300">Assignment Policy</p>
+                    <p className="text-xs text-brand-700/80 dark:text-brand-400/80 mt-1.5 leading-relaxed">
+                      {isEdit
+                        ? "You are modifying a specific assignment. Ensure the new staff member is available for this shift."
+                        : assignedOnShift.length > 0
+                          ? `This shift has ${assignedOnShift.length} active assignment(s). You can add more staff or merchandisers as needed.`
+                          : "Select one or more Staff and/or Merchandisers to assign to this shift."}
                     </p>
                   </div>
-                )}
-
-                {(!isEdit || editData?.roleId === 4) &&
-                  (isEdit || needsMerchOnCreate) && (
-                  <StaffPicker
-                    label={isEdit ? "Change Merchandiser" : "Available Merchandiser (Role: 4)"}
-                    accounts={merchList}
-                    selectedId={selectedMerchId}
-                    onSelect={setSelectedMerchId}
-                    isLoading={isLoadingAccounts}
-                    error={errors.merchId}
-                    accentColor="warning"
-                  />
-                )}
-
-                {!isEdit && shiftCoverage.hasMerch && (
-                  <div className="flex items-center justify-center p-6 rounded-xl border border-dashed border-warning-200 bg-warning-50/50 dark:border-warning-900/50 dark:bg-warning-500/5">
-                    <p className="text-xs text-warning-800 dark:text-warning-300 text-center font-medium">
-                      Merchandiser is already assigned on this shift.<br />
-                      Select only Staff to fill the open slot.
-                    </p>
-                  </div>
-                )}
-                
-                {isEdit && (
-                  <div className="flex items-center justify-center p-6 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
-                    <p className="text-xs text-gray-500 text-center font-medium">
-                      The other role is locked for this edit.<br/>To change both, use the individual edit buttons on each card.
-                    </p>
-                  </div>
-                )}
+                </div>
               </div>
+
+              {/* Currently assigned on this shift */}
+              {!isEdit && assignedOnShift.length > 0 && selectedShiftId > 0 && (
+                <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] space-y-3">
+                  <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <UserCircleIcon className="w-4 h-4" />
+                    Currently On This Shift
+                  </h4>
+                  <ul className="space-y-2">
+                    {assignedOnShift.map((s) => (
+                      <li key={s.scheduleId} className="flex items-center gap-2.5">
+                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black text-white ${s.roleId === 3 ? "bg-brand-500" : "bg-warning-500"}`}>
+                          {s.accountName?.[0]?.toUpperCase() ?? "?"}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">{s.accountName}</p>
+                          <p className={`text-[10px] font-bold uppercase tracking-wide ${s.roleId === 3 ? "text-brand-500" : "text-warning-500"}`}>
+                            {s.roleId === 3 ? "Staff" : "Merchandiser"}
+                          </p>
+                        </div>
+                        <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${s.status === "OnDuty" ? "bg-success-50 text-success-700" : "bg-blue-50 text-blue-700"}`}>
+                          {s.status}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-              <Button 
-                variant="outline" 
-                onClick={onBack} 
-                disabled={isSubmitting} 
-                className="rounded-lg px-6 h-10 text-sm font-medium border-gray-300"
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting || isLoadingAccounts}
-                className="rounded-lg px-8 h-10 text-sm font-medium shadow-sm"
-              >
-                {isSubmitting ? "Saving..." : isEdit ? "Save Changes" : "Complete Assignment"}
-              </Button>
+            {/* Right Column: Personnel */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-1 h-6 rounded-full bg-brand-500"></div>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                    {isEdit ? "Update Personnel" : "Personnel Selection"}
+                  </h3>
+                </div>
+
+                {errors.general && (
+                  <div className="mb-4 rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-900/50 dark:bg-error-500/10 dark:text-error-300">
+                    {errors.general}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Staff picker — always visible in create mode, only for role=3 in edit */}
+                  {(!isEdit || editData?.roleId === 3) && (
+                    <StaffPicker
+                      label={isEdit ? "Change Staff Member" : "Sales Staff (Role 3)"}
+                      accounts={isEdit ? staffList : availableStaff}
+                      selectedId={selectedStaffId}
+                      onSelect={setSelectedStaffId}
+                      isLoading={isLoadingAccounts}
+                      error={errors.staffId}
+                      accentColor="brand"
+                    />
+                  )}
+
+                  {/* Merch picker — always visible in create mode, only for role=4 in edit */}
+                  {(!isEdit || editData?.roleId === 4) && (
+                    <StaffPicker
+                      label={isEdit ? "Change Merchandiser" : "Warehouse Merchandiser (Role 4)"}
+                      accounts={isEdit ? merchList : availableMerch}
+                      selectedId={selectedMerchId}
+                      onSelect={setSelectedMerchId}
+                      isLoading={isLoadingAccounts}
+                      error={errors.merchId}
+                      accentColor="warning"
+                    />
+                  )}
+
+                  {isEdit && (
+                    <div className="flex items-center justify-center p-6 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                      <p className="text-xs text-gray-500 text-center font-medium">
+                        The other role is locked for this edit.<br />To change both, use the individual edit buttons on each card.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <Button
+                  variant="outline"
+                  onClick={onBack}
+                  disabled={isSubmitting}
+                  className="rounded-lg px-6 h-10 text-sm font-medium border-gray-300"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || isLoadingAccounts}
+                  className="rounded-lg px-8 h-10 text-sm font-medium shadow-sm"
+                >
+                  {isSubmitting ? "Saving..." : isEdit ? "Save Changes" : "Complete Assignment"}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </form>
+        </form>
       )}
     </div>
   );

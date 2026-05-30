@@ -8,7 +8,9 @@ interface ShiftTableProps {
   isLoading: boolean;
   onEdit: (shift: ShiftTemplate) => void;
   onDeactivate: (shift: ShiftTemplate) => void;
+  onReactivate: (shift: ShiftTemplate) => void;
   onAddClick: () => void;
+  isAdmin?: boolean;
 }
 
 // Compute a visual "period" label from time string
@@ -40,16 +42,17 @@ const ShiftCard: React.FC<{
   shift: ShiftTemplate;
   onEdit: (shift: ShiftTemplate) => void;
   onDeactivate: (shift: ShiftTemplate) => void;
-}> = ({ shift, onEdit, onDeactivate }) => {
+  onReactivate: (shift: ShiftTemplate) => void;
+  isAdmin?: boolean;
+}> = ({ shift, onEdit, onDeactivate, onReactivate, isAdmin = false }) => {
   const period = getPeriodLabel(shift.startTime);
   const duration = getDuration(shift.startTime, shift.endTime);
 
   return (
-    <div className={`group relative flex flex-col rounded-2xl border bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md dark:bg-white/[0.03] ${
-      shift.isActive
-        ? "border-gray-200 hover:border-brand-200 dark:border-white/[0.07] dark:hover:border-brand-500/30"
-        : "border-gray-200/60 opacity-60 dark:border-white/[0.04]"
-    }`}>
+    <div className={`group relative flex flex-col rounded-2xl border bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md dark:bg-white/[0.03] ${shift.isActive
+      ? "border-gray-200 hover:border-brand-200 dark:border-white/[0.07] dark:hover:border-brand-500/30"
+      : "border-gray-200/60 opacity-60 dark:border-white/[0.04]"
+      }`}>
       {/* Header row */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
@@ -68,11 +71,10 @@ const ShiftCard: React.FC<{
         </div>
 
         {/* Status badge */}
-        <div className={`shrink-0 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${
-          shift.isActive
-            ? "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-400"
-            : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-        }`}>
+        <div className={`shrink-0 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${shift.isActive
+          ? "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-400"
+          : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+          }`}>
           {shift.isActive
             ? <><CheckCircleIcon className="w-4.6 h-4.6" /> Active</>
             : <><CloseIcon className="w-4.6 h-4.5" /> Inactive</>
@@ -111,36 +113,57 @@ const ShiftCard: React.FC<{
             {shift.maxOrdersPerShift}
           </p>
           <p className="text-[10px] text-brand-500/70 font-semibold uppercase tracking-wider mt-0.5">
-            Max Orders / Shift
+            Default max orders (new schedules)
           </p>
         </div>
       </div>
+
+      {(shift.activeScheduleCount ?? 0) > 0 && (
+        <p className="mb-4 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 rounded-lg px-3 py-2">
+          {shift.activeScheduleCount} active work schedule(s) — time changes and deactivation are locked.
+        </p>
+      )}
 
       {/* Footer actions */}
       <div className="mt-auto flex items-center justify-between gap-2 border-t border-gray-100 dark:border-white/[0.05] pt-3">
         <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
           ID: #{shift.shiftTemplateId}
         </span>
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => onEdit(shift)}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-500 transition-all hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 dark:border-gray-700 dark:hover:border-brand-500/40 dark:hover:text-brand-400"
-            title="Edit shift"
-          >
-            <PencilIcon className="w-4.6 h-4.6" />
-            Edit
-          </button>
-          {shift.isActive && (
+        {isAdmin && (
+          <div className="flex gap-1.5">
             <button
-              onClick={() => onDeactivate(shift)}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-500 transition-all hover:border-error-300 hover:bg-error-50 hover:text-error-600 dark:border-gray-700 dark:hover:border-error-500/40 dark:hover:text-error-400"
-              title="Deactivate shift"
+              onClick={() => onEdit(shift)}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-500 transition-all hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 dark:border-gray-700 dark:hover:border-brand-500/40 dark:hover:text-brand-400"
+              title="Edit shift"
             >
-              <TrashBinIcon className="w-4.6 h-4.6" />
-              Deactivate
+              <PencilIcon className="w-4.6 h-4.6" />
+              Edit
             </button>
-          )}
-        </div>
+            {shift.isActive && (
+              <button
+                onClick={() => onDeactivate(shift)}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-500 transition-all hover:border-error-300 hover:bg-error-50 hover:text-error-600 dark:border-gray-700 dark:hover:border-error-500/40 dark:hover:text-error-400"
+                title={
+                  (shift.activeScheduleCount ?? 0) > 0
+                    ? "Cannot deactivate while work schedules are active"
+                    : "Deactivate shift"
+                }
+              >
+                <TrashBinIcon className="w-4.6 h-4.6" />
+                Deactivate
+              </button>
+            )}
+            {!shift.isActive && (
+              <button
+                onClick={() => onReactivate(shift)}
+                className="flex items-center gap-1.5 rounded-lg border border-success-200 px-3 py-1.5 text-xs font-bold text-success-700 transition-all hover:bg-success-50 dark:border-success-900/50 dark:text-success-400"
+                title="Reactivate shift"
+              >
+                Reactivate
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -151,7 +174,9 @@ const ShiftTable: React.FC<ShiftTableProps> = ({
   isLoading,
   onEdit,
   onDeactivate,
+  onReactivate,
   onAddClick,
+  isAdmin = false,
 }) => {
   const showInitialLoading = isLoading && shifts.length === 0;
   const activeShifts = shifts.filter((s) => s.isActive);
@@ -159,8 +184,7 @@ const ShiftTable: React.FC<ShiftTableProps> = ({
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.05] dark:bg-white/[0.03]">
-      <ShiftToolbar onAddClick={onAddClick} />
-
+      <ShiftToolbar onAddClick={onAddClick} isAdmin={isAdmin} />
       <div className="p-6 border-t border-gray-100 dark:border-white/[0.05]">
         {showInitialLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -185,15 +209,17 @@ const ShiftTable: React.FC<ShiftTableProps> = ({
             </div>
             <p className="text-lg font-bold text-gray-900 dark:text-white">No Shift Templates</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
-              You haven&apos;t created any operational shifts yet. Click below to get started.
+              {isAdmin ? "You haven't created any operational shifts yet. Click below to get started." : "No operational shifts have been created yet."}
             </p>
-            <button
-              onClick={onAddClick}
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-brand-500/25 hover:bg-brand-600 transition-colors"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Create First Shift
-            </button>
+            {isAdmin && (
+              <button
+                onClick={onAddClick}
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-brand-500/25 hover:bg-brand-600 transition-colors"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Create First Shift
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
@@ -213,6 +239,8 @@ const ShiftTable: React.FC<ShiftTableProps> = ({
                       shift={shift}
                       onEdit={onEdit}
                       onDeactivate={onDeactivate}
+                      onReactivate={onReactivate}
+                      isAdmin={isAdmin}
                     />
                   ))}
                 </div>
@@ -235,6 +263,8 @@ const ShiftTable: React.FC<ShiftTableProps> = ({
                       shift={shift}
                       onEdit={onEdit}
                       onDeactivate={onDeactivate}
+                      onReactivate={onReactivate}
+                      isAdmin={isAdmin}
                     />
                   ))}
                 </div>

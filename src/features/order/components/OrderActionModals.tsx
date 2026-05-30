@@ -17,6 +17,7 @@ import {
 import { scheduleApi } from "@/features/schedule/services/schedule-api";
 import { WorkSchedule } from "@/features/schedule/types/schedule";
 import { ORDER_STATUS, ROLE_NAME } from "../types/order";
+import { todayVnDateString } from "@/utils/date-utils";
 import { useAuthContext } from "@/context/AuthContext";
 
 // ── Shared Modal Props ──────────────────────────────────────────────────────
@@ -280,45 +281,54 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
   const [schedules, setSchedules] = useState<WorkSchedule[]>([]);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [targetRoleId, setTargetRoleId] = useState(3);
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<AssignOrderFormData>({
     resolver: zodResolver(assignOrderSchema) as any,
+    defaultValues: { targetScheduleId: 0, roleId: 3, note: "" },
   });
 
   useEffect(() => {
     if (isOpen) {
-      reset({ targetAccountId: 0, note: "" });
+      reset({ targetScheduleId: 0, roleId: 3, note: "" });
       setSearchTerm("");
     }
   }, [isOpen, reset]);
 
   useEffect(() => {
     if (!isOpen) return;
-    
-    // RoleId theo DB: Staff = 3, Merchandise = 4
-    // Pending → Staff nhận đơn; Confirmed/Processing/Shipped → Merchandise nhận
-    let targetRoleId = 3; // Default: Staff
+
+    let roleId = 3;
     if (
       currentStatusName === ORDER_STATUS.CONFIRMED ||
       currentStatusName === ORDER_STATUS.PROCESSING ||
-      currentStatusName === ORDER_STATUS.SHIPPED
+      currentStatusName === ORDER_STATUS.DELIVERY_FAILED
     ) {
-      targetRoleId = 4; // Merchandise
+      roleId = 4;
+    } else if (
+      currentStatusName === ORDER_STATUS.SHIPPED ||
+      currentStatusName === ORDER_STATUS.DELIVERING ||
+      currentStatusName === ORDER_STATUS.DELIVERED
+    ) {
+      roleId = 4;
     }
+
+    setTargetRoleId(roleId);
+    setValue("roleId", roleId);
 
     const fetchSchedules = async () => {
       setIsLoadingSchedules(true);
       try {
-        const todayVn = new Date(new Date().getTime() + 7 * 60 * 60 * 1000).toISOString().split("T")[0];
         const res = await scheduleApi.getWorkSchedules({
-          workDate: todayVn,
+          workDate: todayVnDateString(),
           status: "OnDuty",
-          roleId: targetRoleId,
+          roleId,
         });
         setSchedules(res);
       } catch (err) {
@@ -329,7 +339,7 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
     };
 
     fetchSchedules();
-  }, [isOpen, currentStatusName]);
+  }, [isOpen, currentStatusName, setValue]);
 
   const filteredSchedules = schedules.filter((schedule) =>
     schedule.accountName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -342,7 +352,7 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
           Reassign Order
         </h2>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Admin assigns a staff member to handle this order.
+          Admin reassigns the {targetRoleId === 3 ? "Staff" : "Merchandise"} slot using an on-duty schedule.
         </p>
       </div>
 
@@ -358,30 +368,35 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
           />
         </div>
 
+        <input type="hidden" {...register("roleId")} />
+
         <div>
-          <Label htmlFor="targetAccountId">Select Staff {isLoadingSchedules && "(Loading...)"}</Label>
+          <Label htmlFor="targetScheduleId">
+            Select {targetRoleId === 3 ? "Staff" : "Merchandise"} schedule{" "}
+            {isLoadingSchedules && "(Loading...)"}
+          </Label>
           <select
-            id="targetAccountId"
-            {...register("targetAccountId")}
+            id="targetScheduleId"
+            {...register("targetScheduleId")}
             className={`mt-2 h-11 w-full rounded-lg border ${
-              errors.targetAccountId ? "border-error-500" : "border-gray-300 dark:border-gray-700"
+              errors.targetScheduleId ? "border-error-500" : "border-gray-300 dark:border-gray-700"
             } bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`}
           >
             {filteredSchedules.length === 0 ? (
-              <option value="0" disabled>-- No staff currently on shift --</option>
+              <option value="0" disabled>-- No on-duty schedules --</option>
             ) : (
               <>
-                <option value="0" disabled>-- Please select a staff member --</option>
+                <option value="0" disabled>-- Select schedule --</option>
                 {filteredSchedules.map((schedule) => (
-                  <option key={schedule.accountId} value={schedule.accountId}>
+                  <option key={schedule.scheduleId} value={schedule.scheduleId}>
                     {schedule.accountName} (Shift: {schedule.shiftName}, Load: {schedule.currentLoad}/{schedule.maxLoad})
                   </option>
                 ))}
               </>
             )}
           </select>
-          {errors.targetAccountId && (
-            <p className="mt-1 text-sm text-error-500">{errors.targetAccountId.message}</p>
+          {errors.targetScheduleId && (
+            <p className="mt-1 text-sm text-error-500">{errors.targetScheduleId.message}</p>
           )}
         </div>
 

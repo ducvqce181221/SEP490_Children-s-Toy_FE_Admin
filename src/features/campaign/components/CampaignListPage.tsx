@@ -555,9 +555,9 @@ export const CampaignListPage: React.FC = () => {
                     <TableCell className="px-5 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         {/* Submit button (for Draft) */}
-                        {campaign.status === "Draft" && (
+                        {(campaign.status === "Draft" || campaign.status === "Rejected") && (
                           <button
-                            title="Submit for Review"
+                            title={campaign.status === "Rejected" ? "Nộp lại để duyệt" : "Nộp để duyệt"}
                             onClick={() => setSubmitId(campaign.campaignId)}
                             className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-green-400 hover:text-green-500 dark:border-gray-700 dark:text-gray-300"
                           >

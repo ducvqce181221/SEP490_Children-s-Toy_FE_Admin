@@ -81,3 +81,9 @@ export const getIdealFutureTime = (): number => {
   return Date.now() + 10 * 60000;
 };
 
+/** Today's date in Vietnam (YYYY-MM-DD) for shift/schedule queries. */
+export const todayVnDateString = (): string => {
+  const vn = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return vn.toISOString().split("T")[0];
+};
+

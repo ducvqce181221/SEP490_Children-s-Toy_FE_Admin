@@ -49,18 +49,6 @@ export const CampaignFormSchema = z
 
     targetType: z.enum(["ALL", "ROLE", "INDIVIDUAL"] as const),
 
-    scheduledAt: z
-      .string()
-      .optional()
-      .nullable()
-      .refine(
-        (val) => {
-          if (!val) return true;
-          return new Date(val) > new Date();
-        },
-        { message: "Scheduled time must not be in the past." }
-      ),
-
     eventKey: z
       .string()
       .max(100, "Event key must not exceed 100 characters.")

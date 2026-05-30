@@ -12,53 +12,53 @@ type ErrorBody = { code?: string; message?: string };
 /** User-facing messages for campaign domain (falls back to API message). Uses numbers from campaign-schedule-hints to align with backend constraints. */
 const CAMPAIGN_ERROR_MESSAGE_BY_CODE: Partial<Record<string, string>> = {
   SOURCE_TYPE_INVALID: "Invalid campaign source type.",
-  CONTENT_REQUIRED: "Content is required (template or title + message).",
-  TEMPLATE_NOT_FOUND: "Notification template not found or inactive.",
-  TARGET_REQUIRED: "At least one recipient target is required.",
-  TARGET_ACCOUNT_INVALID: "One or more target accounts are invalid.",
-  REFERENCE_INCONSISTENT: "Reference (type / id) is inconsistent.",
+  CONTENT_REQUIRED: "Content is required (either template or custom title and body).",
+  TEMPLATE_NOT_FOUND: "Notification template does not exist or has been deactivated.",
+  TARGET_REQUIRED: "At least one target recipient must be selected.",
+  TARGET_ACCOUNT_INVALID: "One or more recipient accounts are invalid.",
+  REFERENCE_INCONSISTENT: "Linked reference type and ID are inconsistent.",
   REFERENCE_NOT_FOUND:
-    "Linked reference not found or unavailable: voucher must be Active; promotion must be Active or Scheduled (and EndDate must not have passed when the campaign was created); blog must be Published. Check the details page of the voucher/promotion/blog to update its status or change the reference.",
+    "Linked reference could not be found or is unavailable: vouchers must be Active; promotions must be Active or Scheduled; blog posts must be Published.",
   FORBIDDEN: "You do not have permission to perform this action.",
   INVALID_STATUS_TRANSITION:
-    "The action does not match the current status of the campaign (e.g., only Approved can be scheduled; only Scheduled can be rescheduled). Please check the list or refresh the page.",
-  REFERENCE_EXPIRED: "The linked reference (voucher/promotion/...) is no longer valid for this action — it may have changed status or expired after the campaign was created.",
+    "This action is not allowed in the campaign's current status. Only Approved campaigns can be scheduled, and only Scheduled campaigns can be rescheduled. Please refresh the page and try again.",
+  REFERENCE_EXPIRED: "Linked reference (voucher/promotion) is no longer valid (either expired or changed status).",
   SCHEDULE_NOT_ALLOWED_AT_SUBMIT:
-    "Scheduling is not allowed when submitting for approval. Please remove scheduledAt from the form (if any) and only schedule after approval.",
-  SCHEDULE_NOT_ALLOWED_AT_CREATE: "Cannot set ScheduledAt when creating a campaign. Please schedule via the API or Schedule button after it is approved.",
-  REVIEWER_CANNOT_BE_SUBMITTER: "Reviewer cannot be the same as the submitter.",
-  REFERENCE_ALREADY_EXPIRED: "The linked reference (voucher/promotion) has expired — cannot proceed with the previous reference.",
-  TEMPLATE_DEACTIVATED: "Notification template has been deactivated.",
-  REVIEW_NOTE_REQUIRED: "A note is required when rejecting.",
+    "Scheduling is not allowed when submitting for review. Please clear the scheduled date and schedule it only after it has been approved.",
+  SCHEDULE_NOT_ALLOWED_AT_CREATE: "Cannot set schedule date during campaign creation. Please schedule the campaign using the 'Schedule' button after it is approved.",
+  REVIEWER_CANNOT_BE_SUBMITTER: "The reviewer cannot be the same person who submitted the campaign.",
+  REFERENCE_ALREADY_EXPIRED: "The linked reference (voucher/promotion) has already expired.",
+  TEMPLATE_DEACTIVATED: "Notification template is currently deactivated.",
+  REVIEW_NOTE_REQUIRED: "A review note is required when rejecting the campaign.",
   APPROVED_EXPIRED:
-    "Approved window expired: the campaign must be scheduled within the allowed timeframe after being Approved. Submit for approval again or create a new campaign if needed.",
-  SCHEDULED_AT_REQUIRED: "Send time has not been chosen. Please select a date and time in the 'Send time' field or use Quick pick and click Confirm.",
-  SCHEDULED_AT_TOO_SOON: `Send time must be at least ${SCHEDULE_MIN_LEAD_MINUTES} minutes after the current time (based on server clock). Choose a later time or click 'In 30 minutes'.`,
-  SCHEDULED_AT_TOO_FAR: `Send time cannot be further than ${SCHEDULE_MAX_LEAD_DAYS} days from now. Shorten the date or split into multiple campaigns.`,
+    "Approval period has expired: campaigns must be scheduled within the allowed timeframe after approval. Please submit for review again or create a new campaign.",
+  SCHEDULED_AT_REQUIRED: "Send time has not been chosen. Please select a date and time, or use a quick option.",
+  SCHEDULED_AT_TOO_SOON: `Send time must be at least ${SCHEDULE_MIN_LEAD_MINUTES} minutes in the future (server time). Choose a later time or use the 'In 30 minutes' option.`,
+  SCHEDULED_AT_TOO_FAR: `Send time cannot exceed ${SCHEDULE_MAX_LEAD_DAYS} days from now. Please select a sooner date or split your campaign.`,
   VALID_RANGE_INVALID:
-    "Invalid Valid from / Valid to range: 'Valid from' must be earlier than 'Valid to'. Modify either value or clear both if not needed.",
+    "Invalid valid-from/valid-to range: 'Valid from' must be before 'Valid to'. Adjust these dates or remove them if not needed.",
   SCHEDULED_AT_OUT_OF_RANGE:
-    "Send time is outside of the specified Valid from / Valid to range. Either adjust the Send time to fall within the range, or leave both valid fields blank to remove the constraint.",
+    "Send time falls outside the valid-from/valid-to range. Adjust the send time to fit within the range, or leave the valid fields blank.",
   SCHEDULED_BEFORE_VOUCHER_START:
-    `Send time is earlier than when the voucher becomes active (StartDate on voucher details). Please view the voucher details, get the start time, and set the Send time after that mark, while still satisfying the minimum ${SCHEDULE_MIN_LEAD_MINUTES} minutes lead time and ${SCHEDULE_MAX_LEAD_DAYS} days window...`,
+    `Send time is earlier than the voucher's effective start date. Please check the voucher's start date and set a send time after it, keeping a minimum of ${SCHEDULE_MIN_LEAD_MINUTES} minutes and within ${SCHEDULE_MAX_LEAD_DAYS} days.`,
   SCHEDULED_TOO_CLOSE_TO_VOUCHER_END:
-    `Send time must be at least ${VOUCHER_END_BUFFER_HOURS} hours before the voucher expires (EndDate) — meaning the send time cannot be too close to expiration. Set it earlier; for example, if EndDate is 17:00, you should send before 15:00.`,
+    `Send time must be at least ${VOUCHER_END_BUFFER_HOURS} hours before the voucher expires. For example, if the voucher ends at 17:00, send before 15:00.`,
   SCHEDULED_TOO_EARLY_FOR_SALE:
-    `Send time is too early compared to the promotion: it cannot be scheduled before (Promotion StartDate minus ${SALE_LEAD_HOURS_BEFORE_START} hours). For example, if the sale starts at 10:00 on June 20, you cannot send before 10:00 on June 19.`,
+    `Send time is too early for the promotion: you cannot send before ${SALE_LEAD_HOURS_BEFORE_START} hours prior to the sale start date. For example, if the sale starts at 10:00 on June 20, do not send before 10:00 on June 19.`,
   SCHEDULED_AFTER_SLOT_START:
-    "[Deprecated] Older flash error code; the new version uses SCHEDULED_TOO_CLOSE_TO_SALE_END based on the last slot's end rule. If you still see this, refresh the page and try again.",
+    "[Deprecated] Legacy flash sale error; please refresh and try again.",
   SCHEDULED_TOO_CLOSE_TO_SALE_END:
-    `Send time must be at least ${VOUCHER_END_BUFFER_HOURS} hours before the promotion end time: for standard sales, this is the campaign EndDate; for flash sales, it is the end of the last active timeslot (maximum EndAt). Set the Send time earlier to allow a ${VOUCHER_END_BUFFER_HOURS}-hour buffer.`,
+    `Send time must be at least ${VOUCHER_END_BUFFER_HOURS} hours before the promotion ends. Set an earlier send time to allow a ${VOUCHER_END_BUFFER_HOURS}-hour buffer.`,
   SCHEDULED_AFTER_LAUNCH:
-    "Coming soon product: Send time cannot be after the LaunchDate (notifications are only valid before or exactly on the launch day). Check LaunchDate in the product catalog.",
+    "Coming Soon product: cannot send after Launch Date. Notifications are only allowed before or on the launch date.",
   MAX_RESCHEDULE_EXCEEDED:
-    "You have reached the maximum number of reschedules allowed for this campaign. Contact an administrator or create a new campaign.",
+    "Maximum rescheduling limit has been reached for this campaign. Please contact support or create a new campaign.",
   CAMPAIGN_LOCKED_BY_JOB:
-    "The campaign is temporarily locked by a background sending worker. Wait a few seconds and try rescheduling again; avoid double-clicking.",
-  SAME_SCHEDULED_AT: "The new send time must be different from the currently scheduled send time. Please select a different time.",
-  REASON_TOO_LONG: "The rescheduling reason cannot exceed 200 characters. Please shorten your content.",
+    "This campaign is currently locked by a background worker. Please wait a few seconds and try rescheduling again.",
+  SAME_SCHEDULED_AT: "The new send time must be different from the current send time. Please select a different time.",
+  REASON_TOO_LONG: "Reschedule reason cannot exceed 200 characters.",
   WARN_VOUCHER_EXPIRING_SOON:
-    `Warning (non-blocking): The voucher will expire within approximately ${VOUCHER_EXPIRING_WARN_HOURS} hours after the send time — please check if this notification window is still appropriate for customers.`,
+    `Warning: The voucher will expire within ${VOUCHER_EXPIRING_WARN_HOURS} hours after sending. Please verify if this timeframe is appropriate for customers.`,
 };
 
 export function getCampaignMutationErrorMessage(
@@ -67,6 +67,8 @@ export function getCampaignMutationErrorMessage(
 ): string | null {
   const ax = error as AxiosError<ErrorBody>;
   const status = ax.response?.status;
+  if (status === 403)
+    return CAMPAIGN_ERROR_MESSAGE_BY_CODE.FORBIDDEN ?? "You do not have permission to perform this action.";
   if (status !== 400 && status !== 422) return null;
   const data = ax.response?.data;
   const code = data?.code;
