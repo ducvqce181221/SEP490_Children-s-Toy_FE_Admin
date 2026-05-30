@@ -22,7 +22,6 @@ import {
 } from "../types/campaign";
 import { useAuthContext } from "@/context/AuthContext";
 import { useCampaignImageUpload } from "../hooks/useCampaignImageUpload";
-import { formatLocalToUTC, formatUTCtoLocal } from "@/utils/date-utils";
 import { accountApi } from "@/features/account/services/account-api";
 import {
   DocsIcon,
@@ -71,8 +70,6 @@ const EMPTY_WIZARD: WizardState = {
   selectedRoleId: "",
   individualAccountIds: [],
   individualAccountNames: [],
-  scheduleType: "immediate",
-  scheduledAt: "",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1001,8 +998,6 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
           selectedRoleId: c.targets.find((t) => t.targetType === "ROLE_ID")?.targetValue || "",
           individualAccountIds,
           individualAccountNames,
-          scheduleType: "immediate", // Schedule is set separately after approval
-          scheduledAt: "",
         });
       })
       .catch(() => {
@@ -1073,8 +1068,8 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
       targetType: state.targetMode,
       scheduledAt: null, // Scheduling is done separately after Admin approval
       imageUrl: state.imageUrl || null,
-      actionType: state.referenceType || null,
-      actionTarget: state.referenceId ? String(state.referenceId) : null,
+      actionType: "ROUTE",
+      actionTarget: state.resolvedObject?.defaultActionTarget ?? null,
       createdByAccountId: account?.accountId ?? 0,
       targets,
     };

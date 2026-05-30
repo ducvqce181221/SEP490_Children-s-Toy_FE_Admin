@@ -1,6 +1,7 @@
 import axiosClient from "@/configs/axios-client";
 import {
   AssignOrderRequest,
+  ReassignOrderRequest,
   CancelOrderRequest,
   CancelOrderResponse,
   ConfirmOrderRequest,
@@ -88,4 +89,7 @@ export const orderApi = {
       `/admin/orders/${id}/assign`,
       body,
     ),
+
+  reassignOrder: (id: number, body: ReassignOrderRequest): Promise<void> =>
+    axiosClient.post<void, ReassignOrderRequest>(`/orders/${id}/reassign`, body),
 };

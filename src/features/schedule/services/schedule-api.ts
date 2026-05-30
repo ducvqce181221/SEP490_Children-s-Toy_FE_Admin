@@ -10,9 +10,11 @@ import {
 
 export const scheduleApi = {
   // ─── Shift Templates ─────────────────────────────────────────────────────────
-  // Backend route: GET /api/shift-templates
-  getShiftTemplates: () =>
-    axiosClient.get<ShiftTemplate[]>("/shift-templates"),
+  // Backend route: GET /api/shift-templates?includeInactive=
+  getShiftTemplates: (params?: { includeInactive?: boolean }) =>
+    axiosClient.get<ShiftTemplate[]>("/shift-templates", {
+      params: params?.includeInactive ? { includeInactive: true } : undefined,
+    }),
 
   // Backend route: POST /api/shift-templates
   createShiftTemplate: (data: ShiftTemplateFormData) =>

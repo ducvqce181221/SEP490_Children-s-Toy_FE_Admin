@@ -80,6 +80,7 @@ export interface CampaignReferenceCardProps {
   /** Khi true: nhấn Start/End Date cho màn đặt lịch */
   scheduleContextNote?: boolean;
   className?: string;
+  imageUrl?: string | null;
 }
 
 export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
@@ -89,7 +90,10 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
   resolvedReference,
   scheduleContextNote = false,
   className = "",
+  imageUrl,
 }) => {
+  const [isSlotsExpanded, setIsSlotsExpanded] = React.useState(true);
+
   if (!referenceType) {
     return (
       <div
@@ -151,13 +155,15 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
       </div>
 
       {resolvedReference ? (
-        <div className={orderedFlashSlots.length > 0 ? "grid grid-cols-1 xl:grid-cols-12 gap-6" : "space-y-3"}>
-          <div className="xl:col-span-4 space-y-3">
+        <div className="space-y-5">
+          <div className="space-y-3">
 
             <div className="flex items-center gap-3">
-              {resolvedReference.imageUrl ? (
+              {(resolvedReference.imageUrl || imageUrl) &&
+              referenceType !== "VOUCHER" &&
+              referenceType !== "SALE" ? (
                 <img
-                  src={resolvedReference.imageUrl}
+                  src={resolvedReference.imageUrl || imageUrl || ""}
                   alt={resolvedReference.displayName || "Reference"}
                   className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-white/10 bg-white flex-shrink-0"
                 />
@@ -204,154 +210,172 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
               </p>
             ) : null}
             {resolvedReference.defaultActionTarget ? (
-              <a
-                href={mapReferenceDefaultActionToAdminUrl(resolvedReference.defaultActionTarget)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-brand-500 hover:text-brand-600 mt-1 font-medium"
-              >
-                View Details
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
+              <div className="mt-1 space-y-1">
+                <a
+                  href={mapReferenceDefaultActionToAdminUrl(resolvedReference.defaultActionTarget)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-brand-500 hover:text-brand-600 font-medium"
+                >
+                  View Details (admin)
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  Link khi khách bấm TB:{" "}
+                  <span className="font-mono text-gray-700 dark:text-gray-300 break-all">
+                    {resolvedReference.defaultActionTarget}
+                  </span>
+                </p>
+              </div>
             ) : null}
           </div>
           {orderedFlashSlots.length > 0 ? (
-            <div className="xl:col-span-8 xl:border-l xl:border-t-0 xl:pl-6 xl:mt-0 mt-3 pt-3 xl:pt-0 border-t border-gray-100 dark:border-white/10">
-              <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-2">
-                Flash timeframe (VN time)
-              </p>
-              <div className="max-h-[400px] overflow-y-auto pr-1">
-                <ul className="space-y-2">
-                  {orderedFlashSlots.map((slot) => {
-                    const start = new Date(slot.startAtUtc);
-                    const end = new Date(slot.endAtUtc);
-                    const phase = getFlashSlotPhase(new Date(), start, end);
-                    const badge =
-                      phase === "live"
-                        ? {
-                          label: "Ongoing",
-                          className:
-                            "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/35 dark:text-emerald-100",
-                        }
-                        : phase === "upcoming"
+            <div className="mt-5 pt-5 border-t border-gray-100 dark:border-white/10 w-full">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold text-gray-700 dark:text-gray-200">
+                  Flash timeframe (VN time)
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsSlotsExpanded(!isSlotsExpanded)}
+                  className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors flex items-center gap-1.5 px-2.5 py-1 rounded bg-brand-50 dark:bg-brand-500/10 cursor-pointer select-none"
+                >
+                  {isSlotsExpanded ? (
+                    <>
+                      Hide Slots
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      Show Slots ({orderedFlashSlots.length})
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              </div>
+              {isSlotsExpanded ? (
+                <div className="max-h-[400px] overflow-y-auto pr-1">
+                  <ul className="space-y-2">
+                    {orderedFlashSlots.map((slot) => {
+                      const start = new Date(slot.startAtUtc);
+                      const end = new Date(slot.endAtUtc);
+                      const phase = getFlashSlotPhase(new Date(), start, end);
+                      const badge =
+                        phase === "live"
                           ? {
-                            label: "Upcoming",
-                            className:
-                              "bg-sky-100 text-sky-900 dark:bg-sky-900/35 dark:text-sky-100",
-                          }
-                          : {
-                            label: "Ended",
-                            className:
-                              "bg-gray-100 text-gray-600 dark:bg-gray-800/80 dark:text-gray-400",
-                          };
-                    const lines = slot.productLines ?? [];
-                    return (
-                      <li
-                        key={slot.timeSlotId}
-                        className="rounded-lg border border-gray-100 dark:border-white/[0.06] bg-gray-50/80 dark:bg-white/[0.02] px-2.5 py-2 text-sm"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                          <span
-                            className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${badge.className}`}
-                          >
-                            {badge.label}
-                          </span>
-                          {slot.status ? (
-                            <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                              {slot.status}
+                              label: "Ongoing",
+                              className:
+                                "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/35 dark:text-emerald-100",
+                            }
+                          : phase === "upcoming"
+                            ? {
+                                label: "Upcoming",
+                                className:
+                                  "bg-sky-100 text-sky-900 dark:bg-sky-900/35 dark:text-sky-100",
+                              }
+                            : {
+                                label: "Ended",
+                                className:
+                                  "bg-gray-100 text-gray-600 dark:bg-gray-800/80 dark:text-gray-400",
+                              };
+                      const lines = slot.productLines ?? [];
+                      return (
+                        <li
+                          key={slot.timeSlotId}
+                          className="rounded-lg border border-gray-250 dark:border-white/10 bg-gray-50 dark:bg-zinc-800/40 px-3 py-2.5 text-sm"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                            <span
+                              className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${badge.className}`}
+                            >
+                              {badge.label}
                             </span>
-                          ) : null}
-                        </div>
-                        <p className="text-gray-800 dark:text-white/90 font-medium text-xs leading-snug break-words">
-                          {formatFlashSlotRangeVi(slot.startAtUtc, slot.endAtUtc)}
-                        </p>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                          Slot code #{slot.timeSlotId}
-                        </p>
-                        {lines.length > 0 ? (
-                          <details
-                            className="mt-2 rounded-md border border-gray-200/90 dark:border-white/10 bg-white/50 dark:bg-white/[0.03] overflow-x-auto"
-                            open
-                          >
-                            <summary className="cursor-pointer select-none px-2 py-1.5 text-[11px] font-semibold text-gray-600 dark:text-gray-300 list-none [&::-webkit-details-marker]:hidden">
-                              Product Details ({lines.length})
-                            </summary>
-                            <div className="px-2 pb-2">
-                              <table className="w-full text-[10px] border-collapse min-w-[300px]">
-                                <thead>
-                                  <tr className="border-b border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400">
-                                    <th className="py-1 pr-2 font-medium text-left align-bottom">Product</th>
-                                    <th className="py-1 pr-2 font-medium text-right align-bottom whitespace-nowrap">Flash price</th>
-                                    <th className="py-1 pr-2 font-medium text-right align-bottom whitespace-nowrap">%</th>
-                                    <th className="py-1 pr-1 font-medium text-right align-bottom whitespace-nowrap">SL</th>
-                                    <th className="py-1 pr-1 font-medium text-right align-bottom whitespace-nowrap">Sold</th>
-                                    <th className="py-1 pr-1 font-medium text-right align-bottom whitespace-nowrap">Reserved</th>
-                                    <th className="py-1 font-medium text-right align-bottom whitespace-nowrap">Remaining</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {lines.map((line) => {
-                                    const dim = !line.isActive;
-                                    return (
-                                      <tr
-                                        key={line.slotProductId}
-                                        className={`border-b border-gray-100/80 dark:border-white/[0.06] last:border-0 ${dim ? "opacity-60" : ""}`}
-                                      >
-                                        <td className="py-2 pr-2 align-top text-gray-800 dark:text-white/90 font-medium max-w-[200px]">
-                                          <div className="flex gap-2.5 items-start">
-                                            {line.imageUrl ? (
-                                              <img
-                                                src={line.imageUrl}
-                                                alt={line.productName}
-                                                className="w-10 h-10 object-cover rounded-md border border-gray-200 dark:border-white/10 flex-shrink-0 bg-white"
-                                              />
-                                            ) : (
-                                              <div className="w-10 h-10 rounded-md bg-gray-100 dark:bg-white/5 flex items-center justify-center flex-shrink-0 text-gray-400 border border-transparent dark:border-white/5">
-                                                <svg className="w-4 h-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                              </div>
-                                            )}
+                            {slot.status ? (
+                              <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                                {slot.status}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="text-gray-900 dark:text-white font-semibold text-xs leading-snug break-words">
+                            {formatFlashSlotRangeVi(slot.startAtUtc, slot.endAtUtc)}
+                          </p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
+                            Slot code #{slot.timeSlotId}
+                          </p>
+                          {lines.length > 0 ? (
+                            <details
+                              className="mt-2 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-900/50 overflow-x-auto"
+                              open
+                            >
+                              <summary className="cursor-pointer select-none px-2 py-1.5 text-[11px] font-bold text-gray-850 dark:text-white list-none [&::-webkit-details-marker]:hidden">
+                                Product Details ({lines.length})
+                              </summary>
+                              <div className={`px-2 pb-2 ${lines.length > 4 ? "max-h-[240px] overflow-y-auto" : ""}`}>
+                                <table className="w-full text-[10px] border-collapse min-w-[300px]">
+                                  <thead>
+                                    <tr className="border-b border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 font-semibold">
+                                      <th className="py-1 pr-2 font-medium text-left align-bottom">Product</th>
+                                      <th className="py-1 pr-2 font-medium text-right align-bottom whitespace-nowrap">Flash price</th>
+                                      <th className="py-1 pr-2 font-medium text-right align-bottom whitespace-nowrap">%</th>
+                                      <th className="py-1 pr-1 font-medium text-right align-bottom whitespace-nowrap">SL</th>
+                                      <th className="py-1 pr-1 font-medium text-right align-bottom whitespace-nowrap">Sold</th>
+                                      <th className="py-1 pr-1 font-medium text-right align-bottom whitespace-nowrap">Reserved</th>
+                                      <th className="py-1 font-medium text-right align-bottom whitespace-nowrap">Remaining</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {lines.map((line) => {
+                                      const dim = !line.isActive;
+                                      return (
+                                        <tr
+                                          key={line.slotProductId}
+                                          className="border-b border-gray-100/80 dark:border-white/[0.06] last:border-0"
+                                        >
+                                          <td className="py-2 pr-2 align-top text-gray-900 dark:text-white font-medium max-w-[200px]">
                                             <div>
-                                              <span className="line-clamp-2 leading-snug">{line.productName}</span>
+                                              <span className="line-clamp-2 leading-snug font-semibold text-gray-950 dark:text-white">{line.productName}</span>
                                               <span className="block text-[10px] text-gray-400 font-normal mt-0.5">
                                                 SP #{line.productId}
                                                 {!line.isActive ? " · Paused" : ""}
                                               </span>
                                             </div>
-                                          </div>
-                                        </td>
-                                        <td className="py-1.5 pr-2 align-top text-right tabular-nums whitespace-nowrap">
-                                          {formatVnd(line.salePrice)}
-                                        </td>
-                                        <td className="py-1.5 pr-2 align-top text-right tabular-nums whitespace-nowrap">
-                                          {line.discountPercent != null ? `${line.discountPercent}%` : "—"}
-                                        </td>
-                                        <td className="py-1.5 pr-1 align-top text-right tabular-nums">{line.saleQuantity}</td>
-                                        <td className="py-1.5 pr-1 align-top text-right tabular-nums">{line.soldQuantity}</td>
-                                        <td className="py-1.5 pr-1 align-top text-right tabular-nums">{line.reservedQuantity}</td>
-                                        <td className="py-1.5 align-top text-right tabular-nums font-medium">
-                                          {flashLineRemaining(line)}
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
-                          </details>
-                        ) : (
-                          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 italic">
-                            Slot has no flash products.
-                          </p>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+                                          </td>
+                                          <td className="py-1.5 pr-2 align-top text-right tabular-nums whitespace-nowrap">
+                                            {formatVnd(line.salePrice)}
+                                          </td>
+                                          <td className="py-1.5 pr-2 align-top text-right tabular-nums whitespace-nowrap">
+                                            {line.discountPercent != null ? `${line.discountPercent}%` : "—"}
+                                          </td>
+                                          <td className="py-1.5 pr-1 align-top text-right tabular-nums">{line.saleQuantity}</td>
+                                          <td className="py-1.5 pr-1 align-top text-right tabular-nums">{line.soldQuantity}</td>
+                                          <td className="py-1.5 pr-1 align-top text-right tabular-nums">{line.reservedQuantity}</td>
+                                          <td className="py-1.5 align-top text-right tabular-nums font-medium">
+                                            {flashLineRemaining(line)}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </details>
+                          ) : (
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 italic">
+                              Slot has no flash products.
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -365,13 +389,14 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
 };
 
 /** Wrapper lấy field từ Campaign đầy đủ */
-export function CampaignReferenceCardFromCampaign({ campaign, ...rest }: Omit<CampaignReferenceCardProps, "campaignName" | "referenceType" | "referenceId" | "resolvedReference"> & { campaign: Campaign }) {
+export function CampaignReferenceCardFromCampaign({ campaign, ...rest }: Omit<CampaignReferenceCardProps, "campaignName" | "referenceType" | "referenceId" | "resolvedReference" | "imageUrl"> & { campaign: Campaign }) {
   return (
     <CampaignReferenceCard
       campaignName={campaign.campaignName}
       referenceType={campaign.referenceType}
       referenceId={campaign.referenceId}
       resolvedReference={campaign.resolvedReference}
+      imageUrl={campaign.imageUrl}
       {...rest}
     />
   );

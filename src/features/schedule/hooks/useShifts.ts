@@ -3,9 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { scheduleApi } from "../services/schedule-api";
 import { ShiftTemplate } from "../types/shift";
-import toast from "react-hot-toast";
 
-export const useShifts = () => {
+export type UseShiftsOptions = {
+  /** Admin shift management page: include inactive templates. Schedule picker: active only. */
+  includeInactive?: boolean;
+};
+
+export const useShifts = (options: UseShiftsOptions = {}) => {
+  const { includeInactive = false } = options;
   const [shifts, setShifts] = useState<ShiftTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,7 +19,9 @@ export const useShifts = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await scheduleApi.getShiftTemplates();
+      const data = await scheduleApi.getShiftTemplates(
+        includeInactive ? { includeInactive: true } : undefined
+      );
       setShifts(data);
     } catch (err) {
       console.error("Failed to fetch shifts:", err);
@@ -22,7 +29,7 @@ export const useShifts = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [includeInactive]);
 
   useEffect(() => {
     fetchShifts();

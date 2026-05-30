@@ -160,18 +160,24 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
           </p>
         </div>
 
-        {/* "Đơn của tôi" toggle — first-class trên mobile */}
-        <label className="flex shrink-0 cursor-pointer select-none items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 transition-colors hover:border-brand-300 hover:bg-brand-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-brand-700 dark:hover:bg-brand-900/20">
-          <input
-            type="checkbox"
-            className="rounded-sm border-gray-300 text-brand-500 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900"
-            checked={assignedToMe}
-            onChange={(e) => onAssignedToMeChange(e.target.checked)}
-          />
-          <span className={assignedToMe ? "font-medium text-brand-600 dark:text-brand-400" : ""}>
-            My Orders
+        {roleName === ROLE_NAME.ADMIN && (
+          <label className="flex shrink-0 cursor-pointer select-none items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 transition-colors hover:border-brand-300 hover:bg-brand-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-brand-700 dark:hover:bg-brand-900/20">
+            <input
+              type="checkbox"
+              className="rounded-sm border-gray-300 text-brand-500 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900"
+              checked={assignedToMe}
+              onChange={(e) => onAssignedToMeChange(e.target.checked)}
+            />
+            <span className={assignedToMe ? "font-medium text-brand-600 dark:text-brand-400" : ""}>
+              My Orders
+            </span>
+          </label>
+        )}
+        {roleName === ROLE_NAME.STAFF || roleName === ROLE_NAME.MERCHANDISE ? (
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Showing orders assigned to you (until completed)
           </span>
-        </label>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">

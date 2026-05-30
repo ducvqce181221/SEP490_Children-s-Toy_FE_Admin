@@ -83,6 +83,7 @@ const ShiftFormModal: React.FC<ShiftFormModalProps> = ({
   }, [initialData, reset, isOpen]);
 
   const isEdit = !!initialData;
+  const timeLocked = isEdit && (initialData?.activeScheduleCount ?? 0) > 0;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[520px] p-0 overflow-hidden">
@@ -106,6 +107,13 @@ const ShiftFormModal: React.FC<ShiftFormModalProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
+          {timeLocked && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-500/10 dark:text-amber-300">
+              This template has active work schedules. Shift times cannot be changed until those schedules finish.
+              You can still update the name or default max orders for new schedules.
+            </div>
+          )}
+
           {/* Shift Name */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -122,8 +130,15 @@ const ShiftFormModal: React.FC<ShiftFormModalProps> = ({
           {/* Time Range */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-              Time Interval <span className="text-error-500">*</span>
+              Time Interval {!timeLocked && <span className="text-error-500">*</span>}
             </label>
+            {timeLocked ? (
+              <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300">
+                <span>{startTime?.slice(0, 5) ?? initialData?.startTime.slice(0, 5)}</span>
+                <span className="text-gray-400">—</span>
+                <span>{endTime?.slice(0, 5) ?? initialData?.endTime.slice(0, 5)}</span>
+              </div>
+            ) : (
             <div className="flex items-start gap-3">
               <div className="flex-1 relative">
                 <DatePicker
@@ -160,12 +175,13 @@ const ShiftFormModal: React.FC<ShiftFormModalProps> = ({
                 )}
               </div>
             </div>
+            )}
           </div>
 
           {/* Max Orders */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-              Max Orders Per Shift <span className="text-error-500">*</span>
+              Default Max Orders Per Shift <span className="text-error-500">*</span>
             </label>
             <Input
               type="number"
@@ -174,19 +190,27 @@ const ShiftFormModal: React.FC<ShiftFormModalProps> = ({
               error={!!errors.maxOrdersPerShift}
               hint={errors.maxOrdersPerShift?.message}
             />
+            <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+              Applies to newly created work schedules only. Existing schedules keep their current capacity.
+            </p>
           </div>
 
           {/* Active Toggle */}
           <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3">
             <div>
               <p className="text-sm font-semibold text-gray-900 dark:text-white">Shift Active</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Enable this shift for work schedule assignments</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {timeLocked
+                  ? "Cannot deactivate while work schedules are Scheduled or On Duty"
+                  : "Enable this shift for work schedule assignments"}
+              </p>
             </div>
-            <label className="relative inline-flex cursor-pointer items-center">
+            <label className={`relative inline-flex items-center ${timeLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
               <input
                 type="checkbox"
                 id="isActive"
                 {...register("isActive")}
+                disabled={timeLocked}
                 className="peer sr-only"
               />
               <div className="peer h-6 w-11 rounded-full bg-gray-300 transition-all after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all peer-checked:bg-brand-500 peer-checked:after:translate-x-full dark:bg-gray-600"></div>

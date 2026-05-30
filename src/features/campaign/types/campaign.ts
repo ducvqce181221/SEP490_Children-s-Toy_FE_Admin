@@ -271,6 +271,4 @@ export interface WizardState {
   selectedRoleId: string;
   individualAccountIds: number[];
   individualAccountNames: string[];
-  scheduleType: "immediate" | "scheduled";
-  scheduledAt: string;
 }
