@@ -218,8 +218,9 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
 
   const handleAssign = async (data: AssignOrderFormData) => {
     const result = await assignOrder(orderId, {
-      targetAccountId: data.targetAccountId,
-      note: data.note || undefined,
+      roleId: data.roleId,
+      newScheduleId: data.targetScheduleId,
+      notes: data.note || undefined,
     });
     if (result.success) {
       toast.success(result.message);
@@ -230,18 +231,23 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   };
 
   const role = account?.roleName;
+  const isAdmin = role === ROLE_NAME.ADMIN;
+  const isAssignedToMe = isAdmin || (order?.isAssignedToCurrentUser ?? false);
 
   const canConfirm =
     order?.statusName === ORDER_STATUS.PENDING &&
-    (role === ROLE_NAME.STAFF || role === ROLE_NAME.ADMIN);
+    isAssignedToMe &&
+    (role === ROLE_NAME.STAFF || isAdmin);
 
   const canProcess =
     order?.statusName === ORDER_STATUS.CONFIRMED &&
-    (role === ROLE_NAME.MERCHANDISE || role === ROLE_NAME.ADMIN);
+    isAssignedToMe &&
+    (role === ROLE_NAME.MERCHANDISE || isAdmin);
 
   const canShip =
     order?.statusName === ORDER_STATUS.PROCESSING &&
-    (role === ROLE_NAME.MERCHANDISE || role === ROLE_NAME.ADMIN);
+    isAssignedToMe &&
+    (role === ROLE_NAME.MERCHANDISE || isAdmin);
 
   const isTerminalStatus =
     order?.statusName === ORDER_STATUS.CANCELLED ||
@@ -249,14 +255,15 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     order?.statusName === ORDER_STATUS.COMPLETED;
 
   const canCancel =
-    role === ROLE_NAME.ADMIN
+    isAdmin
       ? !isTerminalStatus && !!order
-      : (order?.statusName === ORDER_STATUS.PENDING ||
+      : isAssignedToMe &&
+        (order?.statusName === ORDER_STATUS.PENDING ||
           order?.statusName === ORDER_STATUS.CONFIRMED) &&
         role === ROLE_NAME.STAFF;
 
   const canAssign =
-    role === ROLE_NAME.ADMIN &&
+    isAdmin &&
     !!order &&
     order.statusName !== ORDER_STATUS.COMPLETED &&
     order.statusName !== ORDER_STATUS.CANCELLED;

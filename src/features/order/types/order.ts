@@ -254,6 +254,7 @@ export interface OrderDetail {
   assignedToStaffName: string | null;
   assignedToMerchId: number | null;
   assignedToMerchName: string | null;
+  isAssignedToCurrentUser?: boolean;
   // Lịch sử đơn hàng
   statusHistory: OrderStatusHistory[];
   // Vận chuyển
@@ -321,6 +322,12 @@ export interface CancelOrderResponse {
 export interface AssignOrderRequest {
   targetAccountId: number;
   note?: string;
+}
+
+export interface ReassignOrderRequest {
+  roleId: number;
+  newScheduleId: number;
+  notes?: string;
 }
 
 // ─── Pagination ───────────────────────────────────────────────────────────────

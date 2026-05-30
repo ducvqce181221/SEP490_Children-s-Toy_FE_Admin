@@ -3,7 +3,7 @@ import { useState } from "react";
 import { orderApi } from "../services/order-api";
 import {
   ApiErrorResponse,
-  AssignOrderRequest,
+  ReassignOrderRequest,
   CancelOrderRequest,
   ConfirmOrderRequest,
   MutationResult,
@@ -119,11 +119,11 @@ export const useOrderMutations = (onSuccess?: () => void) => {
   // ── Assign ────────────────────────────────────────────────────────────────
   const assignOrder = async (
     orderId: number,
-    body: AssignOrderRequest,
+    body: ReassignOrderRequest,
   ): Promise<MutationResult> => {
     setAssigningId(orderId);
     try {
-      await orderApi.assignOrder(orderId, body);
+      await orderApi.reassignOrder(orderId, body);
       onSuccess?.();
       return { success: true, message: "Order reassigned successfully." };
     } catch (err) {

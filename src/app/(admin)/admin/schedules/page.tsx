@@ -16,10 +16,14 @@ import {
   formatWeekRange,
   getWeekMondaysFromDateFilter,
 } from "@/features/schedule/utils/week-date";
+import { useAuthContext } from "@/context/AuthContext";
 
 type Tab = "schedule" | "overview";
 
 export default function SchedulesPage() {
+  const { account } = useAuthContext();
+  const isAdmin = account?.roleName === "Admin";
+
   const [viewMode, setViewMode] = useState<"list" | "create" | "edit">("list");
   const [activeTab, setActiveTab] = useState<Tab>("schedule");
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]);
@@ -187,6 +191,7 @@ export default function SchedulesPage() {
               }}
               onCloneWeekClick={() => setShowCloneWeekConfirm(true)}
               isCloningWeek={isCloningWeek}
+              isAdmin={isAdmin}
             />
           )}
 

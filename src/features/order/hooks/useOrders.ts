@@ -107,8 +107,11 @@ export const useOrders = () => {
         pageNumber,
         pageSize,
         ...(statusId !== "" && statusId !== 0 && { statusId }),
-        ...(statusId === "" && defaultStatusIds.length > 0 && { statusIds: defaultStatusIds }),
-        ...(assignedToMe && { assignedToMe }),
+        ...(statusId === "" &&
+          roleName !== ROLE_NAME.STAFF &&
+          roleName !== ROLE_NAME.MERCHANDISE &&
+          defaultStatusIds.length > 0 && { statusIds: defaultStatusIds }),
+        ...(assignedToMe && roleName === ROLE_NAME.ADMIN && { assignedToMe }),
         ...(searchKeyword && { keyword: searchKeyword }),
         ...(fromDate && { fromDate }),
         ...(toDate && { toDate }),

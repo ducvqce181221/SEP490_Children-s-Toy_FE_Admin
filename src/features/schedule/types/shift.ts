@@ -7,7 +7,8 @@ export interface ShiftTemplate {
   endTime: string;   // "HH:mm:ss"
   maxOrdersPerShift: number;
   isActive: boolean;
-  createdAt: string;
+  activeScheduleCount?: number;
+  createdAt?: string;
   updatedAt?: string;
 }
 
