@@ -30,6 +30,31 @@ const formatDateTime = (dateValue: string | null) => {
   }).format(parsedDate);
 };
 
+const decodeHtmlEntities = (value: string) => {
+  if (typeof window === "undefined") {
+    return value;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = value;
+  return textarea.value;
+};
+
+const stripHtmlTags = (value: string) => value.replace(/<[^>]*>/g, " ");
+
+const countWordsFromHtml = (html: string) => {
+  const plainText = stripHtmlTags(decodeHtmlEntities(html))
+    .replace(/&nbsp;/gi, " ")
+    .trim();
+
+  if (plainText.length === 0) {
+    return 0;
+  }
+
+  const words = plainText.match(/[\p{L}\p{N}]+/gu);
+  return words?.length ?? 0;
+};
+
 const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
   blogPostId,
   isOpen,
@@ -38,6 +63,7 @@ const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [blogDetail, setBlogDetail] = useState<BlogDetail | null>(null);
+  const wordCount = countWordsFromHtml(blogDetail?.blogContent ?? "");
 
   useEffect(() => {
     if (!isOpen || !blogPostId) {
@@ -155,12 +181,15 @@ const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
           <div className="sm:col-span-2">
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Content</label>
             <div
-              className={`${inputClassName} min-h-[160px] whitespace-normal`}
+              className={`${inputClassName} min-h-[160px] whitespace-normal p-0`}
             >
               <div
-                className="ql-editor p-0"
-              dangerouslySetInnerHTML={{ __html: blogDetail.blogContent || "<p>--</p>" }}
+                className="ql-editor p-4"
+                dangerouslySetInnerHTML={{ __html: blogDetail.blogContent || "<p>--</p>" }}
               />
+              <div className="border-t border-gray-200 px-3 py-1.5 text-right text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                {wordCount} words
+              </div>
             </div>
           </div>
 
