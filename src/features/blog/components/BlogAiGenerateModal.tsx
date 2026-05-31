@@ -140,6 +140,7 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
         defaultTone: tone.trim() || "Friendly",
         defaultCategoryId: categoryId,
         isActive: true,
+        sourceContent: defaultContent.trim() || null,
       });
 
       const blockedFromSuccess = parseBlockedPayload(result);

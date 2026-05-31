@@ -197,6 +197,7 @@ export interface AiBlogGenerateRequest {
   defaultTone?: string | null;
   defaultCategoryId: number;
   isActive?: boolean;
+  sourceContent?: string | null;
 }
 
 export interface AiBlogGenerateResult {
