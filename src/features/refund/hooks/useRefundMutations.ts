@@ -19,8 +19,26 @@ export const useRefundMutations = (onSuccess?: () => void) => {
     }
   };
 
+  const [isReassigning, setIsReassigning] = useState(false);
+
+  const reassign = async (id: number, data: { roleId: number; newScheduleId: number; notes?: string }) => {
+    setIsReassigning(true);
+    try {
+      await refundApi.reassign(id, data);
+      toast.success("Refund reassigned successfully");
+      onSuccess?.();
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    } finally {
+      setIsReassigning(false);
+    }
+  };
+
   return {
     updateStatus,
     isSubmitting,
+    reassign,
+    isReassigning,
   };
 };

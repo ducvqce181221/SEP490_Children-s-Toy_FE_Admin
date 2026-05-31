@@ -23,4 +23,9 @@ export const refundApi = {
   updateStatus: (id: number, data: UpdateRefundStatusData) => {
     return axiosClient.patch<Refund>(`${BASE_URL}/${id}/status`, data);
   },
+
+  // Phân công lại
+  reassign: (id: number, data: { roleId: number; newScheduleId: number; notes?: string }) => {
+    return axiosClient.post<void>(`${BASE_URL}/${id}/reassign`, data);
+  },
 };

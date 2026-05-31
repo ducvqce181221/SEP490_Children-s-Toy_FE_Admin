@@ -269,6 +269,8 @@ export const OrderCancelModal: React.FC<CancelModalProps> = ({
 interface AssignModalProps extends ActionModalProps {
   onAssign: (data: AssignOrderFormData) => void;
   currentStatusName: string; // Truyền vào để biết nên load Staff hay Merchandise
+  title?: string;
+  description?: string;
 }
 
 export const OrderAssignModal: React.FC<AssignModalProps> = ({
@@ -277,6 +279,8 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
   isSubmitting,
   onAssign,
   currentStatusName,
+  title,
+  description,
 }) => {
   const [schedules, setSchedules] = useState<WorkSchedule[]>([]);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
@@ -349,10 +353,10 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
       <div className="mb-5">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
-          Reassign Order
+          {title || "Reassign Order"}
         </h2>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Admin reassigns the {targetRoleId === 3 ? "Staff" : "Merchandise"} slot using an on-duty schedule.
+          {description || `Admin reassigns the ${targetRoleId === 3 ? "Staff" : "Merchandise"} slot using an on-duty schedule.`}
         </p>
       </div>
 

@@ -54,6 +54,12 @@ export interface Refund {
   adminNote?: string | null;
   details?: RefundDetailItem[];
   statusHistory?: RefundStatusHistoryItem[];
+  shippingHistory?: {
+    previousStatus: string;
+    newStatus: string;
+    source: string;
+    processedAt: string;
+  }[];
   assignedToStaffName?: string | null;
   assignedToMerchName?: string | null;
   refundSource?: string;
