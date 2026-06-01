@@ -240,7 +240,7 @@ const ProductExportReportModal = ({
       const link = document.createElement("a");
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       link.href = url;
-      link.download = `inventory-report-${timestamp}.${format}`;
+      link.download = `product-quantity-report-${timestamp}.${format}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -264,9 +264,9 @@ const ProductExportReportModal = ({
       className="max-h-[90vh] w-full max-w-6xl overflow-y-auto overflow-x-hidden p-0"
     >
       <div className="border-b border-gray-200 px-6 py-4 sm:px-8 dark:border-white/[0.05]">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Export Inventory Report</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Export Product Quantity Report</h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Generate a professional inventory report with the filters you need.
+          Generate a professional product quantity report with the filters you need.
         </p>
       </div>
 
@@ -521,7 +521,7 @@ const ProductExportReportModal = ({
           <div className="mt-4 min-h-[200px] h-[min(540px,calc(90vh-18rem))] overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-gray-950">
             {previewUrl ? (
               <iframe
-                title="Inventory report preview"
+                title="Product quantity report preview"
                 src={previewUrl}
                 className="h-full w-full"
               />

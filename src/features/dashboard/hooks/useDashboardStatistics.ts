@@ -1,5 +1,7 @@
 import { AxiosError } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthContext } from "@/context/AuthContext";
+import { canAccessAdminDashboardAnalytics } from "@/features/auth/utils/admin-access";
 import { dashboardApi } from "../services/dashboard-api";
 import {
   DASHBOARD_PERIOD,
@@ -22,9 +24,11 @@ const buildFilter = (
 };
 
 export const useDashboardStatistics = () => {
+  const { account } = useAuthContext();
   const [period, setPeriod] = useState<DashboardPeriod>(DASHBOARD_PERIOD.CURRENT_MONTH);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [limitedAccessMessage, setLimitedAccessMessage] = useState<string | null>(null);
 
   const [orderStatus, setOrderStatus] = useState<DashboardOrderStatusStatistics | null>(null);
   const [newCustomers, setNewCustomers] = useState<DashboardNewCustomerStatistics | null>(null);
@@ -36,9 +40,26 @@ export const useDashboardStatistics = () => {
     [period],
   );
 
+  const canLoadAdminAnalytics = useMemo(
+    () => canAccessAdminDashboardAnalytics(account),
+    [account],
+  );
+
   const loadData = useCallback(async () => {
+    if (!canLoadAdminAnalytics) {
+      setOrderStatus(null);
+      setNewCustomers(null);
+      setGrowthStatistics(null);
+      setTotalProducts(null);
+      setError(null);
+      setLimitedAccessMessage("Analytics data is available for Admin role only.");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
+    setLimitedAccessMessage(null);
 
     try {
       const [
@@ -66,7 +87,7 @@ export const useDashboardStatistics = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [filter]);
+  }, [canLoadAdminAnalytics, filter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +109,7 @@ export const useDashboardStatistics = () => {
     period,
     isLoading,
     error,
+    limitedAccessMessage,
     orderStatus,
     newCustomers,
     growthStatistics,
