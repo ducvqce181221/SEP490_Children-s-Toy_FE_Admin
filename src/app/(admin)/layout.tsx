@@ -2,6 +2,7 @@
 
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuthContext } from "@/context/AuthContext";
+import { getDefaultAdminPath, isAllowedAdminPath } from "@/features/auth/utils/admin-access";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
@@ -16,10 +17,11 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
-  const { isAuthenticated, isInitialized } = useAuthContext();
+  const { account, isAuthenticated, isInitialized } = useAuthContext();
   const router = useRouter();
   const pathname = usePathname();
   const redirectingRef = useRef(false);
+  const unauthorizedPathRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -35,6 +37,28 @@ export default function AdminLayout({
       router.replace("/admin/login");
     }
   }, [isAuthenticated, isInitialized, pathname, router]);
+
+  useEffect(() => {
+    if (!isInitialized || !isAuthenticated || pathname === "/admin/login") {
+      unauthorizedPathRef.current = null;
+      return;
+    }
+
+    if (!pathname.startsWith("/admin")) {
+      return;
+    }
+
+    if (!isAllowedAdminPath(account, pathname)) {
+      if (unauthorizedPathRef.current !== pathname) {
+        toast.error("You do not have permission to access this page.");
+        unauthorizedPathRef.current = pathname;
+      }
+      router.replace(getDefaultAdminPath(account));
+      return;
+    }
+
+    unauthorizedPathRef.current = null;
+  }, [account, isAuthenticated, isInitialized, pathname, router]);
 
   if (pathname.startsWith("/admin") && pathname !== "/admin/login" && !isAuthenticated) {
     return null;

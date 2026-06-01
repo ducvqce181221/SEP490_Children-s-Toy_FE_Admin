@@ -1,9 +1,11 @@
 "use client";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
+import { useAuthContext } from "@/context/AuthContext";
+import { isAllowedAdminPath } from "@/features/auth/utils/admin-access";
 import {
   BoxCubeIcon,
   ChatIcon,
@@ -134,7 +136,36 @@ const othersItems: NavItem[] = [
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { account } = useAuthContext();
   const pathname = usePathname();
+
+  const getVisibleNavItems = useCallback((items: NavItem[]) => {
+    return items
+      .map((item) => {
+        if (item.path) {
+          return isAllowedAdminPath(account, item.path) ? item : null;
+        }
+
+        if (item.subItems) {
+          const visibleSubItems = item.subItems.filter((subItem) =>
+            isAllowedAdminPath(account, subItem.path),
+          );
+          if (visibleSubItems.length === 0) {
+            return null;
+          }
+          return {
+            ...item,
+            subItems: visibleSubItems,
+          };
+        }
+
+        return item;
+      })
+      .filter((item): item is NavItem => item !== null);
+  }, [account]);
+
+  const visibleNavItems = useMemo(() => getVisibleNavItems(navItems), [getVisibleNavItems]);
+  const visibleOthersItems = useMemo(() => getVisibleNavItems(othersItems), [getVisibleNavItems]);
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -269,7 +300,7 @@ const AppSidebar: React.FC = () => {
     // Check if the current path matches any submenu item
     let submenuMatched = false;
     ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
+      const items = menuType === "main" ? visibleNavItems : visibleOthersItems;
       items.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
@@ -289,7 +320,7 @@ const AppSidebar: React.FC = () => {
     if (!submenuMatched) {
       setOpenSubmenu(null);
     }
-  }, [pathname, isActive]);
+  }, [pathname, isActive, visibleNavItems, visibleOthersItems]);
 
   useEffect(() => {
     // Set the height of the submenu items when the submenu is opened
@@ -379,7 +410,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(visibleNavItems, "main")}
             </div>
 
             <div className="">
@@ -395,7 +426,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(othersItems, "others")}
+              {renderMenuItems(visibleOthersItems, "others")}
             </div>
           </div>
         </nav>
