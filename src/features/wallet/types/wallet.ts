@@ -3,6 +3,7 @@ export type WalletStatus = "Active" | "Frozen" | "Closed";
 export interface WalletListItem {
   walletId: number;
   account: string;
+  unbannedByName: string | null;
   status: WalletStatus;
   createdAt: string;
   updatedAt: string | null;

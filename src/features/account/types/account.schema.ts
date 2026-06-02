@@ -8,8 +8,8 @@ export const createAccountSchema = z
       .min(2, "Account name must be at least 2 characters.")
       .max(99, "Account name must not exceed 99 characters.")
       .regex(
-        /^[\p{L}\p{N}]+$/u,
-        "Account name can contain only letters and numbers.",
+        /^[\p{L}\p{N}]+(?: [\p{L}\p{N}]+)*$/u,
+        "Account name can contain only letters, numbers, and single spaces between words.",
       ),
     phoneNumber: z
       .string()
@@ -41,3 +41,24 @@ export const createAccountSchema = z
   });
 
 export type CreateAccountFormValues = z.infer<typeof createAccountSchema>;
+
+export const updateAccountInfoSchema = z.object({
+  accountName: z
+    .string()
+    .trim()
+    .min(2, "Account name must be at least 2 characters.")
+    .max(99, "Account name must not exceed 99 characters.")
+    .regex(
+      /^[\p{L}\p{N}]+(?: [\p{L}\p{N}]+)*$/u,
+      "Account name can contain only letters, numbers, and single spaces between words.",
+    ),
+  phoneNumber: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value.length === 0 || /^0\d{9}$/.test(value),
+      "Phone number must start with 0 and contain exactly 10 digits.",
+    ),
+});
+
+export type UpdateAccountInfoFormValues = z.infer<typeof updateAccountInfoSchema>;

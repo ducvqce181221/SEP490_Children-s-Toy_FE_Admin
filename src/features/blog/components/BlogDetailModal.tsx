@@ -55,6 +55,11 @@ const countWordsFromHtml = (html: string) => {
   return words?.length ?? 0;
 };
 
+const formatDescription = (value: string | null | undefined) => {
+  const normalized = value?.trim();
+  return normalized && normalized.length > 0 ? normalized : "-";
+};
+
 const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
   blogPostId,
   isOpen,
@@ -153,6 +158,14 @@ const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
           <div className="sm:col-span-2">
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
             <input className={`${inputClassName} h-11`} value={blogDetail.blogTitle} readOnly />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+            <TextArea
+              className="min-h-[90px] resize-y bg-gray-50 dark:bg-gray-800"
+              value={formatDescription(blogDetail.description)}
+              readOnly
+            />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>

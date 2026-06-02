@@ -170,6 +170,8 @@ export const blogApi = {
     pageNumber: number;
     pageSize: number;
     searchTerm?: string;
+    status?: string;
+    sortDesc?: boolean;
   }): Promise<PaginatedResponse<BlogReviewPermission>> => {
     return axiosClient.get<PaginatedResponse<BlogReviewPermission>>(
       "/admin/blog-review-permissions",

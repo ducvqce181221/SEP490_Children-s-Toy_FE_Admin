@@ -12,7 +12,13 @@ import {
 } from "@/components/ui/table";
 import { useAccountMutations } from "../hooks/useAccountMutations";
 import { useAccounts } from "../hooks/useAccounts";
-import { CreateAccountRequest, CreateAccountResult } from "../types/account";
+import {
+  CreateAccountRequest,
+  CreateAccountResult,
+  UpdateAccountInfoRequest,
+  UpdateAccountInfoResult,
+} from "../types/account";
+import type { UpdateAccountPasswordResult } from "../hooks/useAccountMutations";
 import AccountDetailModal from "./AccountDetailModal";
 import AccountFormModal from "./AccountFormModal";
 import { AccountRow } from "./AccountRow";
@@ -48,10 +54,10 @@ const AccountTable = () => {
 
   const {
     createAccount,
-    updateAccountStatus,
+    updateAccountInfo,
     updateAccountPassword,
     isCreating,
-    updatingAccountId,
+    updatingInfoAccountId,
     updatingPasswordAccountId,
   } =
     useAccountMutations(reloadAccounts);
@@ -95,33 +101,33 @@ const AccountTable = () => {
     return result;
   };
 
-  const handleUpdateAccountStatus = async (
+  const handleUpdateAccountInfo = async (
     accountId: number,
-    isActive: boolean,
-  ): Promise<boolean> => {
-    const result = await updateAccountStatus(accountId, isActive);
+    payload: UpdateAccountInfoRequest,
+  ): Promise<UpdateAccountInfoResult> => {
+    const result = await updateAccountInfo(accountId, payload);
 
     if (result.success) {
       toast.success(result.message);
-      return true;
+    } else if (!result.validationErrors) {
+      toast.error(result.message);
     }
 
-    toast.error(result.message);
-    return false;
+    return result;
   };
 
   const handleUpdateAccountPassword = async (
     accountId: number,
     payload: { newPassword: string; confirmNewPassword: string },
-  ): Promise<boolean> => {
+  ): Promise<UpdateAccountPasswordResult> => {
     const result = await updateAccountPassword(accountId, payload);
     if (result.success) {
       toast.success(result.message);
-      return true;
+    } else if (!result.validationErrors) {
+      toast.error(result.message);
     }
 
-    toast.error(result.message);
-    return false;
+    return result;
   };
 
   return (
@@ -270,15 +276,12 @@ const AccountTable = () => {
         accountId={selectedEditAccountId}
         isOpen={selectedEditAccountId !== null}
         mode="edit"
-        isSavingStatus={
-          selectedEditAccountId !== null &&
-          updatingAccountId === selectedEditAccountId
-        }
+        isSavingInfo={selectedEditAccountId !== null && updatingInfoAccountId === selectedEditAccountId}
         isSavingPassword={
           selectedEditAccountId !== null &&
           updatingPasswordAccountId === selectedEditAccountId
         }
-        onUpdateStatus={handleUpdateAccountStatus}
+        onUpdateInfo={handleUpdateAccountInfo}
         onUpdatePassword={handleUpdateAccountPassword}
         onClose={() => setSelectedEditAccountId(null)}
       />
