@@ -32,6 +32,7 @@ const MERCH_ALLOWED_PREFIXES = [
   "/admin/notifications",
   "/admin/orders",
   "/admin/order-queue",
+  "/admin/refunds",
 ] as const;
 
 function normalizeRoleName(roleName?: string): string {
