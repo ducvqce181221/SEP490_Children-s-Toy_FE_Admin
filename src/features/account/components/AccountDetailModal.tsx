@@ -7,19 +7,29 @@ import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { EyeCloseIcon, EyeIcon } from "@/icons";
 import { accountApi } from "../services/account-api";
-import { AccountDetail, ApiErrorResponse } from "../types/account";
+import type { UpdateAccountPasswordResult } from "../hooks/useAccountMutations";
+import { updateAccountInfoSchema } from "../types/account.schema";
+import {
+  AccountDetail,
+  ApiErrorResponse,
+  UpdateAccountInfoRequest,
+  UpdateAccountInfoResult,
+} from "../types/account";
 
 interface AccountDetailModalProps {
   accountId: number | null;
   isOpen: boolean;
   mode: "detail" | "edit";
-  isSavingStatus?: boolean;
+  isSavingInfo?: boolean;
   isSavingPassword?: boolean;
-  onUpdateStatus?: (accountId: number, isActive: boolean) => Promise<boolean>;
+  onUpdateInfo?: (
+    accountId: number,
+    payload: UpdateAccountInfoRequest,
+  ) => Promise<UpdateAccountInfoResult>;
   onUpdatePassword?: (
     accountId: number,
     payload: { newPassword: string; confirmNewPassword: string },
-  ) => Promise<boolean>;
+  ) => Promise<UpdateAccountPasswordResult>;
   onClose: () => void;
 }
 
@@ -46,9 +56,9 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   accountId,
   isOpen,
   mode,
-  isSavingStatus = false,
+  isSavingInfo = false,
   isSavingPassword = false,
-  onUpdateStatus,
+  onUpdateInfo,
   onUpdatePassword,
   onClose,
 }) => {
@@ -56,6 +66,12 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [accountDetail, setAccountDetail] = useState<AccountDetail | null>(null);
   const [statusValue, setStatusValue] = useState<"active" | "inactive">("active");
+  const [accountName, setAccountName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    accountName?: string;
+    phoneNumber?: string;
+  }>({});
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -79,6 +95,9 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
         if (!isCancelled) {
           setAccountDetail(response);
           setStatusValue(response.isActive ? "active" : "inactive");
+          setAccountName(response.accountName);
+          setPhoneNumber(response.phoneNumber ?? "");
+          setFieldErrors({});
           setNewPassword("");
           setConfirmNewPassword("");
           setPasswordError(null);
@@ -118,11 +137,36 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
     }
 
     const nextIsActive = statusValue === "active";
-    const hasStatusChange = nextIsActive !== accountDetail.isActive;
+    const normalizedAccountName = accountName.trim();
+    const normalizedPhoneNumber = phoneNumber.trim();
+    const hasAccountUpdate =
+      normalizedAccountName !== accountDetail.accountName ||
+      nextIsActive !== accountDetail.isActive ||
+      normalizedPhoneNumber !== (accountDetail.phoneNumber ?? "");
     const hasPasswordInput =
       newPassword.trim().length > 0 || confirmNewPassword.trim().length > 0;
 
+    setFieldErrors({});
     setPasswordError(null);
+
+    if (hasAccountUpdate) {
+      const validationResult = updateAccountInfoSchema.safeParse({
+        accountName,
+        phoneNumber,
+      });
+
+      if (!validationResult.success) {
+        const nextFieldErrors: { accountName?: string; phoneNumber?: string } = {};
+        for (const issue of validationResult.error.issues) {
+          const fieldName = issue.path[0];
+          if (fieldName === "accountName" || fieldName === "phoneNumber") {
+            nextFieldErrors[fieldName] = issue.message;
+          }
+        }
+        setFieldErrors(nextFieldErrors);
+        return;
+      }
+    }
 
     if (hasPasswordInput) {
       if (newPassword.trim().length === 0 || confirmNewPassword.trim().length === 0) {
@@ -134,27 +178,55 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
         setPasswordError("Confirm new password does not match new password.");
         return;
       }
+
+      if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/.test(newPassword)) {
+        setPasswordError(
+          "New password must contain at least one uppercase letter, one lowercase letter, and one digit.",
+        );
+        return;
+      }
     }
 
-    if (!hasStatusChange && !hasPasswordInput) {
+    if (!hasAccountUpdate && !hasPasswordInput) {
       onClose();
       return;
     }
 
-    if (hasStatusChange && onUpdateStatus) {
-      const isStatusUpdated = await onUpdateStatus(accountDetail.accountId, nextIsActive);
-      if (!isStatusUpdated) {
+    if (hasAccountUpdate && onUpdateInfo) {
+      const infoResult = await onUpdateInfo(accountDetail.accountId, {
+        accountName: normalizedAccountName,
+        phoneNumber: normalizedPhoneNumber === "" ? null : normalizedPhoneNumber,
+        isActive: nextIsActive,
+      });
+
+      if (!infoResult.success) {
+        if (infoResult.validationErrors) {
+          setFieldErrors({
+            accountName: infoResult.validationErrors.AccountName?.[0],
+            phoneNumber: infoResult.validationErrors.PhoneNumber?.[0],
+          });
+        }
         return;
       }
-      setAccountDetail((prev) => (prev ? { ...prev, isActive: nextIsActive } : prev));
+
+      if (infoResult.data) {
+        setAccountDetail(infoResult.data);
+        setAccountName(infoResult.data.accountName);
+        setPhoneNumber(infoResult.data.phoneNumber ?? "");
+      }
     }
 
     if (hasPasswordInput && onUpdatePassword) {
-      const isPasswordUpdated = await onUpdatePassword(accountDetail.accountId, {
+      const passwordResult = await onUpdatePassword(accountDetail.accountId, {
         newPassword: newPassword.trim(),
         confirmNewPassword: confirmNewPassword.trim(),
       });
-      if (!isPasswordUpdated) {
+      if (!passwordResult.success) {
+        setPasswordError(
+          passwordResult.validationErrors?.NewPassword?.[0] ??
+            passwordResult.validationErrors?.ConfirmNewPassword?.[0] ??
+            passwordResult.message,
+        );
         return;
       }
     }
@@ -227,7 +299,15 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Account Name
             </label>
-            <input className={inputClassName} value={accountDetail.accountName} readOnly />
+            <input
+              className={inputClassName}
+              value={mode === "edit" ? accountName : accountDetail.accountName}
+              onChange={(event) => setAccountName(event.target.value)}
+              readOnly={mode !== "edit"}
+            />
+            {mode === "edit" && fieldErrors.accountName && (
+              <p className="mt-1 text-sm text-error-600">{fieldErrors.accountName}</p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -247,9 +327,13 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             </label>
             <input
               className={inputClassName}
-              value={accountDetail.phoneNumber ?? "--"}
-              readOnly
+              value={mode === "edit" ? phoneNumber : accountDetail.phoneNumber ?? "--"}
+              onChange={(event) => setPhoneNumber(event.target.value)}
+              readOnly={mode !== "edit"}
             />
+            {mode === "edit" && fieldErrors.phoneNumber && (
+              <p className="mt-1 text-sm text-error-600">{fieldErrors.phoneNumber}</p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -367,9 +451,14 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
           <Button
             variant="primary"
             onClick={handleSave}
-            disabled={isLoading || !accountDetail || isSavingStatus || isSavingPassword}
+            disabled={
+              isLoading ||
+              !accountDetail ||
+              isSavingInfo ||
+              isSavingPassword
+            }
           >
-            {isSavingStatus || isSavingPassword ? "Saving..." : "Save"}
+            {isSavingInfo || isSavingPassword ? "Saving..." : "Save"}
           </Button>
         )}
         <Button variant="primary" onClick={onClose}>

@@ -21,6 +21,8 @@ const STAFF_ALLOWED_PREFIXES = [
   "/admin/notifications",
   "/admin/campaigns",
   "/admin/blog-review-permissions",
+  "/admin/schedules",
+  "/admin/shifts",
 ] as const;
 
 const MERCH_ALLOWED_PREFIXES = [
@@ -33,6 +35,8 @@ const MERCH_ALLOWED_PREFIXES = [
   "/admin/orders",
   "/admin/order-queue",
   "/admin/refunds",
+  "/admin/schedules",
+  "/admin/shifts",
 ] as const;
 
 function normalizeRoleName(roleName?: string): string {
