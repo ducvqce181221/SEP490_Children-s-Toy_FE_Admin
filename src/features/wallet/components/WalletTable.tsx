@@ -116,13 +116,14 @@ const WalletTable = () => {
       />
 
       <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
-        <div className="min-w-[900px]">
+        <div className="min-w-[1020px]">
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
                 <TableCell isHeader className={headerCellClassName}>#</TableCell>
                 <TableCell isHeader className={headerCellClassName}>WalletId</TableCell>
                 <TableCell isHeader className={headerCellClassName}>Account</TableCell>
+                <TableCell isHeader className={headerCellClassName}>Unbanned By</TableCell>
                 <TableCell isHeader className={headerCellClassName}>Status</TableCell>
                 <TableCell isHeader className={headerCellClassName}>CreatedAt</TableCell>
                 <TableCell isHeader className={headerCellClassName}>UpdatedAt</TableCell>
@@ -133,7 +134,7 @@ const WalletTable = () => {
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
               {showInitialLoading && (
                 <TableRow>
-                  <TableCell colSpan={7} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <TableCell colSpan={8} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                     Loading wallet list...
                   </TableCell>
                 </TableRow>
@@ -141,7 +142,7 @@ const WalletTable = () => {
 
               {!showInitialLoading && error && (
                 <TableRow>
-                  <TableCell colSpan={7} className="px-5 py-10 text-center text-sm text-error-600">
+                  <TableCell colSpan={8} className="px-5 py-10 text-center text-sm text-error-600">
                     {error}
                   </TableCell>
                 </TableRow>
@@ -149,7 +150,7 @@ const WalletTable = () => {
 
               {!showInitialLoading && !error && wallets.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <TableCell colSpan={8} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                     No matching wallets found.
                   </TableCell>
                 </TableRow>
@@ -166,6 +167,9 @@ const WalletTable = () => {
                     </TableCell>
                     <TableCell className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       {wallet.account}
+                    </TableCell>
+                    <TableCell className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      {wallet.unbannedByName?.trim() || "-"}
                     </TableCell>
                     <TableCell className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       {wallet.status}

@@ -38,6 +38,7 @@ export interface BlogListItem {
 
 export interface BlogDetail extends BlogListItem {
   blogContent: string;
+  description?: string | null;
   reason: string | null;
 }
 

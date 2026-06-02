@@ -27,7 +27,6 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
   onGenerated,
 }) => {
   const [title, setTitle] = useState(defaultTitle);
-  const [description, setDescription] = useState("");
   const [promptStructure, setPromptStructure] = useState("");
   const [tone, setTone] = useState("Friendly");
   const [categoryId, setCategoryId] = useState<number>(0);
@@ -135,7 +134,6 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
         blogPostId: blogPostId ?? undefined,
         action: "Generate",
         title: title.trim(),
-        description: description.trim() || null,
         promptStructure: promptStructure.trim(),
         defaultTone: tone.trim() || "Friendly",
         defaultCategoryId: categoryId,
@@ -176,7 +174,6 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
         </h3>
         {error && <p className="text-sm text-error-600">{error}</p>}
         <input className="h-11 w-full rounded-lg border border-gray-300 px-4 text-sm" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title / keyword" />
-        <textarea className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" />
         <textarea className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm" rows={4} value={promptStructure} onChange={(e) => setPromptStructure(e.target.value)} placeholder="PromptStructure" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input className="h-11 rounded-lg border border-gray-300 px-3 text-sm" value={tone} onChange={(e) => setTone(e.target.value)} placeholder="Tone (default: Friendly)" />
