@@ -34,6 +34,7 @@ const MERCH_ALLOWED_PREFIXES = [
   "/admin/notifications",
   "/admin/orders",
   "/admin/order-queue",
+  "/admin/refunds",
   "/admin/schedules",
   "/admin/shifts",
 ] as const;

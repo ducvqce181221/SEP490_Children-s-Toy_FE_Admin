@@ -272,6 +272,9 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
 
   const changeStatusButtonLabel = getChangeStatusButtonLabel(nextStatus);
 
+  const latestShippingStatus = refund.shippingHistory?.[0]?.newStatus?.toLowerCase() ?? "";
+  const isCarrierDelivered = latestShippingStatus === "delivered" || latestShippingStatus === "returned";
+
   const hasShippingHistory = (refund.shippingHistory?.length ?? 0) > 0;
   const showShippingTab = !!refund.shippingOrderCode || hasShippingHistory;
 
@@ -602,9 +605,20 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
             </span>
           )}
           {canChangeStatus && nextStatus && (
-            <Button variant="primary" onClick={() => setIsStatusModalOpen(true)}>
-              {changeStatusButtonLabel}
-            </Button>
+            <div className="flex items-center gap-3">
+              {refund.refundStatus === "RefundShipping" && !isCarrierDelivered && (
+                <span className="text-xs text-amber-600 dark:text-amber-500 font-medium bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-900/30">
+                  Waiting for carrier delivery confirmation
+                </span>
+              )}
+              <Button
+                variant="primary"
+                onClick={() => setIsStatusModalOpen(true)}
+                disabled={refund.refundStatus === "RefundShipping" && !isCarrierDelivered}
+              >
+                {changeStatusButtonLabel}
+              </Button>
+            </div>
           )}
         </div>
       </div>
