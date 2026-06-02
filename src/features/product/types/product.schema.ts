@@ -175,15 +175,18 @@ export const ProductFormSchema = z
     lengthCm: z
       .number()
       .int("Length must be a whole number")
-      .gt(0, "Length (cm) must be greater than 0"),
+      .gt(0, "Length (cm) must be greater than 0")
+      .lte(150, "Length (cm) must not exceed 150 cm"),
     widthCm: z
       .number()
       .int("Width must be a whole number")
-      .gt(0, "Width (cm) must be greater than 0"),
+      .gt(0, "Width (cm) must be greater than 0")
+      .lte(150, "Width (cm) must not exceed 150 cm"),
     heightCm: z
       .number()
       .int("Height must be a whole number")
-      .gt(0, "Height (cm) must be greater than 0"),
+      .gt(0, "Height (cm) must be greater than 0")
+      .lte(150, "Height (cm) must not exceed 150 cm"),
     mainImageUrl: z
       .string()
       .refine(

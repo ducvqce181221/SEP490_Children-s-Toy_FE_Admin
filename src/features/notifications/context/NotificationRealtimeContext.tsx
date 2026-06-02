@@ -61,6 +61,9 @@ export function NotificationRealtimeProvider({
           </div>,
           { duration: 4000, id: `notif-${n.deliveryId}` },
         );
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("realtime-notification", { detail: n }));
+        }
       },
       onUnreadCountUpdated: setUnreadCount,
       onNotificationRead: () => {
