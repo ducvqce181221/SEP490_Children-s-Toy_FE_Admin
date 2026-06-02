@@ -38,6 +38,7 @@ export interface BlogListItem {
 
 export interface BlogDetail extends BlogListItem {
   blogContent: string;
+  description?: string | null;
   reason: string | null;
 }
 
@@ -197,6 +198,7 @@ export interface AiBlogGenerateRequest {
   defaultTone?: string | null;
   defaultCategoryId: number;
   isActive?: boolean;
+  sourceContent?: string | null;
 }
 
 export interface AiBlogGenerateResult {
