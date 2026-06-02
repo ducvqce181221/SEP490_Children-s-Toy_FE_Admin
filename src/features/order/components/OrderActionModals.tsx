@@ -218,10 +218,14 @@ export const OrderCancelModal: React.FC<CancelModalProps> = ({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<CancelOrderFormData>({
     resolver: zodResolver(cancelOrderSchema),
+    defaultValues: { reason: "" },
   });
+
+  const reasonValue = watch("reason") || "";
 
   useEffect(() => {
     if (isOpen) reset({ reason: "" });
@@ -240,7 +244,12 @@ export const OrderCancelModal: React.FC<CancelModalProps> = ({
 
       <form onSubmit={handleSubmit((data) => onCancel(data))}>
         <div className="mb-6">
-          <Label htmlFor="cancel-reason">Reason for Cancellation (Required)</Label>
+          <div className="flex justify-between items-center">
+            <Label htmlFor="cancel-reason">Reason for Cancellation (Required)</Label>
+            <span className={`text-xs font-medium ${reasonValue.length > 500 ? "text-error-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+              {reasonValue.length}/500
+            </span>
+          </div>
           <TextArea
             id="cancel-reason"
             className="mt-2"
