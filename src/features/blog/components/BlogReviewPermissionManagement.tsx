@@ -128,7 +128,7 @@ export function BlogReviewPermissionManagement() {
       </div>
 
       <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
-        <div className="min-w-[1040px]">
+        <div className="min-w-[1180px]">
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
@@ -139,20 +139,21 @@ export function BlogReviewPermissionManagement() {
                 <TableCell isHeader className={headerCellClassName}>Status</TableCell>
                 <TableCell isHeader className={headerCellClassName}>Banned At</TableCell>
                 <TableCell isHeader className={headerCellClassName}>Expires At</TableCell>
+                <TableCell isHeader className={headerCellClassName}>UnbannedBy</TableCell>
                 <TableCell isHeader className="px-5 py-3 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400">Action</TableCell>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={8} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <TableCell colSpan={9} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                     Loading customer accounts...
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && items.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <TableCell colSpan={9} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                     No customer accounts found.
                   </TableCell>
                 </TableRow>
@@ -180,6 +181,9 @@ export function BlogReviewPermissionManagement() {
                   </TableCell>
                   <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{toDateTimeText(item.bannedAt)}</TableCell>
                   <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{toDateTimeText(item.banExpiresAt)}</TableCell>
+                  <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                    {item.unbannedByName?.trim() || (item.unbannedBy ? `ID: ${item.unbannedBy}` : "-")}
+                  </TableCell>
                   <TableCell className="px-5 py-4">
                     <div className="flex items-center justify-center">
                       <button
