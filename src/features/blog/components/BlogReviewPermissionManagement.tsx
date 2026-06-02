@@ -14,6 +14,22 @@ import { blogApi } from "../services/blog-api";
 import { BlogReviewPermission } from "../types/blog";
 
 const headerCellClassName = "px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400";
+const filterGridClassName = "grid grid-cols-1 gap-4 lg:grid-cols-12";
+const selectClassName =
+  "h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent py-2.5 pl-4 pr-9 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800";
+const selectArrowClassName =
+  "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-gray-400";
+
+const statusOptions = [
+  { value: "all", label: "All statuses" },
+  { value: "banned", label: "Comment Banned" },
+  { value: "active", label: "Comment Active" },
+];
+
+const dateSortOptions = [
+  { value: "desc", label: "Descending" },
+  { value: "asc", label: "Ascending" },
+];
 
 const toDateTimeText = (value: string | null) => {
   return formatDisplayDate(value);
@@ -54,6 +70,8 @@ export function BlogReviewPermissionManagement() {
   const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateSort, setDateSort] = useState<"desc" | "asc">("desc");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editTarget, setEditTarget] = useState<BlogReviewPermission | null>(null);
@@ -65,6 +83,8 @@ export function BlogReviewPermissionManagement() {
         pageNumber,
         pageSize,
         searchTerm: submittedSearch || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        sortDesc: dateSort === "desc",
       });
       setItems(data.items);
       setTotalPages(data.totalPages);
@@ -74,7 +94,7 @@ export function BlogReviewPermissionManagement() {
     } finally {
       setIsLoading(false);
     }
-  }, [pageNumber, pageSize, submittedSearch]);
+  }, [dateSort, pageNumber, pageSize, statusFilter, submittedSearch]);
 
   useEffect(() => {
     void Promise.resolve().then(fetchData);
@@ -117,13 +137,78 @@ export function BlogReviewPermissionManagement() {
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Blog Review Permissions</h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">View, search, and manage comment permissions for all customer accounts.</p>
         </div>
-        <div className="w-full sm:max-w-sm">
-          <SearchInput
-            value={searchTerm}
-            onChange={setSearchTerm}
-            onKeyDown={(event) => event.key === "Enter" && handleSearchSubmit()}
-            placeholder="Search account, email, ID... (Enter)"
-          />
+        <div className={filterGridClassName}>
+          <div className="lg:col-span-4">
+            <p className="mb-1 block text-sm font-medium text-transparent select-none" aria-hidden="true">
+              Search
+            </p>
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              onKeyDown={(event) => event.key === "Enter" && handleSearchSubmit()}
+              placeholder="Search account, email, ID... (Enter)"
+            />
+          </div>
+          <div className="lg:col-span-8">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:justify-end">
+              <div>
+                <label
+                  htmlFor="blog-review-permission-status"
+                  className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Status
+                </label>
+                <div className="relative">
+                  <select
+                    id="blog-review-permission-status"
+                    className={`${selectClassName} sm:w-44`}
+                    value={statusFilter}
+                    onChange={(event) => {
+                      setStatusFilter(event.target.value);
+                      setPageNumber(1);
+                    }}
+                  >
+                    {statusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <svg className={selectArrowClassName} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.512a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+              <div>
+                <label
+                  htmlFor="blog-review-permission-direction"
+                  className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Direction
+                </label>
+                <div className="relative">
+                  <select
+                    id="blog-review-permission-direction"
+                    className={`${selectClassName} sm:w-48`}
+                    value={dateSort}
+                    onChange={(event) => {
+                      setDateSort(event.target.value === "asc" ? "asc" : "desc");
+                      setPageNumber(1);
+                    }}
+                  >
+                    {dateSortOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <svg className={selectArrowClassName} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.512a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
