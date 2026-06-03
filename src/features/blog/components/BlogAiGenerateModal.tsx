@@ -5,7 +5,7 @@ import { AxiosError } from "axios";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { blogApi } from "../services/blog-api";
-import { flattenValidationErrors, validateAiGenerateInputs } from "../utils/ai-generate-validation";
+import { flattenValidationErrors, validateAiGenerateCategoryId, validateAiGenerateInputs } from "../utils/ai-generate-validation";
 import { ApiErrorResponse, AiBlockedResponse, AiBlogGenerateResult, BlogCategoryItem, ValidationErrorResponse } from "../types/blog";
 
 interface BlogAiGenerateModalProps {
@@ -125,6 +125,12 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
   const handleGenerate = async () => {
     if (!title.trim() || !promptStructure.trim() || categoryId <= 0) {
       setError("Title, PromptStructure, and Category are required.");
+      return;
+    }
+
+    const categoryValidationError = validateAiGenerateCategoryId(categoryId);
+    if (categoryValidationError) {
+      setError(categoryValidationError);
       return;
     }
 

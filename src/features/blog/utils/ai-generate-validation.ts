@@ -1,18 +1,3 @@
-const MEANINGLESS_SINGLE_TOKENS = new Set([
-  "test",
-  "testing",
-  "qwerty",
-  "qwertyuiop",
-  "asdf",
-  "asdfghjkl",
-  "abcxyz",
-]);
-
-const MEANINGLESS_PHRASES = new Set([
-  "random text",
-  "lorem ipsum",
-]);
-
 const KEYBOARD_ROWS = [
   "qwertyuiop",
   "asdfghjkl",
@@ -20,6 +5,16 @@ const KEYBOARD_ROWS = [
 ];
 
 const VOWELS = new Set(["a", "e", "i", "o", "u", "y"]);
+export const MAX_BLOG_CATEGORY_ID = 32767;
+
+const KEYBOARD_COORDINATES = new Map<string, [number, number]>();
+
+KEYBOARD_ROWS.forEach((row, rowIndex) => {
+  const rowOffset = rowIndex * 0.5;
+  row.split("").forEach((char, columnIndex) => {
+    KEYBOARD_COORDINATES.set(char, [columnIndex + rowOffset, rowIndex]);
+  });
+});
 
 function normalizeForMeaningCheck(value: string): string {
   return value
@@ -42,7 +37,7 @@ function isRepeatedPattern(value: string): boolean {
     if (value.length % size !== 0) continue;
 
     const repetitions = value.length / size;
-    if (repetitions < 3) continue;
+    if (repetitions < 2) continue;
 
     const pattern = value.slice(0, size);
     let repeated = true;
@@ -59,20 +54,58 @@ function isRepeatedPattern(value: string): boolean {
   return false;
 }
 
-function isKeyboardMash(value: string): boolean {
-  return KEYBOARD_ROWS.some((row) => row.includes(value) || row.split("").reverse().join("").includes(value));
+function isNearRepeatedPattern(value: string): boolean {
+  if (value.length < 6) {
+    return false;
+  }
+
+  if (isRepeatedPattern(value)) {
+    return true;
+  }
+
+  for (let index = 0; index < value.length; index += 1) {
+    const withoutOneChar = value.slice(0, index) + value.slice(index + 1);
+    if (withoutOneChar.length >= 6 && isRepeatedPattern(withoutOneChar)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
-function isPlaceholderLike(normalized: string): boolean {
-  if (MEANINGLESS_PHRASES.has(normalized)) return true;
+function isKeyboardMash(value: string): boolean {
+  if (value.length < 3 || !/^[a-z]+$/i.test(value)) return false;
 
-  const tokens = normalized.split(" ").filter(Boolean);
-  if (tokens.length === 0) return true;
-  if (tokens.length === 1) return MEANINGLESS_SINGLE_TOKENS.has(tokens[0]);
+  const directRowMash = KEYBOARD_ROWS.some(
+    (row) => row.includes(value) || row.split("").reverse().join("").includes(value),
+  );
+  if (directRowMash) return true;
 
-  return tokens.length >= 2
-    && tokens.every((token) => token === tokens[0])
-    && MEANINGLESS_SINGLE_TOKENS.has(tokens[0]);
+  if (value.length > 8 || !isKeyboardWalk(value)) return false;
+
+  const vowelRatio = getVowelRatio(value);
+  return longestConsonantRun(value) >= 2 || vowelRatio < 0.3 || getUniqueLetterRatio(value) <= 0.6;
+}
+
+function isKeyboardChunk(value: string): boolean {
+  return value.length >= 2
+    && KEYBOARD_ROWS.some((row) => row.includes(value) || row.split("").reverse().join("").includes(value));
+}
+
+function isKeyboardWalk(value: string): boolean {
+  for (let index = 1; index < value.length; index += 1) {
+    const previous = KEYBOARD_COORDINATES.get(value[index - 1]);
+    const current = KEYBOARD_COORDINATES.get(value[index]);
+    if (!previous || !current) return false;
+
+    const horizontalDistance = Math.abs(previous[0] - current[0]);
+    const verticalDistance = Math.abs(previous[1] - current[1]);
+    if (horizontalDistance > 1.5 || verticalDistance > 1) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function longestConsonantRun(token: string): number {
@@ -92,29 +125,120 @@ function longestConsonantRun(token: string): number {
   return longest;
 }
 
-function isSuspiciousAlphabeticToken(token: string): boolean {
-  if (token.length < 6) return false;
+function getVowelRatio(token: string): number {
+  if (token.length === 0) return 0;
 
   const vowelCount = [...token].filter((char) => VOWELS.has(char)).length;
-  if (vowelCount <= 1) return true;
+  return vowelCount / token.length;
+}
 
-  return longestConsonantRun(token) >= 5;
+function getUniqueLetterRatio(token: string): number {
+  if (token.length === 0) return 0;
+  return new Set(token).size / token.length;
+}
+
+function hasRepeatedKeyboardChunk(token: string): boolean {
+  if (token.length < 6) return false;
+
+  for (let size = 3; size <= Math.min(4, Math.floor(token.length / 2)); size += 1) {
+    const counts = new Map<string, number>();
+    for (let index = 0; index <= token.length - size; index += 1) {
+      const chunk = token.slice(index, index + size);
+      if (!isKeyboardChunk(chunk)) continue;
+
+      counts.set(chunk, (counts.get(chunk) ?? 0) + 1);
+      if ((counts.get(chunk) ?? 0) >= 2) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function hasLowDiversityNoiseShape(token: string): boolean {
+  if (token.length < 7) return false;
+
+  const uniqueLetters = new Set(token).size;
+  if (uniqueLetters > 3) return false;
+
+  const bigrams = new Set<string>();
+  for (let index = 0; index < token.length - 1; index += 1) {
+    bigrams.add(token.slice(index, index + 2));
+  }
+
+  return bigrams.size / (token.length - 1) <= 0.55;
+}
+
+function isSuspiciousAlphabeticToken(token: string): boolean {
+  if (token.length < 3) return false;
+
+  if (isKeyboardMash(token) || isNearRepeatedPattern(token) || hasRepeatedKeyboardChunk(token)) {
+    return true;
+  }
+
+  const longestConsonants = longestConsonantRun(token);
+  const vowelCount = [...token].filter((char) => VOWELS.has(char)).length;
+  if (token.length <= 4) {
+    return vowelCount === 0 || longestConsonants >= token.length;
+  }
+
+  if (vowelCount === 0) return true;
+  if (vowelCount <= 1) return true;
+  if (longestConsonants >= 4) return true;
+  if (getVowelRatio(token) < 0.25) return true;
+
+  return hasLowDiversityNoiseShape(token);
+}
+
+function isLowVowelNoiseToken(token: string): boolean {
+  if (token.length < 5) return false;
+
+  const vowelRatio = getVowelRatio(token);
+  if (vowelRatio > 0.35) return false;
+
+  return longestConsonantRun(token) >= 3 || getUniqueLetterRatio(token) <= 0.45;
+}
+
+function isSuspiciousMixedAlphanumericToken(token: string): boolean {
+  if (!/[a-z]/i.test(token) || !/\d/.test(token)) {
+    return false;
+  }
+
+  const lettersOnly = token.replace(/[^a-z]/gi, "");
+  if (lettersOnly.length < 3) {
+    return true;
+  }
+
+  const digitGroups = token.match(/\d+/g)?.length ?? 0;
+  const letterSegments = token.split(/\d+/).filter(Boolean);
+  if (letterSegments.length >= 2) {
+    return true;
+  }
+
+  return isSuspiciousAlphabeticToken(lettersOnly)
+    || isLowVowelNoiseToken(lettersOnly)
+    || digitGroups >= 2;
 }
 
 function looksLikeRandomGibberish(normalized: string): boolean {
-  const tokens = normalized.split(" ")
-    .filter((token) => token.length >= 3 && /^[a-z]+$/i.test(token));
+  const rawTokens = normalized.split(" ").filter(Boolean);
+  if (rawTokens.some((token) => isSuspiciousMixedAlphanumericToken(token))) {
+    return true;
+  }
+
+  const tokens = rawTokens.filter((token) => token.length >= 3 && /^[a-z]+$/i.test(token));
 
   if (tokens.length === 0) return false;
 
-  const suspiciousTokens = tokens.filter(isSuspiciousAlphabeticToken);
+  const suspiciousTokens = tokens.filter((token) => isSuspiciousAlphabeticToken(token) || isLowVowelNoiseToken(token));
   if (suspiciousTokens.length === 0) return false;
 
-  return suspiciousTokens.length === tokens.length
-    && tokens.reduce((sum, token) => sum + token.length, 0) >= 10;
+  return suspiciousTokens.length === tokens.length;
 }
 
 function getMeaningfulInputError(value: string, fieldLabel: string): string | null {
+  const meaninglessError = `${fieldLabel} appears to be meaningless.`;
   const trimmed = value.trim();
   if (!trimmed) return null;
   if (!/[\p{L}\p{N}]/u.test(trimmed)) return `${fieldLabel} is invalid.`;
@@ -124,27 +248,31 @@ function getMeaningfulInputError(value: string, fieldLabel: string): string | nu
 
   const compact = normalized.replace(/\s+/g, "");
   if (!/\p{L}/u.test(normalized) && /\p{N}/u.test(normalized)) {
-    return `${fieldLabel} appears to be meaningless.`;
+    return meaninglessError;
   }
 
-  if (compact.length >= 3 && isRepeatedSingleCharacter(compact)) {
-    return `${fieldLabel} appears to be meaningless.`;
+  if (compact.length < 3 && normalized.split(" ").filter(Boolean).length === 1) {
+    return meaninglessError;
   }
 
-  if (compact.length >= 6 && isRepeatedPattern(compact)) {
-    return `${fieldLabel} appears to be meaningless.`;
+  if (compact.length >= 2 && isRepeatedSingleCharacter(compact)) {
+    return meaninglessError;
   }
 
-  if (compact.length >= 5 && isKeyboardMash(compact)) {
-    return `${fieldLabel} appears to be meaningless.`;
+  if (compact.length >= 4 && isRepeatedPattern(compact)) {
+    return meaninglessError;
   }
 
-  if (isPlaceholderLike(normalized)) {
-    return `${fieldLabel} appears to be meaningless.`;
+  if (isNearRepeatedPattern(compact)) {
+    return meaninglessError;
+  }
+
+  if (isKeyboardMash(compact)) {
+    return meaninglessError;
   }
 
   if (looksLikeRandomGibberish(normalized)) {
-    return `${fieldLabel} appears to be meaningless.`;
+    return meaninglessError;
   }
 
   return null;
@@ -160,6 +288,14 @@ export function validateAiGenerateInputs(input: {
     ?? getMeaningfulInputError(input.promptStructure, "Prompt")
     ?? getMeaningfulInputError(input.description ?? "", "Prompt")
   );
+}
+
+export function validateAiGenerateCategoryId(categoryId: number): string | null {
+  if (!Number.isInteger(categoryId) || categoryId <= 0 || categoryId > MAX_BLOG_CATEGORY_ID) {
+    return "Category is invalid.";
+  }
+
+  return null;
 }
 
 export function flattenValidationErrors(errors: Record<string, string[]> | undefined): string | null {

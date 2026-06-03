@@ -33,33 +33,33 @@ const selectClassName =
 // ── Nhóm status theo luồng xử lý ──────────────────────────────────────────
 // Nhóm 1: Luồng bình thường
 const NORMAL_FLOW_OPTIONS = [
-  { value: ORDER_STATUS_ID.PENDING,    label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.PENDING] },
-  { value: ORDER_STATUS_ID.CONFIRMED,  label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.CONFIRMED] },
+  { value: ORDER_STATUS_ID.PENDING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.PENDING] },
+  { value: ORDER_STATUS_ID.CONFIRMED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.CONFIRMED] },
   { value: ORDER_STATUS_ID.PROCESSING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.PROCESSING] },
-  { value: ORDER_STATUS_ID.SHIPPED,    label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.SHIPPED] },
+  { value: ORDER_STATUS_ID.SHIPPED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.SHIPPED] },
   {
     value: ORDER_STATUS_ID.DELIVERING,
     label: `${ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERING]}`,
   },
-  { value: ORDER_STATUS_ID.DELIVERED,  label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERED] },
-  { value: ORDER_STATUS_ID.COMPLETED,  label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.COMPLETED] },
+  { value: ORDER_STATUS_ID.DELIVERED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERED] },
+  { value: ORDER_STATUS_ID.COMPLETED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.COMPLETED] },
 ];
 
 // Nhóm 2: Luồng trả hàng / sự cố
 const RETURN_FLOW_OPTIONS = [
-  { value: ORDER_STATUS_ID.RETURNING,       label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURNING] },
-  { value: ORDER_STATUS_ID.RETURN_COMPLETED,label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURN_COMPLETED] },
+  { value: ORDER_STATUS_ID.RETURNING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURNING] },
+  { value: ORDER_STATUS_ID.RETURN_COMPLETED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURN_COMPLETED] },
   { value: ORDER_STATUS_ID.DELIVERY_FAILED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERY_FAILED] },
-  { value: ORDER_STATUS_ID.WAITING_RETURN,  label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.WAITING_RETURN] },
-  { value: ORDER_STATUS_ID.RETURN_FAILED,   label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURN_FAILED] },
-  { value: ORDER_STATUS_ID.LOST,            label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.LOST] },
-  { value: ORDER_STATUS_ID.DAMAGED,         label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DAMAGED] },
+  { value: ORDER_STATUS_ID.WAITING_RETURN, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.WAITING_RETURN] },
+  { value: ORDER_STATUS_ID.RETURN_FAILED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURN_FAILED] },
+  { value: ORDER_STATUS_ID.LOST, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.LOST] },
+  { value: ORDER_STATUS_ID.DAMAGED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DAMAGED] },
 ];
 
 // Nhóm 3: Trạng thái kết thúc
 const TERMINAL_OPTIONS = [
   { value: ORDER_STATUS_ID.CANCELLED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.CANCELLED] },
-  { value: ORDER_STATUS_ID.REFUNDED,  label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.REFUNDED] },
+  { value: ORDER_STATUS_ID.REFUNDED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.REFUNDED] },
 ];
 
 const ALL_STATUS_OPTIONS = [
@@ -160,19 +160,6 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
           </p>
         </div>
 
-        {roleName === ROLE_NAME.ADMIN && (
-          <label className="flex shrink-0 cursor-pointer select-none items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 transition-colors hover:border-brand-300 hover:bg-brand-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-brand-700 dark:hover:bg-brand-900/20">
-            <input
-              type="checkbox"
-              className="rounded-sm border-gray-300 text-brand-500 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900"
-              checked={assignedToMe}
-              onChange={(e) => onAssignedToMeChange(e.target.checked)}
-            />
-            <span className={assignedToMe ? "font-medium text-brand-600 dark:text-brand-400" : ""}>
-              My Orders
-            </span>
-          </label>
-        )}
         {roleName === ROLE_NAME.STAFF || roleName === ROLE_NAME.MERCHANDISE ? (
           <span className="text-xs text-gray-500 dark:text-gray-400">
             Showing orders assigned to you (until completed)

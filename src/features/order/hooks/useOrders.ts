@@ -183,6 +183,17 @@ export const useOrders = () => {
     setReloadToken((prev) => prev + 1);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleRealtime = () => {
+      reloadOrders();
+    };
+    window.addEventListener("realtime-notification", handleRealtime);
+    return () => {
+      window.removeEventListener("realtime-notification", handleRealtime);
+    };
+  }, [reloadOrders]);
+
   return {
     orders: ordersResponse?.items ?? [],
     isLoading,

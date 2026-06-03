@@ -28,9 +28,9 @@ export const getNextStatus = (currentStatus: string, isSystemReturn: boolean = f
     case "RefundApproved":
       return isSystemReturn ? "RefundCompleted" : "RefundPickupCreated";
     case "RefundPickupCreated":
-      return "RefundShipping";
+      return null; // Automatic flow via GHN webhook
     case "RefundShipping":
-      return "RefundReceived";
+      return "RefundReceived"; // Manually confirmed by Merchandiser upon arrival
     case "RefundReceived":
       return "RefundInspectionPending";
     case "RefundInspectionPending":
