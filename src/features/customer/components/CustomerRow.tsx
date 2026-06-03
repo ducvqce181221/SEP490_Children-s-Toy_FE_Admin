@@ -12,8 +12,7 @@ interface CustomerRowProps {
   rowNumber: number;
   onOpenDetail: (accountId: number) => void;
   onOpenEdit: (accountId: number) => void;
-  onLockCustomer: (accountId: number) => void;
-  isLocking: boolean;
+  onOpenBlock: (accountId: number) => void;
 }
 
 const formatDateTime = (dateValue: string | null) => {
@@ -37,8 +36,7 @@ const CustomerRowComponent: React.FC<CustomerRowProps> = ({
   rowNumber,
   onOpenDetail,
   onOpenEdit,
-  onLockCustomer,
-  isLocking,
+  onOpenBlock,
 }) => {
   const avatarText =
     customer.accountName.length > 0 ? customer.accountName[0].toUpperCase() : "?";
@@ -79,9 +77,32 @@ const CustomerRowComponent: React.FC<CustomerRowProps> = ({
       </TableCell>
 
       <TableCell className="px-5 py-4 text-start">
-        <Badge size="sm" color={customer.isActive ? "success" : "warning"}>
-          {customer.isActive ? "Active" : "Inactive"}
-        </Badge>
+        <div className="flex flex-col items-start gap-2">
+          <Badge size="sm" color={customer.isActive ? "success" : "warning"}>
+            {customer.isActive ? "Active" : "Inactive"}
+          </Badge>
+          {customer.isCodRestricted && (
+            <Badge size="sm" color="warning">
+              COD Restricted
+            </Badge>
+          )}
+          {customer.isManualBlockRecommended && (
+            <Badge size="sm" color="error">
+              Lock Review
+            </Badge>
+          )}
+        </div>
+      </TableCell>
+
+      <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-300">
+        <div className="space-y-1">
+          <p className="font-medium text-gray-800 dark:text-white/90">
+            {customer.suspiciousDeliveryFailOrderCount}
+          </p>
+          <p className="text-theme-xs text-gray-500 dark:text-gray-400">
+            {customer.lastSuspiciousGHNFailCode ?? "No fail code"}
+          </p>
+        </div>
       </TableCell>
 
       <TableCell className="px-5 py-4 text-start">
@@ -126,14 +147,13 @@ const CustomerRowComponent: React.FC<CustomerRowProps> = ({
           >
             <PencilIcon />
           </button>
-          {customer.isActive && customer.isSuspiciousDeliveryAbuse && (
+          {customer.isManualBlockRecommended && (
             <button
               type="button"
-              onClick={() => onLockCustomer(customer.accountId)}
-              disabled={isLocking}
-              className="rounded-lg border border-error-300 p-2 text-error-500 transition-colors hover:border-error-500 hover:bg-error-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-error-500/40 dark:hover:bg-error-500/10"
-              aria-label={`Lock customer ${customer.accountName}`}
-              title="Lock customer"
+              onClick={() => onOpenBlock(customer.accountId)}
+              className="rounded-lg border border-error-300 p-2 text-error-500 transition-colors hover:border-error-500 hover:bg-error-50 dark:border-error-500/40 dark:text-error-400 dark:hover:bg-error-500/10"
+              aria-label={`Lock customer account ${customer.accountName}`}
+              title="Lock customer account"
             >
               <LockIcon />
             </button>

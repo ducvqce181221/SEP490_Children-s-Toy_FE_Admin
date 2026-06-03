@@ -210,6 +210,36 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              COD Restriction
+            </label>
+            <input
+              className={inputClassName}
+              value={customerDetail.isCodRestricted ? "Restricted" : "Available"}
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Suspicious Failed COD Orders
+            </label>
+            <input
+              className={inputClassName}
+              value={customerDetail.suspiciousDeliveryFailOrderCount}
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Last GHN Fail Code
+            </label>
+            <input
+              className={inputClassName}
+              value={customerDetail.lastSuspiciousGHNFailCode ?? "--"}
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Created At
             </label>
             <input

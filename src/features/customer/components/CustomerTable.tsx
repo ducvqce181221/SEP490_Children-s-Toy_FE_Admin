@@ -3,6 +3,8 @@
 import React, { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import Pagination from "@/components/common/Pagination";
+import Button from "@/components/ui/button/Button";
+import { Modal } from "@/components/ui/modal";
 import {
   Table,
   TableBody,
@@ -10,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { LockIcon } from "@/icons";
 import { useCustomerMutations } from "../hooks/useCustomerMutations";
 import { useCustomers } from "../hooks/useCustomers";
 import { UpdateCustomerRequest } from "../types/customer";
@@ -46,12 +49,23 @@ const CustomerTable = () => {
     reloadCustomers,
   } = useCustomers();
 
-  const { updateCustomer, updatingCustomerId } = useCustomerMutations(reloadCustomers);
+  const {
+    updateCustomer,
+    blockCustomerForDeliveryAbuse,
+    updatingCustomerId,
+    blockingCustomerId,
+  } = useCustomerMutations(reloadCustomers);
 
   const [selectedDetailCustomerId, setSelectedDetailCustomerId] = useState<number | null>(
     null,
   );
   const [selectedEditCustomerId, setSelectedEditCustomerId] = useState<number | null>(null);
+  const [selectedBlockCustomerId, setSelectedBlockCustomerId] = useState<number | null>(null);
+
+  const selectedBlockCustomer = useMemo(
+    () => customers.find((customer) => customer.accountId === selectedBlockCustomerId) ?? null,
+    [customers, selectedBlockCustomerId],
+  );
 
   const pageRangeText = useMemo(() => {
     if (totalCount === 0) {
@@ -87,11 +101,18 @@ const CustomerTable = () => {
     return result;
   };
 
-  const handleLockCustomer = async (customerId: number) => {
-    const result = await updateCustomer(customerId, { isActive: false });
+  const handleConfirmBlock = async () => {
+    if (!selectedBlockCustomer) {
+      return;
+    }
+
+    const result = await blockCustomerForDeliveryAbuse(selectedBlockCustomer.accountId, {
+      note: "Admin manually locked the account after reviewing repeated unpaid COD delivery failures.",
+    });
 
     if (result.success) {
-      toast.success("Customer account locked.");
+      toast.success(result.message);
+      setSelectedBlockCustomerId(null);
       return;
     }
 
@@ -110,7 +131,7 @@ const CustomerTable = () => {
       />
 
       <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
-        <div className="min-w-[1200px]">
+        <div className="min-w-[1180px]">
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
@@ -124,7 +145,7 @@ const CustomerTable = () => {
                   Status
                 </TableCell>
                 <TableCell isHeader className={headerCellClassName}>
-                  Delivery Risk
+                  Delivery Abuse
                 </TableCell>
                 <TableCell isHeader className={headerCellClassName}>
                   Created At
@@ -181,8 +202,7 @@ const CustomerTable = () => {
                     rowNumber={(pageNumber - 1) * pageSize + index + 1}
                     onOpenDetail={setSelectedDetailCustomerId}
                     onOpenEdit={setSelectedEditCustomerId}
-                    onLockCustomer={handleLockCustomer}
-                    isLocking={updatingCustomerId === customer.accountId}
+                    onOpenBlock={setSelectedBlockCustomerId}
                   />
                 ))}
             </TableBody>
@@ -240,6 +260,63 @@ const CustomerTable = () => {
         onSubmit={handleUpdateCustomer}
         onClose={() => setSelectedEditCustomerId(null)}
       />
+
+      <Modal
+        isOpen={selectedBlockCustomer !== null}
+        onClose={() => setSelectedBlockCustomerId(null)}
+        className="max-w-[520px] p-6 lg:p-7"
+      >
+        <div className="flex items-start gap-4 pr-10">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-error-50 text-error-500 dark:bg-error-500/10 dark:text-error-400">
+            <LockIcon />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Lock customer account?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
+              This will deactivate the customer account, record a block history entry,
+              and send the customer an email notification in English.
+            </p>
+          </div>
+        </div>
+
+        {selectedBlockCustomer && (
+          <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-800">
+            <p className="font-medium text-gray-900 dark:text-white">
+              {selectedBlockCustomer.accountName}
+            </p>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">
+              {selectedBlockCustomer.email}
+            </p>
+            <p className="mt-3 text-gray-600 dark:text-gray-300">
+              Suspicious COD failed orders:{" "}
+              <span className="font-semibold text-error-600">
+                {selectedBlockCustomer.suspiciousDeliveryFailOrderCount}
+              </span>
+            </p>
+          </div>
+        )}
+
+        <div className="mt-6 flex justify-end gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setSelectedBlockCustomerId(null)}
+            disabled={blockingCustomerId !== null}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            className="bg-error-500 hover:bg-error-600 disabled:bg-error-300"
+            onClick={handleConfirmBlock}
+            disabled={blockingCustomerId !== null}
+            startIcon={<LockIcon />}
+          >
+            {blockingCustomerId !== null ? "Locking..." : "Lock Account"}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -14,6 +14,8 @@ export interface CustomerListItem {
   isActive: boolean;
   isSuspiciousDeliveryAbuse: boolean;
   suspiciousDeliveryFailOrderCount: number;
+  isCodRestricted: boolean;
+  isManualBlockRecommended: boolean;
   lastSuspiciousGHNFailCode: string | null;
   lastSuspiciousOrderDate: string | null;
   createdAt: string;
@@ -34,6 +36,8 @@ export interface CustomerDetail {
   isActive: boolean;
   isSuspiciousDeliveryAbuse: boolean;
   suspiciousDeliveryFailOrderCount: number;
+  isCodRestricted: boolean;
+  isManualBlockRecommended: boolean;
   lastSuspiciousGHNFailCode: string | null;
   lastSuspiciousOrderDate: string | null;
   createdAt: string;
@@ -60,6 +64,10 @@ export interface CustomerQueryParams {
 
 export interface UpdateCustomerRequest {
   isActive: boolean;
+}
+
+export interface ManualBlockCustomerRequest {
+  note?: string;
 }
 
 export interface ApiErrorResponse {
