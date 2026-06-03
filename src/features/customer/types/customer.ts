@@ -12,6 +12,10 @@ export interface CustomerListItem {
   email: string;
   imageUrl: string | null;
   isActive: boolean;
+  isSuspiciousDeliveryAbuse: boolean;
+  suspiciousDeliveryFailOrderCount: number;
+  lastSuspiciousGHNFailCode: string | null;
+  lastSuspiciousOrderDate: string | null;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -28,6 +32,10 @@ export interface CustomerDetail {
   sexName: string | null;
   imageUrl: string | null;
   isActive: boolean;
+  isSuspiciousDeliveryAbuse: boolean;
+  suspiciousDeliveryFailOrderCount: number;
+  lastSuspiciousGHNFailCode: string | null;
+  lastSuspiciousOrderDate: string | null;
   createdAt: string;
   updatedAt: string | null;
 }

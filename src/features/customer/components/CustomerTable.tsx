@@ -87,6 +87,17 @@ const CustomerTable = () => {
     return result;
   };
 
+  const handleLockCustomer = async (customerId: number) => {
+    const result = await updateCustomer(customerId, { isActive: false });
+
+    if (result.success) {
+      toast.success("Customer account locked.");
+      return;
+    }
+
+    toast.error(result.message);
+  };
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <CustomerToolbar
@@ -99,7 +110,7 @@ const CustomerTable = () => {
       />
 
       <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
-        <div className="min-w-[1050px]">
+        <div className="min-w-[1200px]">
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
@@ -111,6 +122,9 @@ const CustomerTable = () => {
                 </TableCell>
                 <TableCell isHeader className={headerCellClassName}>
                   Status
+                </TableCell>
+                <TableCell isHeader className={headerCellClassName}>
+                  Delivery Risk
                 </TableCell>
                 <TableCell isHeader className={headerCellClassName}>
                   Created At
@@ -128,7 +142,7 @@ const CustomerTable = () => {
               {showInitialLoading && (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
                     Loading customer list...
@@ -139,7 +153,7 @@ const CustomerTable = () => {
               {!showInitialLoading && error && (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="px-5 py-10 text-center text-sm text-error-600"
                   >
                     {error}
@@ -150,7 +164,7 @@ const CustomerTable = () => {
               {!showInitialLoading && !error && customers.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
                     No matching customers found.
@@ -167,6 +181,8 @@ const CustomerTable = () => {
                     rowNumber={(pageNumber - 1) * pageSize + index + 1}
                     onOpenDetail={setSelectedDetailCustomerId}
                     onOpenEdit={setSelectedEditCustomerId}
+                    onLockCustomer={handleLockCustomer}
+                    isLocking={updatingCustomerId === customer.accountId}
                   />
                 ))}
             </TableBody>
