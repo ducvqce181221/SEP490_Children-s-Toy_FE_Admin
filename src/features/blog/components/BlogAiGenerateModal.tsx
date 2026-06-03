@@ -5,7 +5,8 @@ import { AxiosError } from "axios";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { blogApi } from "../services/blog-api";
-import { ApiErrorResponse, AiBlockedResponse, AiBlogGenerateResult, BlogCategoryItem } from "../types/blog";
+import { flattenValidationErrors, validateAiGenerateInputs } from "../utils/ai-generate-validation";
+import { ApiErrorResponse, AiBlockedResponse, AiBlogGenerateResult, BlogCategoryItem, ValidationErrorResponse } from "../types/blog";
 
 interface BlogAiGenerateModalProps {
   isOpen: boolean;
@@ -127,6 +128,15 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
       return;
     }
 
+    const localValidationError = validateAiGenerateInputs({
+      title,
+      promptStructure,
+    });
+    if (localValidationError) {
+      setError(localValidationError);
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
     try {
@@ -151,12 +161,22 @@ const BlogAiGenerateModal: React.FC<BlogAiGenerateModalProps> = ({
       onGenerated(result);
       onClose();
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const axiosError = err as AxiosError<ValidationErrorResponse | ApiErrorResponse>;
       const blockedFromData = parseBlockedPayload(axiosError.response?.data);
       const blockedFromMessage = parseBlockedPayload(axiosError.response?.data?.message);
       const blockedFromDetail = parseBlockedPayload((axiosError.response?.data as { detail?: unknown } | undefined)?.detail);
       if (blockedFromData || blockedFromMessage || blockedFromDetail) {
         setBlockedData(blockedFromData ?? blockedFromMessage ?? blockedFromDetail);
+        return;
+      }
+
+      const validationMessage = flattenValidationErrors(
+        axiosError.response?.data && "errors" in axiosError.response.data
+          ? axiosError.response.data.errors
+          : undefined,
+      );
+      if (validationMessage) {
+        setError(validationMessage);
         return;
       }
 
