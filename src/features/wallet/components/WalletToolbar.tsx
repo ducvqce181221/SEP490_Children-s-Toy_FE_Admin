@@ -67,7 +67,7 @@ const WalletToolbar: React.FC<WalletToolbarProps> = ({
       <div className="mb-5">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Wallet List</h3>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Manage wallet status for freeze and reactivation.
+          Manage customer wallet activation.
         </p>
       </div>
 
@@ -114,7 +114,6 @@ const WalletToolbar: React.FC<WalletToolbarProps> = ({
                     { value: "", label: "All Statuses" },
                     { value: "Active", label: "Active" },
                     { value: "Frozen", label: "Frozen" },
-                    { value: "Closed", label: "Closed" },
                   ]}
                   onChange={(event) =>
                     setLocalStatusFilter((event.target.value as WalletStatus | "") ?? "")
