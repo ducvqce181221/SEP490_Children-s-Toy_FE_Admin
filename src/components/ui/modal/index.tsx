@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
@@ -9,6 +10,30 @@ interface ModalProps {
   showCloseButton?: boolean; // New prop to control close button visibility
   isFullscreen?: boolean; // Default to false for backwards compatibility
 }
+
+let openModalCount = 0;
+let previousBodyOverflow = "";
+let previousHtmlOverflow = "";
+
+const lockPageScroll = () => {
+  if (openModalCount === 0) {
+    previousBodyOverflow = document.body.style.overflow;
+    previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+  }
+
+  openModalCount += 1;
+};
+
+const unlockPageScroll = () => {
+  openModalCount = Math.max(openModalCount - 1, 0);
+
+  if (openModalCount === 0) {
+    document.body.style.overflow = previousBodyOverflow;
+    document.documentElement.style.overflow = previousHtmlOverflow;
+  }
+};
 
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
@@ -37,25 +62,20 @@ export const Modal: React.FC<ModalProps> = ({
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    if (!isOpen) return;
 
-    return () => {
-      document.body.style.overflow = "unset";
-    };
+    lockPageScroll();
+    return unlockPageScroll;
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
   const contentClasses = isFullscreen
     ? "w-full h-full"
     : "relative w-full rounded-3xl bg-white  dark:bg-gray-900";
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center overflow-y-auto modal z-99999">
+  return createPortal(
+    <div className="fixed inset-0 z-999999 flex items-center justify-center overflow-y-auto p-4 modal">
       {!isFullscreen && (
         <div
           className="fixed inset-0 h-full w-full bg-gray-400/50 backdrop-blur-[32px]"
@@ -90,6 +110,7 @@ export const Modal: React.FC<ModalProps> = ({
         )}
         <div>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
