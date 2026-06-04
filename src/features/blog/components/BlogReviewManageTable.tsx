@@ -163,6 +163,11 @@ export default function BlogReviewManageTable() {
     }
   };
 
+  const closeReplyModal = () => {
+    setReplyTarget(null);
+    setReplyText("");
+  };
+
   const handleSearchSubmit = () => {
     setSubmittedSearch(searchTerm.trim());
     setPageNumber(1);
@@ -374,7 +379,7 @@ export default function BlogReviewManageTable() {
         </div>
       </Modal>
 
-      <Modal isOpen={!!replyTarget} onClose={() => setReplyTarget(null)} className="max-w-[620px] p-5 lg:p-6">
+      <Modal isOpen={!!replyTarget} onClose={closeReplyModal} className="max-w-[620px] p-5 lg:p-6">
         <div className="space-y-3">
           <h4 className="text-base font-semibold text-black dark:text-white">Reply to review</h4>
           {replyTarget?.replyToAccountName && <p className="text-xs text-gray-600 dark:text-gray-300">Replying to <span className="font-semibold text-black dark:text-white">{replyTarget.replyToAccountName}</span></p>}
@@ -382,7 +387,7 @@ export default function BlogReviewManageTable() {
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-300">{replyText.length}/500</span>
             <div className="flex gap-2">
-              <button onClick={() => setReplyTarget(null)} className="rounded border px-3 py-1 text-xs text-black dark:text-white">Cancel</button>
+              <button onClick={closeReplyModal} className="rounded border px-3 py-1 text-xs text-black dark:text-white">Cancel</button>
               <button onClick={() => void submitReply()} disabled={!replyText.trim()} className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-50">Send reply</button>
             </div>
           </div>
