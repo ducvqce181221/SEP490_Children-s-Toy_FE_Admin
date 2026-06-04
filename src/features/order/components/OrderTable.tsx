@@ -22,6 +22,7 @@ export default function OrderTable() {
     keyword,
     statusId,
     assignedToMe,
+    workTab,
     fromDate,
     toDate,
     pageNumber,
@@ -34,6 +35,7 @@ export default function OrderTable() {
     handleSearchSubmit,
     handleStatusChange,
     handleAssignedToMeChange,
+    handleWorkTabChange,
     handleFromDateChange,
     handleToDateChange,
     handlePageSizeChange,
@@ -76,6 +78,8 @@ export default function OrderTable() {
         roleName={roleName}
         defaultStatusIds={defaultStatusIds}
         totalCount={totalCount}
+        workTab={workTab}
+        onWorkTabChange={handleWorkTabChange}
       />
 
       {/* ERROR */}
