@@ -287,7 +287,6 @@ const WalletTable = () => {
               className={statusSelectClassName}
               value="Active"
               disabled={editingWallet === null || updatingWalletId === editingWallet.walletId}
-              readOnly
             >
               <option value="Active">Active</option>
             </select>

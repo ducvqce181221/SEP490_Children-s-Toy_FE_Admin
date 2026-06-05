@@ -18,13 +18,11 @@ export const VoucherFormSchema = z.object({
     .min(3, "Voucher description must be at least 3 characters.")
     .max(255, "Voucher description must not exceed 255 characters."),
   
-  // SỬA LỖI 1: Đổi 'errorMap' thành 'message'
   discountType: z
     .enum(["FIXED", "PERCENTAGE"], { 
       message: "Discount type must be either FIXED or PERCENTAGE." 
     }),
   
-  // SỬA LỖI 2: Đổi 'invalid_type_error' thành 'message'
   discountValue: z
     .number({ message: "Discount value is required." })
     .gt(0, "Discount value must be greater than 0.")
@@ -36,7 +34,6 @@ export const VoucherFormSchema = z.object({
     .nullable()
     .optional(),
   
-  // SỬA LỖI 3: Đổi 'errorMap' thành 'message'
   discountTarget: z
     .enum(["ORDER_TOTAL", "SHIPPING_FEE", "FINAL_PRICE"], { 
       message: "Discount target must be either ORDER_TOTAL, SHIPPING_FEE, or FINAL_PRICE." 
@@ -68,114 +65,119 @@ export const VoucherFormSchema = z.object({
     .string()
     .min(1, "End date is required."),
   
-  // SỬA LỖI 4: Đổi 'errorMap' thành 'message'
   status: z
     .enum(["Scheduled", "Active", "Inactive", "Expired", "Pending", "Rejected"], { 
       message: "Status must be one of Scheduled, Active, Inactive, Expired, Pending, or Rejected." 
     }),
-})
-.refine(data => {
-  if (data.discountType === "PERCENTAGE" && data.discountValue > 100) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Discount value must be less than or equal to 100 for percentage vouchers.",
-  path: ["discountValue"]
-})
-.refine(data => {
-  // Đối với FIXED, giá trị giảm giá không được lớn hơn mức chi tiêu tối thiểu (nếu có)
-  if (data.discountType === "FIXED" && data.minOrderAmount !== null && data.minOrderAmount !== undefined) {
-    return data.discountValue <= data.minOrderAmount;
-  }
-  return true;
-}, {
-  message: "Discount value cannot be greater than the minimum order amount for fixed vouchers.",
-  path: ["discountValue"]
-})
-.refine(data => {
-  if (data.discountType === "FIXED" && data.maxDiscountCap !== null && data.maxDiscountCap !== undefined) {
-    return data.discountTarget === "FINAL_PRICE";
-  }
-  return true;
-}, {
-  message: "Max discount cap is only allowed for percentage vouchers, unless the target is FINAL_PRICE.",
-  path: ["maxDiscountCap"]
-})
-.refine(data => {
-  const start = new Date(data.startDate);
-  const end = new Date(data.endDate);
-  // Ensure valid dates before comparison
-  if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-    return start < end;
-  }
-  return true; // Let the min(1) rule handle empty strings
-}, {
-  message: "Start date must be earlier than end date.",
-  path: ["endDate"]
-})
-.refine(data => {
-  const start = new Date(data.startDate);
-  const minFutureTime = getMinimumFutureTime(); 
-  return start.getTime() >= minFutureTime;
-}, {
-  message: "Start date must be at least 10 minutes from now.",
-  path: ["startDate"]
-})
-
-.refine(data => {
-  if (data.totalQuantity !== null && data.totalQuantity !== undefined && data.maxUsagePerUser !== null && data.maxUsagePerUser !== undefined) {
-    return data.maxUsagePerUser <= data.totalQuantity;
-  }
-  return true;
-}, {
-  message: "Max usage per user must be less than or equal to total quantity.",
-  path: ["maxUsagePerUser"]
-})
-.refine(data => {
-  if (data.discountType === "PERCENTAGE" && (data.maxDiscountCap === null || data.maxDiscountCap === undefined)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Max discount cap is required for percentage vouchers.",
-  path: ["maxDiscountCap"]
-})
-.refine(data => {
-  if (data.discountTarget === "FINAL_PRICE") {
-    return data.discountType === "FIXED";
-  }
-  return true;
-}, {
-  message: "Discount type must be FIXED for FINAL_PRICE vouchers.",
-  path: ["discountType"]
-})
-.refine(data => {
-  if (data.discountTarget === "FINAL_PRICE") {
-    return data.minOrderAmount !== null && data.minOrderAmount !== undefined && data.minOrderAmount > 0;
-  }
-  return true;
-}, {
-  message: "Minimum order amount is required and must be greater than 0 for FINAL_PRICE vouchers.",
-  path: ["minOrderAmount"]
-})
-.refine(data => {
-  if (data.discountTarget === "FINAL_PRICE") {
-    return data.totalQuantity !== null && data.totalQuantity !== undefined && data.totalQuantity > 0;
-  }
-  return true;
-}, {
-  message: "Total quantity limit is required for FINAL_PRICE vouchers.",
-  path: ["totalQuantity"]
-})
-.refine(data => {
-  if (data.discountTarget === "FINAL_PRICE") {
-    return data.maxUsagePerUser === 1;
-  }
-  return true;
-}, {
-  message: "Max usage per user must be exactly 1 for FINAL_PRICE vouchers.",
-  path: ["maxUsagePerUser"]
 });
+
+export const getVoucherFormSchema = (isEdit: boolean = false) => {
+  const schema = VoucherFormSchema
+    .refine(data => {
+      if (data.discountType === "PERCENTAGE" && data.discountValue > 100) {
+        return false;
+      }
+      return true;
+    }, {
+      message: "Discount value must be less than or equal to 100 for percentage vouchers.",
+      path: ["discountValue"]
+    })
+    .refine(data => {
+      if (data.discountType === "FIXED" && data.minOrderAmount !== null && data.minOrderAmount !== undefined) {
+        return data.discountValue <= data.minOrderAmount;
+      }
+      return true;
+    }, {
+      message: "Discount value cannot be greater than the minimum order amount for fixed vouchers.",
+      path: ["discountValue"]
+    })
+    .refine(data => {
+      if (data.discountType === "FIXED" && data.maxDiscountCap !== null && data.maxDiscountCap !== undefined) {
+        return data.discountTarget === "FINAL_PRICE" || data.discountTarget === "SHIPPING_FEE";
+      }
+      return true;
+    }, {
+      message: "Max discount cap is only allowed for percentage vouchers, unless the target is FINAL_PRICE or SHIPPING_FEE.",
+      path: ["maxDiscountCap"]
+    })
+    .refine(data => {
+      const start = new Date(data.startDate);
+      const end = new Date(data.endDate);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        return start < end;
+      }
+      return true;
+    }, {
+      message: "Start date must be earlier than end date.",
+      path: ["endDate"]
+    })
+    .refine(data => {
+      if (data.totalQuantity !== null && data.totalQuantity !== undefined && data.maxUsagePerUser !== null && data.maxUsagePerUser !== undefined) {
+        return data.maxUsagePerUser <= data.totalQuantity;
+      }
+      return true;
+    }, {
+      message: "Max usage per user must be less than or equal to total quantity.",
+      path: ["maxUsagePerUser"]
+    })
+    .refine(data => {
+      if (data.discountType === "PERCENTAGE" && (data.maxDiscountCap === null || data.maxDiscountCap === undefined)) {
+        return false;
+      }
+      return true;
+    }, {
+      message: "Max discount cap is required for percentage vouchers.",
+      path: ["maxDiscountCap"]
+    })
+    .refine(data => {
+      if (data.discountTarget === "FINAL_PRICE") {
+        return data.discountType === "FIXED";
+      }
+      return true;
+    }, {
+      message: "Discount type must be FIXED for FINAL_PRICE vouchers.",
+      path: ["discountType"]
+    })
+    .refine(data => {
+      if (data.discountTarget === "FINAL_PRICE") {
+        return data.minOrderAmount !== null && data.minOrderAmount !== undefined && data.minOrderAmount > 0;
+      }
+      return true;
+    }, {
+      message: "Minimum order amount is required and must be greater than 0 for FINAL_PRICE vouchers.",
+      path: ["minOrderAmount"]
+    })
+    .refine(data => {
+      if (data.discountTarget === "FINAL_PRICE") {
+        return data.totalQuantity !== null && data.totalQuantity !== undefined && data.totalQuantity > 0;
+      }
+      return true;
+    }, {
+      message: "Total quantity limit is required for FINAL_PRICE vouchers.",
+      path: ["totalQuantity"]
+    })
+    .refine(data => {
+      if (data.discountTarget === "FINAL_PRICE") {
+        return data.maxUsagePerUser === 1;
+      }
+      return true;
+    }, {
+      message: "Max usage per user must be exactly 1 for FINAL_PRICE vouchers.",
+      path: ["maxUsagePerUser"]
+    });
+
+  if (!isEdit) {
+    return schema.refine(data => {
+      const start = new Date(data.startDate);
+      const minFutureTime = getMinimumFutureTime(); 
+      return start.getTime() >= minFutureTime;
+    }, {
+      message: "Start date must be at least 10 minutes from now.",
+      path: ["startDate"]
+    });
+  }
+
+  return schema;
+};
 
 export type VoucherFormDataSchema = z.infer<typeof VoucherFormSchema>;
