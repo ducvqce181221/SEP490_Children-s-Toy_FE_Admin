@@ -21,6 +21,7 @@ interface PromotionTimeSlotsSectionProps {
   form: UseFormReturn<PromotionFormData>;
   readonly?: boolean;
   isNew?: boolean;
+  hasTransactions?: boolean;
 }
 
 type TabFilter = "Active_Scheduled" | "Inactive" | "Expired" | "All";
@@ -28,6 +29,7 @@ type TabFilter = "Active_Scheduled" | "Inactive" | "Expired" | "All";
 export function PromotionTimeSlotsSection({
   form,
   readonly = false,
+  hasTransactions = false,
 }: PromotionTimeSlotsSectionProps) {
   const [activeTab, setActiveTab] = useState<TabFilter>("Active_Scheduled");
 
@@ -133,7 +135,10 @@ export function PromotionTimeSlotsSection({
                 if (activeTab === "Inactive" && status !== "Inactive") return null;
                 if (activeTab === "Expired" && status !== "Expired") return null;
 
-                const isTimeLocked = readonly || status !== "Scheduled";
+                const isTimeLocked = readonly || 
+                  status === "Active" || 
+                  status === "Expired" || 
+                  (status === "Inactive" && hasTransactions);
                 
                 return (
                 <TableRow key={field.id}>
