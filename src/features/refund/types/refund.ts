@@ -79,7 +79,21 @@ export interface RefundFilter {
   pageSize?: number;
   assignedToMe?: boolean;
   keyword?: string;
+  assignmentScope?: string;
 }
+
+export const REFUND_WORK_TAB = {
+  IN_PROGRESS: "inProgress",
+  COMPLETED: "completed",
+} as const;
+
+export type RefundWorkTab =
+  (typeof REFUND_WORK_TAB)[keyof typeof REFUND_WORK_TAB];
+
+export const REFUND_WORK_TAB_LABEL: Record<RefundWorkTab, string> = {
+  [REFUND_WORK_TAB.IN_PROGRESS]: "In progress",
+  [REFUND_WORK_TAB.COMPLETED]: "Completed",
+};
 
 export interface RefundPaginatedResponse {
   items: Refund[];

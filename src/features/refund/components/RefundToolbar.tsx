@@ -3,7 +3,7 @@
 import React from "react";
 import SearchInput from "@/components/common/SearchInput";
 import DatePicker from "@/components/form/date-picker";
-import { RefundStatusType } from "../types/refund";
+import { RefundStatusType, REFUND_WORK_TAB, REFUND_WORK_TAB_LABEL, RefundWorkTab } from "../types/refund";
 
 interface RefundToolbarProps {
   keyword: string;
@@ -11,14 +11,14 @@ interface RefundToolbarProps {
   onSearchSubmit: () => void;
   refundStatus: RefundStatusType | "";
   onStatusChange: (value: RefundStatusType | "") => void;
-  assignedToMe: boolean;
-  onAssignedToMeChange: (value: boolean) => void;
   fromDate: string;
   onFromDateChange: (value: string) => void;
   toDate: string;
   onToDateChange: (value: string) => void;
   roleName?: string;
   totalCount?: number;
+  workTab?: RefundWorkTab;
+  onWorkTabChange?: (tab: RefundWorkTab) => void;
 }
 
 const selectClassName =
@@ -61,14 +61,14 @@ export const RefundToolbar: React.FC<RefundToolbarProps> = ({
   onSearchSubmit,
   refundStatus,
   onStatusChange,
-  assignedToMe,
-  onAssignedToMeChange,
   fromDate,
   onFromDateChange,
   toDate,
   onToDateChange,
   roleName = "",
   totalCount,
+  workTab = REFUND_WORK_TAB.IN_PROGRESS,
+  onWorkTabChange,
 }) => {
   const handleFromDateChange = React.useCallback(
     ([date]: Date[]) => {
@@ -99,6 +99,9 @@ export const RefundToolbar: React.FC<RefundToolbarProps> = ({
   );
 
   const roleBadge = getRoleBadge(roleName);
+  const showWorkTabs =
+    (roleName === ROLE_NAME.STAFF || roleName === ROLE_NAME.MERCHANDISE) &&
+    !!onWorkTabChange;
 
   return (
     <div className="px-5 py-5 sm:px-6">
@@ -120,26 +123,41 @@ export const RefundToolbar: React.FC<RefundToolbarProps> = ({
             )}
           </div>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {roleName === ROLE_NAME.STAFF && "View and process customer refund requests."}
-            {roleName === ROLE_NAME.MERCHANDISE && "Verify returned toy quality and handle inspections."}
+            {roleName === ROLE_NAME.STAFF &&
+              (workTab === REFUND_WORK_TAB.COMPLETED
+                ? "Refunds you handled in this shift — view only, no actions."
+                : "Refunds assigned to you this shift — verify and update status.")}
+            {roleName === ROLE_NAME.MERCHANDISE &&
+              (workTab === REFUND_WORK_TAB.COMPLETED
+                ? "Refunds you handled in this shift — view only, no actions."
+                : "Refunds assigned to you this shift — verify returned toy quality and handle inspections.")}
             {roleName === ROLE_NAME.ADMIN && "Full access to view, assign, and manage all refund cases."}
             {!roleName && "Manage and track customer refund requests."}
           </p>
         </div>
-
-        {/* "My Refunds" toggle */}
-        <label className="flex shrink-0 cursor-pointer select-none items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 transition-colors hover:border-brand-300 hover:bg-brand-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-brand-700 dark:hover:bg-brand-900/20">
-          <input
-            type="checkbox"
-            className="rounded-sm border-gray-300 text-brand-500 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900"
-            checked={assignedToMe}
-            onChange={(e) => onAssignedToMeChange(e.target.checked)}
-          />
-          <span className={assignedToMe ? "font-medium text-brand-600 dark:text-brand-400" : ""}>
-            My Refunds
-          </span>
-        </label>
       </div>
+
+      {showWorkTabs && (
+        <div className="mb-5 inline-flex rounded-lg border border-gray-200 p-1 dark:border-gray-700">
+          {(Object.values(REFUND_WORK_TAB) as RefundWorkTab[]).map((tab) => {
+            const isActive = workTab === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => onWorkTabChange(tab)}
+                className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-brand-500 text-white shadow-theme-xs"
+                    : "text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5"
+                }`}
+              >
+                {REFUND_WORK_TAB_LABEL[tab]}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         {/* Search */}

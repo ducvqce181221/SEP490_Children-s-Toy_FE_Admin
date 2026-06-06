@@ -68,11 +68,27 @@ export const useReviewMutations = (onSuccess?: () => void) => {
     }
   };
 
+  const deleteReview = async (id: number) => {
+    setIsSubmitting(true);
+    try {
+      await reviewApi.updateStatus(id, { isDeleted: true });
+      toast.success("Review deleted successfully");
+      onSuccess?.();
+    } catch (err: any) {
+      console.error("Delete Review Error", err);
+      const errMsg = err.response?.data?.message || err.message || "Failed to delete review";
+      toast.error(errMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return {
     isSubmitting,
     updateStatus,
     createReply,
     updateReply,
     deleteReply,
+    deleteReview,
   };
 };
