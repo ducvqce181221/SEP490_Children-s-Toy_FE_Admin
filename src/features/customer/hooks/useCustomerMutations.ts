@@ -4,6 +4,7 @@ import { customerApi } from "../services/customer-api";
 import {
   ApiErrorResponse,
   CustomerDetail,
+  ManualBlockCustomerRequest,
   UpdateCustomerRequest,
   UpdateCustomerResult,
   ValidationErrorResponse,
@@ -11,6 +12,7 @@ import {
 
 export const useCustomerMutations = (onSuccess?: () => void) => {
   const [updatingCustomerId, setUpdatingCustomerId] = useState<number | null>(null);
+  const [blockingCustomerId, setBlockingCustomerId] = useState<number | null>(null);
 
   const updateCustomer = async (
     customerId: number,
@@ -55,8 +57,38 @@ export const useCustomerMutations = (onSuccess?: () => void) => {
     }
   };
 
+  const blockCustomerForDeliveryAbuse = async (
+    customerId: number,
+    payload: ManualBlockCustomerRequest,
+  ): Promise<UpdateCustomerResult> => {
+    setBlockingCustomerId(customerId);
+
+    try {
+      const blockedCustomer = await customerApi.blockCustomerForDeliveryAbuse(customerId, payload);
+      onSuccess?.();
+
+      return {
+        success: true,
+        message: "Customer account locked successfully.",
+        data: blockedCustomer as CustomerDetail,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+      return {
+        success: false,
+        message:
+          axiosError.response?.data?.message ??
+          "Unable to lock customer account. Please try again.",
+      };
+    } finally {
+      setBlockingCustomerId(null);
+    }
+  };
+
   return {
     updateCustomer,
+    blockCustomerForDeliveryAbuse,
     updatingCustomerId,
+    blockingCustomerId,
   };
 };
