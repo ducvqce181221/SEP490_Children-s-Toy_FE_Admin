@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
@@ -9,9 +9,10 @@ import Select from "@/components/form/Select";
 import TextArea from "@/components/form/input/TextArea";
 import Button from "@/components/ui/button/Button";
 import { Voucher, VoucherFormData } from "../types/voucher";
-import { VoucherFormSchema } from "../types/voucher.schema";
+import { getVoucherFormSchema } from "../types/voucher.schema";
 import { voucherApi } from "../services/voucher-api";
 import { formatUTCtoLocal, formatLocalToUTC, formatDisplayDate, getIdealFutureTime } from "@/utils/date-utils";
+import { useAuthContext } from "@/context/AuthContext";
 
 export type VoucherModalMode = "create" | "edit" | "detail";
 
@@ -55,6 +56,100 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [rawVoucher, setRawVoucher] = useState<Voucher | null>(null);
 
+  // Helper variables for disabled fields based on Used/Expired states
+  const hasBeenUsed = (rawVoucher?.usedQuantity ?? 0) > 0;
+  const isExpiredStatus = rawVoucher?.status === "Expired";
+  const isExpiredTime = rawVoucher?.endDate ? new Date(rawVoucher.endDate).getTime() <= Date.now() : false;
+  const isExpired = isExpiredStatus || isExpiredTime;
+
+  const isCriticalDisabled = isReadOnly || (isEditMode && (hasBeenUsed || isExpired));
+  const isNonCriticalLockedForExpired = isReadOnly || (isEditMode && isExpired);
+  const isStartDateReadOnly = isReadOnly || (isEditMode && (isExpired || hasBeenUsed));
+
+  const { account } = useAuthContext();
+  const roleName = account?.roleName;
+
+  const statusOptions = useMemo(() => {
+    const defaultOpts = [
+      { value: "Active", label: "Active" },
+      { value: "Inactive", label: "Inactive" },
+      { value: "Scheduled", label: "Scheduled" },
+      { value: "Expired", label: "Expired" },
+      { value: "Pending", label: "Pending" },
+      { value: "Rejected", label: "Rejected" },
+    ];
+
+    if (!rawVoucher) return defaultOpts;
+
+    const currentStatus = rawVoucher.status;
+    const isAdmin = roleName === "Admin";
+
+    if (isDetailMode) {
+      return defaultOpts;
+    }
+
+    switch (currentStatus) {
+      case "Scheduled":
+        return isAdmin
+          ? [
+              { value: "Scheduled", label: "Scheduled" },
+              { value: "Active", label: "Active" },
+              { value: "Inactive", label: "Inactive" },
+            ]
+          : [
+              { value: "Scheduled", label: "Scheduled" },
+              { value: "Inactive", label: "Inactive" },
+            ];
+
+      case "Active":
+        return [
+          { value: "Active", label: "Active" },
+          { value: "Inactive", label: "Inactive" },
+        ];
+
+      case "Inactive":
+        return isAdmin
+          ? [
+              { value: "Inactive", label: "Inactive" },
+              { value: "Active", label: "Active" },
+              { value: "Scheduled", label: "Scheduled" },
+            ]
+          : [
+              { value: "Inactive", label: "Inactive" },
+              { value: "Pending", label: "Reactivate (Request Approval)" },
+            ];
+
+      case "Expired":
+        return isAdmin
+          ? [
+              { value: "Expired", label: "Expired" },
+              { value: "Active", label: "Active" },
+              { value: "Scheduled", label: "Scheduled" },
+            ]
+          : [
+              { value: "Expired", label: "Expired" },
+              { value: "Pending", label: "Reactivate (Request Approval)" },
+            ];
+
+      case "Pending":
+        return isAdmin
+          ? [
+              { value: "Pending", label: "Pending (Under Review)" },
+              { value: "Scheduled", label: "Approve (Schedule)" },
+              { value: "Active", label: "Approve (Start Now)" },
+              { value: "Inactive", label: "Inactive" },
+              { value: "Rejected", label: "Rejected" },
+            ]
+          : [
+              { value: "Pending", label: "Pending" },
+              { value: "Inactive", label: "Inactive" },
+            ];
+
+      default:
+        return defaultOpts;
+    }
+  }, [rawVoucher, roleName, isDetailMode]);
+
   // Không hiển thị Status khi tạo mới hoặc khi edit một voucher đang bị Rejected
   const shouldShowStatus = isDetailMode || (isEditMode && rawVoucher?.status !== "Rejected");
 
@@ -67,7 +162,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
     trigger,
     formState: { errors },
   } = useForm<VoucherFormData>({
-    resolver: zodResolver(VoucherFormSchema),
+    resolver: zodResolver(getVoucherFormSchema(isEditMode)),
     defaultValues,
     mode: "onTouched",
   });
@@ -201,7 +296,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
                 placeholder="e.g. SUMMER2026" 
                 error={!!errors.voucherCode}
                 hint={errors.voucherCode?.message}
-                disabled={isReadOnly}
+                disabled={isCriticalDisabled}
                 {...register("voucherCode", {
                   onChange: (e) => {
                     e.target.value = e.target.value.toUpperCase();
@@ -218,7 +313,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
                 placeholder="e.g. Summer Sale Discount" 
                 error={!!errors.voucherName}
                 hint={errors.voucherName?.message}
-                disabled={isReadOnly}
+                disabled={isNonCriticalLockedForExpired}
                 {...register("voucherName")}
               />
             </div>
@@ -233,7 +328,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               rows={2}
               error={!!errors.voucherDescription}
               hint={errors.voucherDescription?.message}
-              readOnly={isReadOnly}
+              readOnly={isNonCriticalLockedForExpired}
               {...register("voucherDescription")}
             />
           </div>
@@ -248,7 +343,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
                 ]}
                 error={!!errors.discountType}
                 hint={errors.discountType?.message}
-                disabled={isReadOnly}
+                disabled={isCriticalDisabled}
                 {...register("discountType")}
               />
             </div>
@@ -261,7 +356,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
                 placeholder="Value" 
                 error={!!errors.discountValue}
                 hint={errors.discountValue?.message}
-                disabled={isReadOnly}
+                disabled={isCriticalDisabled}
                 {...register("discountValue", { valueAsNumber: true })}
               />
             </div>
@@ -277,7 +372,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
                 placeholder={(discountType === "FIXED" && discountTarget !== "FINAL_PRICE") ? "Not applicable" : "Limit discount up to..."} 
                 error={!!errors.maxDiscountCap}
                 hint={errors.maxDiscountCap?.message}
-                disabled={isReadOnly || (discountType === "FIXED" && discountTarget !== "FINAL_PRICE")}
+                disabled={isCriticalDisabled || (discountType === "FIXED" && discountTarget !== "FINAL_PRICE")}
                 {...register("maxDiscountCap", { 
                   setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v) 
                 })}
@@ -290,7 +385,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
                 placeholder="Minimum cart value" 
                 error={!!errors.minOrderAmount}
                 hint={errors.minOrderAmount?.message}
-                disabled={isReadOnly}
+                disabled={isCriticalDisabled}
                 {...register("minOrderAmount", { 
                   setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v),
                   onChange: () => trigger("discountValue")
@@ -310,7 +405,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
                 ]}
                 error={!!errors.discountTarget}
                 hint={errors.discountTarget?.message}
-                disabled={isReadOnly}
+                disabled={isCriticalDisabled}
                 {...register("discountTarget")}
               />
             </div>
@@ -318,14 +413,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               <div>
                 <Label>Status</Label>
                 <Select 
-                  options={[
-                    { value: "Active", label: "Active" },
-                    { value: "Inactive", label: "Inactive" },
-                    { value: "Scheduled", label: "Scheduled" },
-                    { value: "Expired", label: "Expired" },
-                    { value: "Pending", label: "Pending" },
-                    { value: "Rejected", label: "Rejected" },
-                  ]}
+                  options={statusOptions}
                   error={!!errors.status}
                   hint={errors.status?.message}
                   disabled={isReadOnly}
@@ -343,7 +431,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
                 placeholder={discountTarget === "FINAL_PRICE" ? "e.g. 100" : "Leave blank for unlimited"} 
                 error={!!errors.totalQuantity}
                 hint={errors.totalQuantity?.message}
-                disabled={isReadOnly}
+                disabled={isNonCriticalLockedForExpired}
                 {...register("totalQuantity", { 
                   setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v) 
                 })}
@@ -356,7 +444,7 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
                 placeholder="e.g. 1" 
                 error={!!errors.maxUsagePerUser}
                 hint={errors.maxUsagePerUser?.message}
-                disabled={isReadOnly}
+                disabled={isNonCriticalLockedForExpired}
                 {...register("maxUsagePerUser", { 
                   setValueAs: v => v === "" || v === null || isNaN(v) ? null : parseInt(v) 
                 })}
@@ -369,8 +457,8 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               <Label>
                 Start Date <span className="text-error-500">*</span>
               </Label>
-              {isReadOnly ? (
-                <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
+              {isStartDateReadOnly ? (
+                <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90 opacity-70">
                   {formatDisplayDate(rawVoucher?.startDate)}
                 </div>
               ) : (

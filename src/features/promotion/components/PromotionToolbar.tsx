@@ -106,7 +106,8 @@ export const PromotionToolbar: React.FC<PromotionToolbarProps> = ({
                   options={[
                     { value: "", label: "All Statuses" },
                     { value: "Active", label: "Active" },
-                    { value: "Upcoming", label: "Upcoming" },
+                    { value: "Scheduled", label: "Scheduled" },
+                    { value: "Inactive", label: "Inactive" },
                     { value: "Expired", label: "Expired" },
                   ]}
                   onChange={handleStatusChange}

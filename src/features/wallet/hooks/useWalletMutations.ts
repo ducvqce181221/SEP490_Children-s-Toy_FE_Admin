@@ -28,10 +28,7 @@ export const useWalletMutations = (onSuccess?: () => void) => {
 
       return {
         success: true,
-        message:
-          payload.status === "Frozen"
-            ? "Wallet has been frozen successfully."
-            : "Wallet has been reactivated successfully.",
+        message: "Wallet has been activated successfully.",
         data: updatedWallet,
       };
     } catch (err) {

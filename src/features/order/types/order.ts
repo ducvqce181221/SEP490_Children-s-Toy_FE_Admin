@@ -105,6 +105,20 @@ export const ROLE_NAME = {
   MERCHANDISE: "Merchandise",
 } as const;
 
+/** Tab list Staff/Merch — maps to GET /admin/orders?assignmentScope= */
+export const ORDER_WORK_TAB = {
+  IN_PROGRESS: "inProgress",
+  COMPLETED: "completed",
+} as const;
+
+export type OrderWorkTab =
+  (typeof ORDER_WORK_TAB)[keyof typeof ORDER_WORK_TAB];
+
+export const ORDER_WORK_TAB_LABEL: Record<OrderWorkTab, string> = {
+  [ORDER_WORK_TAB.IN_PROGRESS]: "In progress",
+  [ORDER_WORK_TAB.COMPLETED]: "Completed",
+};
+
 /** StatusId mặc định hiển thị theo role (Admin = [] nghĩa là tất cả) */
 export const ROLE_DEFAULT_STATUS_IDS: Record<string, number[]> = {
   [ROLE_NAME.STAFF]: [ORDER_STATUS_ID.PENDING, ORDER_STATUS_ID.CONFIRMED],
@@ -268,6 +282,7 @@ export interface OrderDetail {
 export interface OrderQueryParams {
   statusId?: number;
   statusIds?: number[];
+  assignmentScope?: OrderWorkTab;
   assignedToMe?: boolean;
   keyword?: string;
   fromDate?: string;

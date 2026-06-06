@@ -33,8 +33,11 @@ export const PromotionRow = React.memo(function PromotionRow({
     switch (status.toLowerCase()) {
       case "active":
         return <Badge size="sm" color="success">Active</Badge>;
+      case "scheduled":
       case "upcoming":
-        return <Badge size="sm" color="warning">Upcoming</Badge>;
+        return <Badge size="sm" color="warning">Scheduled</Badge>;
+      case "inactive":
+        return <Badge size="sm" color="error">Inactive</Badge>;
       case "expired":
         return <Badge size="sm" color="light">Expired</Badge>;
       default:
@@ -84,7 +87,7 @@ export const PromotionRow = React.memo(function PromotionRow({
             </button>
           </Link>
           
-          {promotion.status.toLowerCase() !== "active" ? (
+          {promotion.status.toLowerCase() !== "expired" && (
             <Link href={`/admin/promotions/${promotion.promotionId}/edit`}>
               <button 
                 className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
@@ -93,7 +96,9 @@ export const PromotionRow = React.memo(function PromotionRow({
                 <PencilIcon className="w-5 h-5" />
               </button>
             </Link>
-          ) : (
+          )}
+
+          {promotion.status.toLowerCase() === "active" && (
             <button 
               ref={inactiveBtnRef}
               onClick={() => setIsInactiveOpen(true)}

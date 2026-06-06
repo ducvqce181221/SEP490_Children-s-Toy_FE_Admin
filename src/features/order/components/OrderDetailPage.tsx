@@ -233,6 +233,8 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   const role = account?.roleName;
   const isAdmin = role === ROLE_NAME.ADMIN;
   const isAssignedToMe = isAdmin || (order?.isAssignedToCurrentUser ?? false);
+  const isViewOnlyDetail =
+    !isAdmin && !!order && !order.isAssignedToCurrentUser;
 
   const canConfirm =
     order?.statusName === ORDER_STATUS.PENDING &&
@@ -275,7 +277,9 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     isGhnReturnFlowStatus(ghnStatus);
   const hasShippingHistory = (order?.shippingHistory?.length ?? 0) > 0;
   const showShippingTab = !!order?.shipping || hasShippingHistory || isReturnFlow;
-  const hasActions = canConfirm || canProcess || canShip || canCancel || canAssign;
+  const hasActions =
+    !isViewOnlyDetail &&
+    (canConfirm || canProcess || canShip || canCancel || canAssign);
 
   const tabs: { key: TabKey; label: string; show: boolean }[] = [
     { key: "overview", label: "Overview", show: true },
@@ -303,6 +307,11 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-8">
+      {isViewOnlyDetail && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+          View-only — this order was already handled or is no longer assigned to you this shift. You cannot perform actions on it.
+        </div>
+      )}
       {/* Header */}
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
