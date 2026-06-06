@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 export const UpdateReviewStatusSchema = z.object({
-  moderationStatus: z.enum(["Approved", "Pending", "Rejected", "ManualReview"]),
-  reason: z.string().optional(),
+  moderationStatus: z.enum(["Approved", "Pending", "Rejected", "ManualReview"]).optional().nullable(),
+  reason: z.string().optional().nullable(),
+  isDeleted: z.boolean().optional(),
 });
 
 export type UpdateReviewStatusData = z.infer<typeof UpdateReviewStatusSchema>;

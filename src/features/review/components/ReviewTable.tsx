@@ -15,6 +15,7 @@ import { useReviews } from "../hooks/useReviews";
 import { ReviewRow } from "./ReviewRow";
 import { ReviewDetailModal } from "./ReviewDetailModal";
 import { Review, ReviewQuery } from "../types/review";
+import { useReviewMutations } from "../hooks/useReviewMutations";
 
 export const ReviewTable = () => {
   const router = useRouter();
@@ -29,7 +30,10 @@ export const ReviewTable = () => {
     totalCount,
     query,
     updateQuery,
+    refetch,
   } = useReviews();
+
+  const { deleteReview } = useReviewMutations(refetch);
 
   const [viewReview, setViewReview] = useState<Review | null>(null);
   const [activeReviewId, setActiveReviewId] = useState<number | null>(null);
@@ -121,6 +125,7 @@ export const ReviewTable = () => {
                       setViewReview(review);
                       setActiveReviewId(review.reviewId);
                     }}
+                    onDelete={() => deleteReview(review.reviewId)}
                   />
                 ))
               ) : (

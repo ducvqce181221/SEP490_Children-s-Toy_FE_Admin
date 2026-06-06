@@ -20,7 +20,7 @@ export const RefundTable = () => {
     error,
     keyword,
     refundStatus,
-    assignedToMe,
+    workTab,
     fromDate,
     toDate,
     pageNumber,
@@ -31,7 +31,7 @@ export const RefundTable = () => {
     handleKeywordChange,
     handleSearchSubmit,
     handleStatusChange,
-    handleAssignedToMeChange,
+    handleWorkTabChange,
     handleFromDateChange,
     handleToDateChange,
     handlePageSizeChange,
@@ -55,14 +55,14 @@ export const RefundTable = () => {
         onSearchSubmit={handleSearchSubmit}
         refundStatus={refundStatus}
         onStatusChange={handleStatusChange}
-        assignedToMe={assignedToMe}
-        onAssignedToMeChange={handleAssignedToMeChange}
         fromDate={fromDate}
         onFromDateChange={handleFromDateChange}
         toDate={toDate}
         onToDateChange={handleToDateChange}
         roleName={roleName}
         totalCount={totalCount}
+        workTab={workTab}
+        onWorkTabChange={handleWorkTabChange}
       />
 
       {/* ERROR */}
