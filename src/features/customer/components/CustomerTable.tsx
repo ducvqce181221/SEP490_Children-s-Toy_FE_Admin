@@ -275,8 +275,8 @@ const CustomerTable = () => {
               Lock customer account?
             </h2>
             <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
-              This will deactivate the customer account, record a block history entry,
-              and send the customer an email notification in English.
+              This will deactivate the customer account, record the delivery-abuse case,
+              and send the customer an email notification.
             </p>
           </div>
         </div>
