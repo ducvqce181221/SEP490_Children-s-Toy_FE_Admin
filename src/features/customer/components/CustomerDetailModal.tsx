@@ -144,6 +144,18 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
             </div>
           </div>
 
+          {customerDetail.isSuspiciousDeliveryAbuse && (
+            <div className="sm:col-span-2 rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-300">
+              <p className="font-semibold">COD delivery abuse risk detected</p>
+              <p className="mt-1">
+                {customerDetail.suspiciousDeliveryFailOrderCount} unpaid COD orders reached 3 GHN delivery failures.
+                {customerDetail.lastSuspiciousGHNFailCode
+                  ? ` Last GHN code: ${customerDetail.lastSuspiciousGHNFailCode}.`
+                  : ""}
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Account ID
@@ -193,6 +205,36 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
             <input
               className={inputClassName}
               value={customerDetail.isActive ? "Active" : "Inactive"}
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              COD Restriction
+            </label>
+            <input
+              className={inputClassName}
+              value={customerDetail.isCodRestricted ? "Restricted" : "Available"}
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Suspicious Failed COD Orders
+            </label>
+            <input
+              className={inputClassName}
+              value={customerDetail.suspiciousDeliveryFailOrderCount}
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Last GHN Fail Code
+            </label>
+            <input
+              className={inputClassName}
+              value={customerDetail.lastSuspiciousGHNFailCode ?? "--"}
               readOnly
             />
           </div>

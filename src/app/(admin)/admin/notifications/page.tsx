@@ -1,25 +1,39 @@
 "use client";
 
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import { useAuthContext } from "@/context/AuthContext";
 import { useNotificationRealtime } from "@/features/notifications/context/NotificationRealtimeContext";
 import { notificationApi } from "@/features/notifications/services/notification-api";
-import type { NotificationListItem } from "@/features/notifications/types/notification";
-import Link from "next/link";
+import type { NotificationListItem, NotificationType } from "@/features/notifications/types/notification";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BellIcon,
   CheckCircleIcon,
-  TrashBinIcon,
   EnvelopeIcon,
   BoxCubeIcon,
   DollarLineIcon,
   InfoIcon,
-  ChevronLeftIcon,
-  ChevronDownIcon
 } from "@/icons";
 import EmptyState from "@/components/common/EmptyState";
 import Pagination from "@/components/common/Pagination";
+
+// ─── Role → allowed notification types ───────────────────────────────────────
+const ROLE_ID = { ADMIN: 2, STAFF: 3, MERCHANDISE: 4 } as const;
+
+const ROLE_ALLOWED_TYPES: Record<number, NotificationType[]> = {
+  [ROLE_ID.ADMIN]: ["ORDER", "PROMOTION", "SYSTEM", "BLOG", "STOCK"],
+  [ROLE_ID.STAFF]: ["ORDER", "SYSTEM"],
+  [ROLE_ID.MERCHANDISE]: ["ORDER", "STOCK", "SYSTEM"],
+};
+
+const TYPE_META: Record<NotificationType, { label: string; icon: React.ReactNode; badge: string }> = {
+  ORDER: { label: "Order", icon: <BoxCubeIcon className="w-6 h-6 text-blue-500   fill-current" />, badge: "bg-blue-100   text-blue-700   dark:bg-blue-900/30   dark:text-blue-300" },
+  PROMOTION: { label: "Promotion", icon: <DollarLineIcon className="w-6 h-6 text-orange-500 fill-current" />, badge: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" },
+  SYSTEM: { label: "System", icon: <InfoIcon className="w-6 h-6 text-purple-500 fill-current" />, badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
+  BLOG: { label: "Blog", icon: <EnvelopeIcon className="w-6 h-6 text-sky-500    fill-current" />, badge: "bg-sky-100    text-sky-700    dark:bg-sky-900/30    dark:text-sky-300" },
+  STOCK: { label: "Product Quantity", icon: <BoxCubeIcon className="w-5 h-5 text-green-500  fill-current" />, badge: "bg-green-100  text-green-700  dark:bg-green-900/30  dark:text-green-300" },
+};
 
 function formatTime(iso: string): string {
   if (!iso) return "";
@@ -42,21 +56,28 @@ function formatTime(iso: string): string {
   });
 }
 
-function getNotificationIcon(type: string) {
-  const lowerType = type.toLowerCase();
-  if (lowerType.includes("order")) return <BoxCubeIcon className="w-6 h-6 text-blue-500 fill-current" />;
-  if (lowerType.includes("promo") || lowerType.includes("voucher")) return <DollarLineIcon className="w-6 h-6 text-orange-500 fill-current" />;
-  if (lowerType.includes("system")) return <InfoIcon className="w-6 h-6 text-purple-500 fill-current" />;
-  return <BellIcon className="w-6 h-6 text-gray-500 fill-current" />;
-}
-
 type Tab = "unread" | "all";
 
 export default function AdminNotificationsPage() {
   const router = useRouter();
+  const { account } = useAuthContext();
   const { unreadCount, refreshUnread } = useNotificationRealtime();
+
+  // Derive allowed types for current role (fallback to all if unknown role)
+  const allowedTypes = useMemo<NotificationType[]>(() => {
+    if (!account) return ["ORDER", "PROMOTION", "SYSTEM", "BLOG", "STOCK"];
+    return ROLE_ALLOWED_TYPES[account.roleId] ?? ["ORDER", "PROMOTION", "SYSTEM", "BLOG", "STOCK"];
+  }, [account]);
+
+  const roleName = account?.roleName ?? "";
+  const isAdmin = account?.roleId === ROLE_ID.ADMIN;
+  const isMerch = account?.roleId === ROLE_ID.MERCHANDISE;
+
   const [tab, setTab] = useState<Tab>("unread");
-  const [type, setType] = useState<string>("");
+  // Merchandise defaults to STOCK filter; others default to "all types"
+  const [type, setType] = useState<string>(() =>
+    account?.roleId === ROLE_ID.MERCHANDISE ? "STOCK" : ""
+  );
   const [items, setItems] = useState<NotificationListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -142,9 +163,27 @@ export default function AdminNotificationsPage() {
           {/* Header Stats & Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Inbox</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-3 mb-1">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Notifications</h3>
+                {/* Role badge */}
+                {roleName && (
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${isAdmin
+                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                    : isMerch
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                      : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                    }`}>
+                    {roleName}
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
                 You have <span className="font-semibold text-brand-600">{unreadCount}</span> unread messages
+                {!isAdmin && allowedTypes.length > 0 && (
+                  <span className="ml-2 text-gray-400 dark:text-gray-500">
+                    · Showing: {allowedTypes.map(t => TYPE_META[t]?.label ?? t).join(", ")}
+                  </span>
+                )}
               </p>
             </div>
 
@@ -188,9 +227,13 @@ export default function AdminNotificationsPage() {
                 onChange={(e) => { setType(e.target.value); setPage(1); }}
                 className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
               >
-                <option value="">All Types</option>
-                <option value="ORDER">Order</option>
-                <option value="SYSTEM">System</option>
+                {/* Only show "All Types" if the role has access to more than 1 type */}
+                {allowedTypes.length > 1 && <option value="">All Types</option>}
+                {allowedTypes.map((t) => (
+                  <option key={t} value={t}>
+                    {TYPE_META[t]?.label ?? t}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -229,7 +272,7 @@ export default function AdminNotificationsPage() {
                     {/* Icon Wrapper */}
                     <div className={`p-3 rounded-xl shrink-0 ${item.status === "Unread" ? "bg-orange-50 dark:bg-orange-900/10" : "bg-gray-100 dark:bg-gray-800"
                       }`}>
-                      {getNotificationIcon(item.notificationType)}
+                      {TYPE_META[item.notificationType]?.icon ?? <BellIcon className="w-6 h-6 text-gray-500 fill-current" />}
                     </div>
 
                     {/* Text Content */}
@@ -249,12 +292,19 @@ export default function AdminNotificationsPage() {
                       </p>
 
                       <div className="mt-3 flex items-center gap-4">
-                        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${item.status === "Unread"
-                          ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                          : "bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-500"
-                          }`}>
-                          {item.notificationType}
-                        </span>
+                        {/* Type badge using TYPE_META colors */}
+                        {(() => {
+                          const meta = TYPE_META[item.notificationType];
+                          return meta ? (
+                            <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${meta.badge}`}>
+                              {meta.label}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-gray-200 text-gray-500">
+                              {item.notificationType}
+                            </span>
+                          );
+                        })()}
 
                         {item.actionTarget && (
                           <span className="text-xs font-medium text-orange-600 dark:text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity">

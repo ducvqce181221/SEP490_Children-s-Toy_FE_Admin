@@ -2,7 +2,7 @@
 
 import React, { memo } from "react";
 import Image from "next/image";
-import { EyeIcon, PencilIcon } from "@/icons/index";
+import { EyeIcon, LockIcon, PencilIcon } from "@/icons/index";
 import Badge from "@/components/ui/badge/Badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { CustomerListItem } from "../types/customer";
@@ -12,6 +12,7 @@ interface CustomerRowProps {
   rowNumber: number;
   onOpenDetail: (accountId: number) => void;
   onOpenEdit: (accountId: number) => void;
+  onOpenBlock: (accountId: number) => void;
 }
 
 const formatDateTime = (dateValue: string | null) => {
@@ -35,6 +36,7 @@ const CustomerRowComponent: React.FC<CustomerRowProps> = ({
   rowNumber,
   onOpenDetail,
   onOpenEdit,
+  onOpenBlock,
 }) => {
   const avatarText =
     customer.accountName.length > 0 ? customer.accountName[0].toUpperCase() : "?";
@@ -75,9 +77,52 @@ const CustomerRowComponent: React.FC<CustomerRowProps> = ({
       </TableCell>
 
       <TableCell className="px-5 py-4 text-start">
-        <Badge size="sm" color={customer.isActive ? "success" : "warning"}>
-          {customer.isActive ? "Active" : "Inactive"}
-        </Badge>
+        <div className="flex flex-col items-start gap-2">
+          <Badge size="sm" color={customer.isActive ? "success" : "warning"}>
+            {customer.isActive ? "Active" : "Inactive"}
+          </Badge>
+          {customer.isCodRestricted && (
+            <Badge size="sm" color="warning">
+              COD Restricted
+            </Badge>
+          )}
+          {customer.isManualBlockRecommended && (
+            <Badge size="sm" color="error">
+              Lock Review
+            </Badge>
+          )}
+        </div>
+      </TableCell>
+
+      <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-300">
+        <div className="space-y-1">
+          <p className="font-medium text-gray-800 dark:text-white/90">
+            {customer.suspiciousDeliveryFailOrderCount}
+          </p>
+          <p className="text-theme-xs text-gray-500 dark:text-gray-400">
+            {customer.lastSuspiciousGHNFailCode ?? "No fail code"}
+          </p>
+        </div>
+      </TableCell>
+
+      <TableCell className="px-5 py-4 text-start">
+        {customer.isSuspiciousDeliveryAbuse ? (
+          <div className="space-y-1">
+            <Badge size="sm" color="error">
+              COD abuse risk
+            </Badge>
+            <p className="text-theme-xs text-gray-500 dark:text-gray-400">
+              {customer.suspiciousDeliveryFailOrderCount} failed COD orders
+            </p>
+            {customer.lastSuspiciousGHNFailCode && (
+              <p className="text-theme-xs text-gray-500 dark:text-gray-400">
+                Last code: {customer.lastSuspiciousGHNFailCode}
+              </p>
+            )}
+          </div>
+        ) : (
+          <span className="text-theme-sm text-gray-500 dark:text-gray-400">Clear</span>
+        )}
       </TableCell>
 
       <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-300">
@@ -102,6 +147,17 @@ const CustomerRowComponent: React.FC<CustomerRowProps> = ({
           >
             <PencilIcon />
           </button>
+          {customer.isManualBlockRecommended && (
+            <button
+              type="button"
+              onClick={() => onOpenBlock(customer.accountId)}
+              className="rounded-lg border border-error-300 p-2 text-error-500 transition-colors hover:border-error-500 hover:bg-error-50 dark:border-error-500/40 dark:text-error-400 dark:hover:bg-error-500/10"
+              aria-label={`Lock customer account ${customer.accountName}`}
+              title="Lock customer account"
+            >
+              <LockIcon />
+            </button>
+          )}
         </div>
       </TableCell>
     </TableRow>
