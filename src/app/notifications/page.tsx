@@ -1,23 +1,55 @@
 "use client";
 
+import { useAuthContext } from "@/context/AuthContext";
 import { useNotificationRealtime } from "@/features/notifications/context/NotificationRealtimeContext";
 import { notificationApi } from "@/features/notifications/services/notification-api";
-import type { NotificationListItem } from "@/features/notifications/types/notification";
+import type { NotificationListItem, NotificationType } from "@/features/notifications/types/notification";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleString("en-US");
 }
 
+// ─── Role → allowed types ──────────────────────────────────────────────
+const ROLE_ID = { ADMIN: 2, STAFF: 3, MERCHANDISE: 4 } as const;
+
+const ROLE_ALLOWED_TYPES: Record<number, NotificationType[]> = {
+  [ROLE_ID.ADMIN]: ["ORDER", "PROMOTION", "SYSTEM", "BLOG", "STOCK"],
+  [ROLE_ID.STAFF]: ["ORDER", "SYSTEM"],
+  [ROLE_ID.MERCHANDISE]: ["ORDER", "STOCK", "SYSTEM"],
+};
+
+const TYPE_LABELS: Record<NotificationType, { label: string; color: string }> = {
+  ORDER: { label: "Order", color: "bg-blue-100   text-blue-700   dark:bg-blue-900/30   dark:text-blue-300" },
+  PROMOTION: { label: "Promotion", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" },
+  SYSTEM: { label: "System", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
+  BLOG: { label: "Blog", color: "bg-sky-100    text-sky-700    dark:bg-sky-900/30    dark:text-sky-300" },
+  STOCK: { label: "Product Quantity", color: "bg-green-100  text-green-700  dark:bg-green-900/30  dark:text-green-300" },
+};
+
 type Tab = "unread" | "all";
 
 export default function CustomerNotificationsPage() {
   const router = useRouter();
+  const { account } = useAuthContext();
   const { refreshUnread } = useNotificationRealtime();
+
+  const allowedTypes = useMemo<NotificationType[]>(() => {
+    if (!account) return ["ORDER", "PROMOTION", "SYSTEM", "BLOG", "STOCK"];
+    return ROLE_ALLOWED_TYPES[account.roleId] ?? ["ORDER", "PROMOTION", "SYSTEM", "BLOG", "STOCK"];
+  }, [account]);
+
+  const roleName = account?.roleName ?? "";
+  const isAdmin = account?.roleId === ROLE_ID.ADMIN;
+  const isMerch = account?.roleId === ROLE_ID.MERCHANDISE;
+
   const [tab, setTab] = useState<Tab>("unread");
+  const [type, setType] = useState<string>(() =>
+    account?.roleId === ROLE_ID.MERCHANDISE ? "STOCK" : ""
+  );
   const [items, setItems] = useState<NotificationListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -31,6 +63,7 @@ export default function CustomerNotificationsPage() {
       try {
         const res = await notificationApi.getNotifications({
           status: tab === "unread" ? "Unread" : undefined,
+          type: type || undefined,
           page,
           pageSize,
         });
@@ -45,7 +78,7 @@ export default function CustomerNotificationsPage() {
     return () => {
       cancelled = true;
     };
-  }, [tab, page, pageSize]);
+  }, [tab, type, page, pageSize]);
 
   async function handleOpen(item: NotificationListItem) {
     if (item.status === "Unread") {
@@ -83,6 +116,7 @@ export default function CustomerNotificationsPage() {
       await refreshUnread();
       const res = await notificationApi.getNotifications({
         status: tab === "unread" ? "Unread" : undefined,
+        type: type || undefined,
         page,
         pageSize,
       });
@@ -96,21 +130,37 @@ export default function CustomerNotificationsPage() {
   return (
     <div>
       <div className="mb-6 rounded-2xl border border-amber-100 bg-white/80 p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/60">
-        <h1 className="text-2xl font-bold text-amber-950 dark:text-amber-50">
-          Your Notifications
-        </h1>
+        <div className="flex items-start gap-3 mb-1 flex-wrap">
+          <h1 className="text-2xl font-bold text-amber-950 dark:text-amber-50">
+            Your Notifications
+          </h1>
+          {/* Role badge */}
+          {roleName && (
+            <span className={`mt-1.5 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${isAdmin
+              ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+              : isMerch
+                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+              }`}>
+              {roleName}
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          Order updates, promotions, and store news.
+          {!isAdmin && allowedTypes.length > 0
+            ? `Showing: ${allowedTypes.map(t => TYPE_LABELS[t]?.label ?? t).join(", ")} notifications`
+            : "Order updates, promotions, stock alerts, and more."
+          }
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
+          {/* Read/All Tabs */}
           <div className="inline-flex rounded-full border border-amber-200 bg-amber-50/50 p-0.5 dark:border-amber-900/50 dark:bg-gray-800">
             <button
               type="button"
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                tab === "unread"
-                  ? "bg-white text-amber-900 shadow dark:bg-amber-900/40 dark:text-amber-100"
-                  : "text-gray-600 dark:text-gray-400"
-              }`}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${tab === "unread"
+                ? "bg-white text-amber-900 shadow dark:bg-amber-900/40 dark:text-amber-100"
+                : "text-gray-600 dark:text-gray-400"
+                }`}
               onClick={() => {
                 setPage(1);
                 setTab("unread");
@@ -120,11 +170,10 @@ export default function CustomerNotificationsPage() {
             </button>
             <button
               type="button"
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                tab === "all"
-                  ? "bg-white text-amber-900 shadow dark:bg-amber-900/40 dark:text-amber-100"
-                  : "text-gray-600 dark:text-gray-400"
-              }`}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${tab === "all"
+                ? "bg-white text-amber-900 shadow dark:bg-amber-900/40 dark:text-amber-100"
+                : "text-gray-600 dark:text-gray-400"
+                }`}
               onClick={() => {
                 setPage(1);
                 setTab("all");
@@ -133,6 +182,24 @@ export default function CustomerNotificationsPage() {
               All
             </button>
           </div>
+
+          {/* Type Filter - role-scoped */}
+          <select
+            value={type}
+            onChange={(e) => { setType(e.target.value); setPage(1); }}
+            className="h-9 rounded-full border border-amber-200 bg-amber-50/50 px-3 py-1 text-sm text-amber-900 focus:outline-none dark:border-amber-900/50 dark:bg-gray-800 dark:text-amber-100"
+          >
+            {allowedTypes.length > 1 && <option value="">All Types</option>}
+            {allowedTypes.map((t) => {
+              const meta = TYPE_LABELS[t];
+              return (
+                <option key={t} value={t}>
+                  {meta?.label ?? t}
+                </option>
+              );
+            })}
+          </select>
+
           <button
             type="button"
             onClick={() => void markAllRead()}
@@ -161,36 +228,41 @@ export default function CustomerNotificationsPage() {
 
       <ul className="space-y-3">
         {!loading &&
-          items.map((item) => (
-            <li key={item.deliveryId}>
-              <button
-                type="button"
-                onClick={() => void handleOpen(item)}
-                className={`w-full rounded-2xl border p-4 text-left transition hover:border-amber-300 hover:shadow-md dark:hover:border-amber-800 ${
-                  item.status === "Unread"
+          items.map((item) => {
+            const typeInfo = TYPE_LABELS[item.notificationType] ?? { label: item.notificationType, color: "bg-gray-100 text-gray-600" };
+            return (
+              <li key={item.deliveryId}>
+                <button
+                  type="button"
+                  onClick={() => void handleOpen(item)}
+                  className={`w-full rounded-2xl border p-4 text-left transition hover:border-amber-300 hover:shadow-md dark:hover:border-amber-800 ${item.status === "Unread"
                     ? "border-amber-200 bg-amber-50/40 dark:border-amber-900/30 dark:bg-amber-950/20"
                     : "border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900/50"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      {item.title}
-                    </p>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                      {item.message}
-                    </p>
-                    <p className="mt-2 text-xs text-gray-400">
-                      {item.notificationType} · {formatTime(item.createdAt)}
-                    </p>
+                    }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {item.title}
+                      </p>
+                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                        {item.message}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${typeInfo.color}`}>
+                          {typeInfo.label}
+                        </span>
+                        <span className="text-xs text-gray-400">{formatTime(item.createdAt)}</span>
+                      </div>
+                    </div>
+                    {item.status === "Unread" && (
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-orange-500" />
+                    )}
                   </div>
-                  {item.status === "Unread" && (
-                    <span className="h-2 w-2 shrink-0 rounded-full bg-orange-500" />
-                  )}
-                </div>
-              </button>
-            </li>
-          ))}
+                </button>
+              </li>
+            );
+          })}
       </ul>
 
       {!loading && total > pageSize && (

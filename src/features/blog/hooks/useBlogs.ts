@@ -4,7 +4,6 @@ import { useAuthContext } from "@/context/AuthContext";
 import { blogApi } from "../services/blog-api";
 import {
   ApiErrorResponse,
-  BlogManagementStatus,
   BlogListItem,
   BlogSortBy,
   BlogStatus,
@@ -152,8 +151,7 @@ export const useBlogs = () => {
   const effectiveError = isAuthorizedRole
     ? error
     : "You do not have permission to view blog management.";
-  const adminAllowedStatuses: BlogManagementStatus[] = ["Pending", "Published", "Scheduled"];
-  const availableStatuses = isAdmin ? adminAllowedStatuses : blogStatuses;
+  const availableStatuses = blogStatuses;
 
   return {
     blogs: blogsResponse?.items ?? [],

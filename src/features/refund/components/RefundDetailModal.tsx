@@ -55,9 +55,14 @@ export const RefundDetailModal: React.FC<RefundDetailModalProps> = ({
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs">
                   <div className="mb-4">
                     <h3 className="font-semibold text-gray-800 dark:text-white/90 mb-1">Refund Information</h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs text-gray-500">Order: {refund.orderCode}</span>
                       {getStatusBadge(refund.refundStatus)}
+                      {refund.isSystemReturn && (
+                        <span className="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                          ⚙ System Return
+                        </span>
+                      )}
                     </div>
                   </div>
 

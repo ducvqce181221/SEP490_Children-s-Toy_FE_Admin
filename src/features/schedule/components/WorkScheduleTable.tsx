@@ -18,6 +18,7 @@ interface WorkScheduleTableProps {
   onAssignClick: () => void;
   onCloneWeekClick: () => void;
   isCloningWeek?: boolean;
+  isAdmin?: boolean;
 }
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -55,7 +56,8 @@ const ScheduleCard: React.FC<{
   onMarkAbsent: (id: number) => void;
   onEdit: (schedule: WorkSchedule) => void;
   onDelete: (id: number) => void;
-}> = ({ schedule, onMarkAbsent, onEdit, onDelete }) => {
+  isAdmin?: boolean;
+}> = ({ schedule, onMarkAbsent, onEdit, onDelete, isAdmin = false }) => {
   const loadPercentage = schedule.maxLoad > 0
     ? Math.round((schedule.currentLoad / schedule.maxLoad) * 100)
     : 0;
@@ -76,9 +78,9 @@ const ScheduleCard: React.FC<{
 
   const isStaff = schedule.roleId === 3;
   const avatarText = schedule.accountName ? schedule.accountName[0].toUpperCase() : "?";
-  /** Backend allows PUT update + mark absent while OnDuty; only Completed/Cancelled/Absent are blocked. */
+  /** Backend allows PUT update + mark absent while OnDuty; only Completed/Cancelled/Absent are blocked. Only Admin can edit. */
   const canManageAssignment =
-    schedule.status === "Scheduled" || schedule.status === "OnDuty";
+    isAdmin && (schedule.status === "Scheduled" || schedule.status === "OnDuty");
 
   return (
     <div className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:border-brand-200 dark:border-white/[0.07] dark:bg-white/[0.03] dark:hover:border-brand-500/30">
@@ -209,6 +211,7 @@ const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
   onAssignClick,
   onCloneWeekClick,
   isCloningWeek,
+  isAdmin = false,
 }) => {
   const showInitialLoading = isLoading && schedules.length === 0;
 
@@ -238,6 +241,7 @@ const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
         onAssignClick={onAssignClick}
         onCloneWeekClick={onCloneWeekClick}
         isCloningWeek={isCloningWeek}
+        isAdmin={isAdmin}
       />
 
       <div className="p-6 border-t border-gray-100 dark:border-white/[0.05]">
@@ -310,6 +314,7 @@ const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
                       onMarkAbsent={onMarkAbsent}
                       onEdit={onEdit}
                       onDelete={onDelete}
+                      isAdmin={isAdmin}
                     />
                   ))}
                 </div>

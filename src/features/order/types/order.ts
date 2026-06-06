@@ -1,4 +1,10 @@
-// ─── Status constants ────────────────────────────────────────────────────────
+// ─── Status constants (phải khớp CHÍNH XÁC với OrderStatus.cs enum và StatusOrders DB) ────
+//
+// ID mapping (theo enum backend):
+//  1=Pending, 2=Confirmed, 3=Processing, 4=Shipped, 5=Delivering
+//  6=Delivered, 7=Completed, 8=Cancelled, 9=Refunded
+//  10=Returning, 11=ReturnCompleted
+//  12=DeliveryFailed, 13=WaitingReturn, 14=ReturnFailed, 15=Lost, 16=Damaged
 
 export const ORDER_STATUS = {
   PENDING: "Pending",
@@ -9,6 +15,14 @@ export const ORDER_STATUS = {
   DELIVERED: "Delivered",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
+  REFUNDED: "Refunded",
+  RETURNING: "Returning",
+  RETURN_COMPLETED: "ReturnCompleted",
+  DELIVERY_FAILED: "DeliveryFailed",
+  WAITING_RETURN: "WaitingReturn",
+  RETURN_FAILED: "ReturnFailed",
+  LOST: "Lost",
+  DAMAGED: "Damaged",
 } as const;
 
 export type OrderStatusName = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
@@ -22,38 +36,88 @@ export const ORDER_STATUS_ID = {
   DELIVERED: 6,
   COMPLETED: 7,
   CANCELLED: 8,
+  REFUNDED: 9,
+  RETURNING: 10,
+  RETURN_COMPLETED: 11,
+  DELIVERY_FAILED: 12,
+  WAITING_RETURN: 13,
+  RETURN_FAILED: 14,
+  LOST: 15,
+  DAMAGED: 16,
 } as const;
 
+/** Label hiển thị cho Admin — khớp với fulfillmentLabel từ backend */
 export const ORDER_STATUS_LABEL: Record<number, string> = {
-  1: "Pending",
-  2: "Confirmed",
-  3: "Processing",
-  4: "Shipped",
-  5: "Delivering",
-  6: "Delivered",
-  7: "Completed",
-  8: "Cancelled",
+  1:  "Pending",
+  2:  "Confirmed",
+  3:  "Processing",
+  4:  "Shipped",
+  5:  "Delivering (incl. return flow)",
+  6:  "Delivered",
+  7:  "Completed",
+  8:  "Cancelled",
+  9:  "Refunded",
+  10: "Returning to warehouse",
+  11: "Return Completed",
+  12: "Delivery Failed",
+  13: "Waiting Return",
+  14: "Return Failed",
+  15: "Lost",
+  16: "Damaged",
 };
 
 export const PAYMENT_STATUS = {
   PENDING: "PENDING",
   PAID: "PAID",
   FAILED: "FAILED",
+  EXPIRED: "EXPIRED",
+  CANCELLED: "CANCELLED",
+  COD_PENDING: "COD_PENDING",
   REFUNDED: "REFUNDED",
+  PARTIALLY_REFUNDED: "PARTIALLY_REFUNDED",
 } as const;
 
 export const PAYMENT_STATUS_LABEL: Record<string, string> = {
-  PENDING: "Pending",
+  PENDING: "Pending payment",
   PAID: "Paid",
-  FAILED: "Failed",
-  REFUNDED: "Refunded",
+  FAILED: "Payment failed",
+  EXPIRED: "Payment expired",
+  CANCELLED: "Payment cancelled",
+  COD_PENDING: "Pay on delivery",
+  REFUNDED: "Refunded to wallet",
+  PARTIALLY_REFUNDED: "Partially refunded to wallet",
 };
+
+/** PAID + Cancelled order: refund may still be pending admin action */
+export function isPaidCancelledAnomaly(
+  paymentStatus: string,
+  statusId: number,
+): boolean {
+  return (
+    paymentStatus === PAYMENT_STATUS.PAID &&
+    statusId === ORDER_STATUS_ID.CANCELLED
+  );
+}
 
 export const ROLE_NAME = {
   ADMIN: "Admin",
   STAFF: "Staff",
   MERCHANDISE: "Merchandise",
 } as const;
+
+/** Tab list Staff/Merch — maps to GET /admin/orders?assignmentScope= */
+export const ORDER_WORK_TAB = {
+  IN_PROGRESS: "inProgress",
+  COMPLETED: "completed",
+} as const;
+
+export type OrderWorkTab =
+  (typeof ORDER_WORK_TAB)[keyof typeof ORDER_WORK_TAB];
+
+export const ORDER_WORK_TAB_LABEL: Record<OrderWorkTab, string> = {
+  [ORDER_WORK_TAB.IN_PROGRESS]: "In progress",
+  [ORDER_WORK_TAB.COMPLETED]: "Completed",
+};
 
 /** StatusId mặc định hiển thị theo role (Admin = [] nghĩa là tất cả) */
 export const ROLE_DEFAULT_STATUS_IDS: Record<string, number[]> = {
@@ -73,10 +137,33 @@ export const SHIPPING_STATUS_LABEL: Record<string, string> = {
   delivery_fail: "Delivery Failed",
   waiting_to_return: "Waiting to Return",
   return: "Return",
+  return_transporting: "Return transporting",
+  return_sorting: "Return sorting",
   returning: "Returning",
+  return_fail: "Return failed",
   returned: "Returned",
   cancel: "Cancelled",
 };
+
+export function formatGhnShippingLabel(status: string | null | undefined): string {
+  if (!status) return "";
+  const key = status.toLowerCase();
+  return SHIPPING_STATUS_LABEL[key] ?? status;
+}
+
+export function isGhnReturnFlowStatus(status: string | null | undefined): boolean {
+  if (!status) return false;
+  const key = status.toLowerCase();
+  return [
+    "waiting_to_return",
+    "return",
+    "return_transporting",
+    "return_sorting",
+    "returning",
+    "return_fail",
+    "returned",
+  ].includes(key);
+}
 
 // ─── List ────────────────────────────────────────────────────────────────────
 
@@ -86,6 +173,8 @@ export interface OrderListItem {
   orderCode: string;
   statusId: number;
   statusName: string;
+  fulfillmentLabel?: string;
+  ghnShippingStatus?: string | null;
   customerName: string;
   customerPhone: string;
   totalAmount: number;
@@ -145,6 +234,8 @@ export interface OrderDetail {
   orderCode: string;
   statusId: number;
   statusName: string;
+  fulfillmentLabel?: string;
+  ghnShippingStatus?: string | null;
   orderDate: string;
   confirmedAt: string | null;
   shippedAt: string | null;
@@ -177,6 +268,7 @@ export interface OrderDetail {
   assignedToStaffName: string | null;
   assignedToMerchId: number | null;
   assignedToMerchName: string | null;
+  isAssignedToCurrentUser?: boolean;
   // Lịch sử đơn hàng
   statusHistory: OrderStatusHistory[];
   // Vận chuyển
@@ -190,6 +282,7 @@ export interface OrderDetail {
 export interface OrderQueryParams {
   statusId?: number;
   statusIds?: number[];
+  assignmentScope?: OrderWorkTab;
   assignedToMe?: boolean;
   keyword?: string;
   fromDate?: string;
@@ -244,6 +337,12 @@ export interface CancelOrderResponse {
 export interface AssignOrderRequest {
   targetAccountId: number;
   note?: string;
+}
+
+export interface ReassignOrderRequest {
+  roleId: number;
+  newScheduleId: number;
+  notes?: string;
 }
 
 // ─── Pagination ───────────────────────────────────────────────────────────────

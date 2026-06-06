@@ -5,8 +5,10 @@ import { useAuthContext } from "@/context/AuthContext";
 import { orderApi } from "../services/order-api";
 import {
   ApiErrorResponse,
+  ORDER_WORK_TAB,
   OrderListItem,
   OrderQueryParams,
+  OrderWorkTab,
   PaginatedResponse,
   ROLE_DEFAULT_STATUS_IDS,
   ROLE_NAME,
@@ -14,6 +16,14 @@ import {
 
 const DEFAULT_PAGE_NUMBER = 1;
 const DEFAULT_PAGE_SIZE = 10;
+
+const isOperationalRole = (roleName: string) =>
+  roleName === ROLE_NAME.STAFF || roleName === ROLE_NAME.MERCHANDISE;
+
+const parseWorkTabFromUrl = (value: string | null): OrderWorkTab => {
+  if (value === ORDER_WORK_TAB.COMPLETED) return ORDER_WORK_TAB.COMPLETED;
+  return ORDER_WORK_TAB.IN_PROGRESS;
+};
 
 export const useOrders = () => {
   const { account } = useAuthContext();
@@ -40,6 +50,9 @@ export const useOrders = () => {
     searchParams?.has("status") ? Number(searchParams.get("status")) : ""
   );
   const [assignedToMe, setAssignedToMe] = useState(searchParams?.get("assigned") === "true");
+  const [workTab, setWorkTab] = useState<OrderWorkTab>(() =>
+    parseWorkTabFromUrl(searchParams?.get("tab") ?? null),
+  );
   const [fromDate, setFromDate] = useState<string>(searchParams?.get("from") || "");
   const [toDate, setToDate] = useState<string>(searchParams?.get("to") || "");
 
@@ -63,6 +76,19 @@ export const useOrders = () => {
     if (assignedToMe) { params.set("assigned", "true"); changed = true; }
     else if (params.has("assigned")) { params.delete("assigned"); changed = true; }
 
+    if (isOperationalRole(roleName)) {
+      if (workTab !== ORDER_WORK_TAB.IN_PROGRESS) {
+        params.set("tab", workTab);
+        changed = true;
+      } else if (params.has("tab")) {
+        params.delete("tab");
+        changed = true;
+      }
+    } else if (params.has("tab")) {
+      params.delete("tab");
+      changed = true;
+    }
+
     if (fromDate) { params.set("from", fromDate); changed = true; }
     else if (params.has("from")) { params.delete("from"); changed = true; }
 
@@ -81,7 +107,7 @@ export const useOrders = () => {
     } else if (window.location.search) {
       window.history.replaceState(null, "", window.location.pathname);
     }
-  }, [searchKeyword, statusId, assignedToMe, fromDate, toDate, pageNumber, pageSize]);
+  }, [searchKeyword, statusId, assignedToMe, workTab, roleName, fromDate, toDate, pageNumber, pageSize]);
 
   // ── Reload trigger ──────────────────────────────────────────────────────
   const [reloadToken, setReloadToken] = useState(0);
@@ -107,8 +133,12 @@ export const useOrders = () => {
         pageNumber,
         pageSize,
         ...(statusId !== "" && statusId !== 0 && { statusId }),
-        ...(statusId === "" && defaultStatusIds.length > 0 && { statusIds: defaultStatusIds }),
-        ...(assignedToMe && { assignedToMe }),
+        ...(statusId === "" &&
+          roleName !== ROLE_NAME.STAFF &&
+          roleName !== ROLE_NAME.MERCHANDISE &&
+          defaultStatusIds.length > 0 && { statusIds: defaultStatusIds }),
+        ...(assignedToMe && roleName === ROLE_NAME.ADMIN && { assignedToMe }),
+        ...(isOperationalRole(roleName) && { assignmentScope: workTab }),
         ...(searchKeyword && { keyword: searchKeyword }),
         ...(fromDate && { fromDate }),
         ...(toDate && { toDate }),
@@ -139,10 +169,13 @@ export const useOrders = () => {
     pageSize,
     statusId,
     assignedToMe,
+    workTab,
+    roleName,
     searchKeyword,
     fromDate,
     toDate,
     reloadToken,
+    defaultStatusIds,
   ]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
@@ -157,6 +190,11 @@ export const useOrders = () => {
 
   const handleAssignedToMeChange = useCallback((value: boolean) => {
     setAssignedToMe(value);
+    setPageNumber(DEFAULT_PAGE_NUMBER);
+  }, []);
+
+  const handleWorkTabChange = useCallback((tab: OrderWorkTab) => {
+    setWorkTab(tab);
     setPageNumber(DEFAULT_PAGE_NUMBER);
   }, []);
 
@@ -179,6 +217,17 @@ export const useOrders = () => {
     setReloadToken((prev) => prev + 1);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleRealtime = () => {
+      reloadOrders();
+    };
+    window.addEventListener("realtime-notification", handleRealtime);
+    return () => {
+      window.removeEventListener("realtime-notification", handleRealtime);
+    };
+  }, [reloadOrders]);
+
   return {
     orders: ordersResponse?.items ?? [],
     isLoading,
@@ -186,6 +235,7 @@ export const useOrders = () => {
     keyword,
     statusId,
     assignedToMe,
+    workTab,
     fromDate,
     toDate,
     pageNumber,
@@ -200,6 +250,7 @@ export const useOrders = () => {
     handleSearchSubmit,
     handleStatusChange,
     handleAssignedToMeChange,
+    handleWorkTabChange,
     handleFromDateChange,
     handleToDateChange,
     handlePageSizeChange,

@@ -2,21 +2,20 @@ import { AxiosError } from "axios";
 import { useState } from "react";
 import { accountApi } from "../services/account-api";
 import {
-  AccountDetail,
   ApiErrorResponse,
   CreateAccountRequest,
   CreateAccountResult,
-  MutationResult,
+  UpdateAccountInfoRequest,
+  UpdateAccountInfoResult,
+  UpdateAccountPasswordRequest,
   ValidationErrorResponse,
 } from "../types/account";
-
-interface UpdateAccountStatusResult extends MutationResult {
-  data?: AccountDetail;
-}
+export type UpdateAccountPasswordResult = CreateAccountResult;
 
 export const useAccountMutations = (onSuccess?: () => void) => {
   const [isCreating, setIsCreating] = useState(false);
-  const [updatingAccountId, setUpdatingAccountId] = useState<number | null>(null);
+  const [updatingInfoAccountId, setUpdatingInfoAccountId] = useState<number | null>(null);
+  const [updatingPasswordAccountId, setUpdatingPasswordAccountId] = useState<number | null>(null);
 
   const createAccount = async (
     payload: CreateAccountRequest,
@@ -59,43 +58,92 @@ export const useAccountMutations = (onSuccess?: () => void) => {
     }
   };
 
-  const updateAccountStatus = async (
+  const updateAccountInfo = async (
     accountId: number,
-    isActive: boolean,
-  ): Promise<UpdateAccountStatusResult> => {
-    setUpdatingAccountId(accountId);
+    payload: UpdateAccountInfoRequest,
+  ): Promise<UpdateAccountInfoResult> => {
+    setUpdatingInfoAccountId(accountId);
 
     try {
-      const updatedAccount = await accountApi.updateAccountStatus(accountId, {
-        isActive,
-      });
+      const updatedAccount = await accountApi.updateAccountInfo(accountId, payload);
       onSuccess?.();
 
       return {
         success: true,
-        message: isActive
-          ? "Account activated successfully."
-          : "Account deactivated successfully.",
+        message: "Account updated successfully.",
         data: updatedAccount,
       };
     } catch (error) {
-      const axiosError = error as AxiosError<ApiErrorResponse>;
+      const axiosError = error as AxiosError<
+        ValidationErrorResponse | ApiErrorResponse
+      >;
+
+      if (
+        axiosError.response?.status === 400 &&
+        axiosError.response.data &&
+        "errors" in axiosError.response.data
+      ) {
+        return {
+          success: false,
+          message: axiosError.response.data.message,
+          validationErrors: axiosError.response.data.errors,
+        };
+      }
 
       return {
         success: false,
         message:
           axiosError.response?.data?.message ??
-          "Unable to update account status. Please try again.",
+          "Unable to update account information. Please try again.",
       };
     } finally {
-      setUpdatingAccountId(null);
+      setUpdatingInfoAccountId(null);
+    }
+  };
+
+  const updateAccountPassword = async (
+    accountId: number,
+    payload: UpdateAccountPasswordRequest,
+  ): Promise<UpdateAccountPasswordResult> => {
+    setUpdatingPasswordAccountId(accountId);
+
+    try {
+      await accountApi.updateAccountPassword(accountId, payload);
+      return {
+        success: true,
+        message: "Account password updated successfully.",
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError<ValidationErrorResponse | ApiErrorResponse>;
+      if (
+        axiosError.response?.status === 400 &&
+        axiosError.response.data &&
+        "errors" in axiosError.response.data
+      ) {
+        return {
+          success: false,
+          message: axiosError.response.data.message,
+          validationErrors: axiosError.response.data.errors,
+        };
+      }
+
+      return {
+        success: false,
+        message:
+          axiosError.response?.data?.message ??
+          "Unable to update account password. Please try again.",
+      };
+    } finally {
+      setUpdatingPasswordAccountId(null);
     }
   };
 
   return {
     createAccount,
-    updateAccountStatus,
+    updateAccountInfo,
+    updateAccountPassword,
     isCreating,
-    updatingAccountId,
+    updatingInfoAccountId,
+    updatingPasswordAccountId,
   };
 };

@@ -1,8 +1,9 @@
-export type WalletStatus = "Active" | "Frozen" | "Closed";
+export type WalletStatus = "Active" | "Frozen";
 
 export interface WalletListItem {
   walletId: number;
   account: string;
+  unbannedByName: string | null;
   status: WalletStatus;
   createdAt: string;
   updatedAt: string | null;
@@ -16,7 +17,7 @@ export interface WalletQueryParams {
 }
 
 export interface UpdateWalletStatusRequest {
-  status: Extract<WalletStatus, "Active" | "Frozen">;
+  status: Extract<WalletStatus, "Active">;
 }
 
 export interface PaginatedResponse<T> {

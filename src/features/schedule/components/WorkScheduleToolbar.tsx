@@ -9,6 +9,7 @@ interface WorkScheduleToolbarProps {
   onAssignClick: () => void;
   onCloneWeekClick: () => void;
   isCloningWeek?: boolean;
+  isAdmin?: boolean;
 }
 
 const WorkScheduleToolbar: React.FC<WorkScheduleToolbarProps> = ({
@@ -18,6 +19,7 @@ const WorkScheduleToolbar: React.FC<WorkScheduleToolbarProps> = ({
   onAssignClick,
   onCloneWeekClick,
   isCloningWeek = false,
+  isAdmin = false,
 }) => {
   return (
     <div className="px-5 py-5 sm:px-6">
@@ -27,26 +29,28 @@ const WorkScheduleToolbar: React.FC<WorkScheduleToolbarProps> = ({
             Daily Work Schedule
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage staff assignments and track shift performance.
+            {isAdmin ? "Manage staff assignments and track shift performance." : "View staff assignments and shift schedules."}
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Button
-            variant="outline"
-            startIcon={<CopyIcon className="w-5 h-5" />}
-            onClick={onCloneWeekClick}
-            disabled={isCloningWeek}
-          >
-            {isCloningWeek ? "Copying..." : "Copy Last Week"}
-          </Button>
-          <Button
-            variant="primary"
-            startIcon={<PlusIcon className="w-5 h-5" />}
-            onClick={onAssignClick}
-          >
-            Assign Staff
-          </Button>
-        </div>
+        {isAdmin && (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button
+              variant="outline"
+              startIcon={<CopyIcon className="w-5 h-5" />}
+              onClick={onCloneWeekClick}
+              disabled={isCloningWeek}
+            >
+              {isCloningWeek ? "Copying..." : "Copy Last Week"}
+            </Button>
+            <Button
+              variant="primary"
+              startIcon={<PlusIcon className="w-5 h-5" />}
+              onClick={onAssignClick}
+            >
+              Assign Staff
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -1,17 +1,15 @@
 import { AxiosError } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthContext } from "@/context/AuthContext";
+import { canAccessAdminDashboardAnalytics } from "@/features/auth/utils/admin-access";
 import { dashboardApi } from "../services/dashboard-api";
 import {
   DASHBOARD_PERIOD,
-  DashboardCompletedOrderStatistics,
+  DashboardGrowthStatistics,
   DashboardNewCustomerStatistics,
-  DashboardOrderRateStatistics,
   DashboardOrderStatusStatistics,
   DashboardPeriod,
-  DashboardRevenueStatistics,
-  DashboardSlowMovingProducts,
   DashboardTimeFilter,
-  DashboardTopSellingProducts,
   DashboardTotalProducts,
 } from "../types/dashboard";
 
@@ -26,17 +24,15 @@ const buildFilter = (
 };
 
 export const useDashboardStatistics = () => {
+  const { account } = useAuthContext();
   const [period, setPeriod] = useState<DashboardPeriod>(DASHBOARD_PERIOD.CURRENT_MONTH);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [limitedAccessMessage, setLimitedAccessMessage] = useState<string | null>(null);
 
-  const [revenue, setRevenue] = useState<DashboardRevenueStatistics | null>(null);
   const [orderStatus, setOrderStatus] = useState<DashboardOrderStatusStatistics | null>(null);
   const [newCustomers, setNewCustomers] = useState<DashboardNewCustomerStatistics | null>(null);
-  const [completedOrders, setCompletedOrders] = useState<DashboardCompletedOrderStatistics | null>(null);
-  const [orderRates, setOrderRates] = useState<DashboardOrderRateStatistics | null>(null);
-  const [top5BestSellers, setTop5BestSellers] = useState<DashboardTopSellingProducts | null>(null);
-  const [slowMovingProducts, setSlowMovingProducts] = useState<DashboardSlowMovingProducts | null>(null);
+  const [growthStatistics, setGrowthStatistics] = useState<DashboardGrowthStatistics | null>(null);
   const [totalProducts, setTotalProducts] = useState<DashboardTotalProducts | null>(null);
 
   const filter = useMemo(
@@ -44,38 +40,43 @@ export const useDashboardStatistics = () => {
     [period],
   );
 
+  const canLoadAdminAnalytics = useMemo(
+    () => canAccessAdminDashboardAnalytics(account),
+    [account],
+  );
+
   const loadData = useCallback(async () => {
+    if (!canLoadAdminAnalytics) {
+      setOrderStatus(null);
+      setNewCustomers(null);
+      setGrowthStatistics(null);
+      setTotalProducts(null);
+      setError(null);
+      setLimitedAccessMessage("Analytics data is available for Admin role only.");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
+    setLimitedAccessMessage(null);
 
     try {
       const [
-        revenueData,
         orderStatusData,
         newCustomersData,
-        completedOrdersData,
-        orderRatesData,
-        top5Data,
-        slowMovingData,
+        growthStatisticsData,
         totalProductsData,
       ] = await Promise.all([
-        dashboardApi.getRevenueStatistics(filter),
         dashboardApi.getOrderStatusStatistics(filter),
         dashboardApi.getNewCustomerStatistics(filter),
-        dashboardApi.getCompletedOrderStatistics(filter),
-        dashboardApi.getOrderRateStatistics(filter),
-        dashboardApi.getTop5BestSellers(),
-        dashboardApi.getSlowMovingProducts(5),
+        dashboardApi.getGrowthStatistics(filter),
         dashboardApi.getTotalProducts(),
       ]);
 
-      setRevenue(revenueData);
       setOrderStatus(orderStatusData);
       setNewCustomers(newCustomersData);
-      setCompletedOrders(completedOrdersData);
-      setOrderRates(orderRatesData);
-      setTop5BestSellers(top5Data);
-      setSlowMovingProducts(slowMovingData);
+      setGrowthStatistics(growthStatisticsData);
       setTotalProducts(totalProductsData);
     } catch (err) {
       const axiosError = err as AxiosError<DashboardApiError>;
@@ -86,7 +87,7 @@ export const useDashboardStatistics = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [filter]);
+  }, [canLoadAdminAnalytics, filter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,13 +109,10 @@ export const useDashboardStatistics = () => {
     period,
     isLoading,
     error,
-    revenue,
+    limitedAccessMessage,
     orderStatus,
     newCustomers,
-    completedOrders,
-    orderRates,
-    top5BestSellers,
-    slowMovingProducts,
+    growthStatistics,
     totalProducts,
     setPeriod,
     reload: loadData,

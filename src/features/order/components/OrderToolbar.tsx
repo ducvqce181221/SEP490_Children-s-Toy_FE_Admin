@@ -6,9 +6,39 @@ import DatePicker from "@/components/form/date-picker";
 import {
   ORDER_STATUS_ID,
   ORDER_STATUS_LABEL,
-  ROLE_DEFAULT_STATUS_IDS,
+  ORDER_WORK_TAB,
+  ORDER_WORK_TAB_LABEL,
+  OrderWorkTab,
   ROLE_NAME,
 } from "../types/order";
+
+const selectClassName =
+  "h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800";
+
+const NORMAL_FLOW_OPTIONS = [
+  { value: ORDER_STATUS_ID.PENDING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.PENDING] },
+  { value: ORDER_STATUS_ID.CONFIRMED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.CONFIRMED] },
+  { value: ORDER_STATUS_ID.PROCESSING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.PROCESSING] },
+  { value: ORDER_STATUS_ID.SHIPPED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.SHIPPED] },
+  { value: ORDER_STATUS_ID.DELIVERING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERING] },
+  { value: ORDER_STATUS_ID.DELIVERED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERED] },
+  { value: ORDER_STATUS_ID.COMPLETED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.COMPLETED] },
+];
+
+const RETURN_FLOW_OPTIONS = [
+  { value: ORDER_STATUS_ID.RETURNING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURNING] },
+  { value: ORDER_STATUS_ID.RETURN_COMPLETED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURN_COMPLETED] },
+  { value: ORDER_STATUS_ID.DELIVERY_FAILED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERY_FAILED] },
+  { value: ORDER_STATUS_ID.WAITING_RETURN, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.WAITING_RETURN] },
+  { value: ORDER_STATUS_ID.RETURN_FAILED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.RETURN_FAILED] },
+  { value: ORDER_STATUS_ID.LOST, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.LOST] },
+  { value: ORDER_STATUS_ID.DAMAGED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DAMAGED] },
+];
+
+const TERMINAL_OPTIONS = [
+  { value: ORDER_STATUS_ID.CANCELLED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.CANCELLED] },
+  { value: ORDER_STATUS_ID.REFUNDED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.REFUNDED] },
+];
 
 interface OrderToolbarProps {
   keyword: string;
@@ -25,21 +55,9 @@ interface OrderToolbarProps {
   roleName?: string;
   defaultStatusIds?: number[];
   totalCount?: number;
+  workTab?: OrderWorkTab;
+  onWorkTabChange?: (tab: OrderWorkTab) => void;
 }
-
-const selectClassName =
-  "h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800";
-
-const ALL_STATUS_OPTIONS = [
-  { value: ORDER_STATUS_ID.PENDING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.PENDING] },
-  { value: ORDER_STATUS_ID.CONFIRMED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.CONFIRMED] },
-  { value: ORDER_STATUS_ID.PROCESSING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.PROCESSING] },
-  { value: ORDER_STATUS_ID.SHIPPED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.SHIPPED] },
-  { value: ORDER_STATUS_ID.DELIVERING, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERING] },
-  { value: ORDER_STATUS_ID.DELIVERED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.DELIVERED] },
-  { value: ORDER_STATUS_ID.COMPLETED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.COMPLETED] },
-  { value: ORDER_STATUS_ID.CANCELLED, label: ORDER_STATUS_LABEL[ORDER_STATUS_ID.CANCELLED] },
-];
 
 function getRoleBadge(roleName: string) {
   switch (roleName) {
@@ -69,6 +87,8 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
   roleName = "",
   defaultStatusIds = [],
   totalCount,
+  workTab = ORDER_WORK_TAB.IN_PROGRESS,
+  onWorkTabChange,
 }) => {
   const handleFromDateChange = React.useCallback(
     ([date]: Date[]) => {
@@ -100,21 +120,14 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
 
   const roleBadge = getRoleBadge(roleName);
   const isAdmin = roleName === ROLE_NAME.ADMIN;
+  const showWorkTabs =
+    (roleName === ROLE_NAME.STAFF || roleName === ROLE_NAME.MERCHANDISE) &&
+    !!onWorkTabChange;
 
-  // Tên của preset mặc định theo role (hiển thị trong option "—")
-  const defaultLabel = defaultStatusIds.length > 0
-    ? `Default (${defaultStatusIds.map((id) => ORDER_STATUS_LABEL[id]).join(", ")})`
-    : "All Statuses";
-
-  const statusOptions = isAdmin
-    ? [
-      { value: "", label: "Default (All)" },
-      ...ALL_STATUS_OPTIONS,
-    ]
-    : [
-      { value: "", label: defaultLabel },
-      ...ALL_STATUS_OPTIONS,
-    ];
+  const defaultLabel =
+    defaultStatusIds.length > 0
+      ? `Default (${defaultStatusIds.map((id) => ORDER_STATUS_LABEL[id]).join(", ")})`
+      : "All Statuses";
 
   return (
     <div className="px-5 py-5 sm:px-6">
@@ -136,29 +149,43 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
             )}
           </div>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {roleName === ROLE_NAME.STAFF && "View and confirm pending orders."}
-            {roleName === ROLE_NAME.MERCHANDISE && "Prepare and create waybills for confirmed orders."}
+            {roleName === ROLE_NAME.STAFF &&
+              (workTab === ORDER_WORK_TAB.COMPLETED
+                ? "Orders you handled in this shift — view only, no actions."
+                : "Orders assigned to you this shift — confirm and track.")}
+            {roleName === ROLE_NAME.MERCHANDISE &&
+              (workTab === ORDER_WORK_TAB.COMPLETED
+                ? "Orders you handled in this shift — view only, no actions."
+                : "Orders assigned to you this shift — prepare and create waybills.")}
             {roleName === ROLE_NAME.ADMIN && "Full access to view, assign, and manage all orders."}
             {!roleName && "Track, process, and update order statuses."}
           </p>
         </div>
-
-        {/* "Đơn của tôi" toggle — first-class trên mobile */}
-        <label className="flex shrink-0 cursor-pointer select-none items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 transition-colors hover:border-brand-300 hover:bg-brand-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-brand-700 dark:hover:bg-brand-900/20">
-          <input
-            type="checkbox"
-            className="rounded-sm border-gray-300 text-brand-500 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900"
-            checked={assignedToMe}
-            onChange={(e) => onAssignedToMeChange(e.target.checked)}
-          />
-          <span className={assignedToMe ? "font-medium text-brand-600 dark:text-brand-400" : ""}>
-            My Orders
-          </span>
-        </label>
       </div>
 
+      {showWorkTabs && (
+        <div className="mb-5 inline-flex rounded-lg border border-gray-200 p-1 dark:border-gray-700">
+          {(Object.values(ORDER_WORK_TAB) as OrderWorkTab[]).map((tab) => {
+            const isActive = workTab === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => onWorkTabChange(tab)}
+                className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-brand-500 text-white shadow-theme-xs"
+                    : "text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5"
+                }`}
+              >
+                {ORDER_WORK_TAB_LABEL[tab]}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        {/* Search */}
         <div className="lg:col-span-4">
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Search
@@ -175,10 +202,8 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
           />
         </div>
 
-        {/* Filters */}
         <div className="lg:col-span-8">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {/* Status */}
             <div className="flex flex-col">
               <label
                 htmlFor="order-status"
@@ -194,15 +219,33 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
                   onStatusChange(e.target.value === "" ? "" : Number(e.target.value))
                 }
               >
-                {statusOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
+                <option value="">
+                  {isAdmin ? "Default (All)" : defaultLabel}
+                </option>
+                <optgroup label="── Normal Flow ──">
+                  {NORMAL_FLOW_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="── Return & Issue Flow ──">
+                  {RETURN_FLOW_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="── Terminal ──">
+                  {TERMINAL_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
 
-            {/* From date */}
             <div className="flex flex-col">
               <DatePicker
                 id="from-date"
@@ -213,7 +256,6 @@ const OrderToolbar: React.FC<OrderToolbarProps> = ({
               />
             </div>
 
-            {/* To date */}
             <div className="flex flex-col">
               <DatePicker
                 id="to-date"

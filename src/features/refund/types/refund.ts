@@ -12,6 +12,7 @@ export type RefundStatusType =
 export interface RefundDetailItem {
   productId: number;
   productName: string;
+  productImage?: string | null;
   quantity: number;
   unitPrice: number;
   refundAmount: number;
@@ -53,8 +54,16 @@ export interface Refund {
   adminNote?: string | null;
   details?: RefundDetailItem[];
   statusHistory?: RefundStatusHistoryItem[];
+  shippingHistory?: {
+    previousStatus: string;
+    newStatus: string;
+    source: string;
+    processedAt: string;
+  }[];
   assignedToStaffName?: string | null;
   assignedToMerchName?: string | null;
+  refundSource?: string;
+  isSystemReturn?: boolean;
 }
 
 export interface RefundFilter {

@@ -152,7 +152,7 @@ const DesktopPreview: React.FC<{ campaign: Campaign }> = ({ campaign }) => {
     });
   }
 
-  const imageUrl = campaign.imageUrl;
+  const imageUrl = campaign.imageUrl || campaign.resolvedReference?.imageUrl;
 
   return (
     <div className="mx-auto w-full max-w-[350px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden shadow-md">
@@ -525,8 +525,8 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
   const sent = stat?.totalSent ?? 0;
   const read = stat?.totalRead ?? 0;
   const clicked = stat?.totalClicked ?? 0;
-  const readPct = sent > 0 ? Math.round((read / sent) * 100) : 0;
-  const clickPct = sent > 0 ? Math.round((clicked / sent) * 100) : 0;
+  const readPct = sent > 0 ? Math.min(Math.round((read / sent) * 100), 100) : 0;
+  const clickPct = sent > 0 ? Math.min(Math.round((clicked / sent) * 100), 100) : 0;
 
   const statusCfg = STATUS_DISPLAY[campaign.status] ?? {
     label: campaign.status,
@@ -700,15 +700,16 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
       </div>
 
       {/* ── Campaign Results (Top Level) ────────────────────────────────────────── */}
+      {(campaign.status === "Sent" || campaign.status === "Failed") ? (
       <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5">
         <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
-          Campaign Results
+          Send Results
         </h3>
 
         {/* Big 3 numbers */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <StatCard
-            label="Sent"
+            label="Recipients (Bell)"
             value={sent}
             icon={
               <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -741,8 +742,16 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
             color="border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-400"
           />
         </div>
-
+        <p className="text-xs text-gray-400 dark:text-gray-500">% based on bell recipients (WEB_BELL)</p>
       </div>
+      ) : (
+      <div className="rounded-2xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] p-5">
+        <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+          Send Results
+        </h3>
+        <p className="text-sm text-gray-400 dark:text-gray-500">Data will be available after the campaign is successfully sent.</p>
+      </div>
+      )}
 
       {/* ── 4-8 Layout ────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

@@ -18,8 +18,10 @@ import {
   ORDER_STATUS_LABEL,
   PAYMENT_STATUS,
   PAYMENT_STATUS_LABEL,
+  isPaidCancelledAnomaly,
   ROLE_NAME,
-  SHIPPING_STATUS_LABEL,
+  formatGhnShippingLabel,
+  isGhnReturnFlowStatus,
 } from "../types/order";
 import {
   AssignOrderFormData,
@@ -52,6 +54,8 @@ function OrderStatusBadge({ statusId, statusName }: { statusId: number; statusNa
     [ORDER_STATUS_ID.PROCESSING]: "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800",
     [ORDER_STATUS_ID.SHIPPED]:    "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800",
     [ORDER_STATUS_ID.DELIVERING]: "bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800",
+    [ORDER_STATUS_ID.RETURNING]: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800",
+    [ORDER_STATUS_ID.RETURN_COMPLETED]: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800",
     [ORDER_STATUS_ID.DELIVERED]:  "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
     [ORDER_STATUS_ID.COMPLETED]:  "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800",
     [ORDER_STATUS_ID.CANCELLED]:  "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800",
@@ -124,22 +128,32 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     }
   };
 
-  const loadOrder = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const loadOrder = useCallback(async (isCancelled?: () => boolean) => {
+    if (!isCancelled?.()) {
+      setIsLoading(true);
+      setError(null);
+    }
     try {
       const res = await orderApi.getOrderById(orderId);
-      setOrder(res);
+      if (!isCancelled?.()) setOrder(res);
     } catch (err) {
-      const ae = err as AxiosError<ApiErrorResponse>;
-      setError(ae.response?.data?.message ?? "Could not load order details.");
+      if (!isCancelled?.()) {
+        const ae = err as AxiosError<ApiErrorResponse>;
+        setError(ae.response?.data?.message ?? "Could not load order details.");
+      }
     } finally {
-      setIsLoading(false);
+      if (!isCancelled?.()) setIsLoading(false);
     }
   }, [orderId]);
 
   useEffect(() => {
-    loadOrder();
+    let cancelled = false;
+    void (async () => {
+      await loadOrder(() => cancelled);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [loadOrder]);
 
   const {
@@ -153,7 +167,9 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     shippingId,
     cancellingId,
     assigningId,
-  } = useOrderMutations(loadOrder);
+  } = useOrderMutations(() => {
+    void loadOrder();
+  });
 
   // ── Actions handlers
   const handleConfirm = async (note?: string) => {
@@ -202,8 +218,9 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
 
   const handleAssign = async (data: AssignOrderFormData) => {
     const result = await assignOrder(orderId, {
-      targetAccountId: data.targetAccountId,
-      note: data.note || undefined,
+      roleId: data.roleId,
+      newScheduleId: data.targetScheduleId,
+      notes: data.note || undefined,
     });
     if (result.success) {
       toast.success(result.message);
@@ -214,37 +231,60 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   };
 
   const role = account?.roleName;
+  const isAdmin = role === ROLE_NAME.ADMIN;
+  const isAssignedToMe = isAdmin || (order?.isAssignedToCurrentUser ?? false);
+  const isViewOnlyDetail =
+    !isAdmin && !!order && !order.isAssignedToCurrentUser;
 
   const canConfirm =
     order?.statusName === ORDER_STATUS.PENDING &&
-    (role === ROLE_NAME.STAFF || role === ROLE_NAME.ADMIN);
+    isAssignedToMe &&
+    (role === ROLE_NAME.STAFF || isAdmin);
 
   const canProcess =
     order?.statusName === ORDER_STATUS.CONFIRMED &&
-    (role === ROLE_NAME.MERCHANDISE || role === ROLE_NAME.ADMIN);
+    isAssignedToMe &&
+    (role === ROLE_NAME.MERCHANDISE || isAdmin);
 
   const canShip =
     order?.statusName === ORDER_STATUS.PROCESSING &&
-    (role === ROLE_NAME.MERCHANDISE || role === ROLE_NAME.ADMIN);
+    isAssignedToMe &&
+    (role === ROLE_NAME.MERCHANDISE || isAdmin);
+
+  const isTerminalStatus =
+    order?.statusName === ORDER_STATUS.CANCELLED ||
+    order?.statusName === ORDER_STATUS.REFUNDED ||
+    order?.statusName === ORDER_STATUS.COMPLETED;
 
   const canCancel =
-    (order?.statusName === ORDER_STATUS.PENDING ||
-      order?.statusName === ORDER_STATUS.CONFIRMED) &&
-    (role === ROLE_NAME.STAFF || role === ROLE_NAME.ADMIN);
+    isAdmin
+      ? !isTerminalStatus && !!order
+      : isAssignedToMe &&
+        (order?.statusName === ORDER_STATUS.PENDING ||
+          order?.statusName === ORDER_STATUS.CONFIRMED) &&
+        role === ROLE_NAME.STAFF;
 
   const canAssign =
-    role === ROLE_NAME.ADMIN &&
+    isAdmin &&
     !!order &&
     order.statusName !== ORDER_STATUS.COMPLETED &&
     order.statusName !== ORDER_STATUS.CANCELLED;
 
+  const ghnStatus = order?.ghnShippingStatus ?? order?.shipping?.status ?? null;
+  const isReturnFlow =
+    order?.statusId === ORDER_STATUS_ID.RETURNING ||
+    order?.statusId === ORDER_STATUS_ID.RETURN_COMPLETED ||
+    isGhnReturnFlowStatus(ghnStatus);
   const hasShippingHistory = (order?.shippingHistory?.length ?? 0) > 0;
-  const hasActions = canConfirm || canProcess || canShip || canCancel || canAssign;
+  const showShippingTab = !!order?.shipping || hasShippingHistory || isReturnFlow;
+  const hasActions =
+    !isViewOnlyDetail &&
+    (canConfirm || canProcess || canShip || canCancel || canAssign);
 
   const tabs: { key: TabKey; label: string; show: boolean }[] = [
     { key: "overview", label: "Overview", show: true },
     { key: "history", label: `Order History (${order?.statusHistory?.length ?? 0})`, show: true },
-    { key: "shipping-history", label: `Shipping History (${order?.shippingHistory?.length ?? 0})`, show: hasShippingHistory },
+    { key: "shipping-history", label: `Shipping History (${order?.shippingHistory?.length ?? 0})`, show: showShippingTab },
   ];
 
   if (isLoading && !order) {
@@ -267,6 +307,11 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-8">
+      {isViewOnlyDetail && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+          View-only — this order was already handled or is no longer assigned to you this shift. You cannot perform actions on it.
+        </div>
+      )}
       {/* Header */}
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -275,8 +320,19 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
               #{order.orderCode}
             </h2>
             <OrderStatusBadge statusId={order.statusId} statusName={order.statusName} />
+            {order.fulfillmentLabel && order.fulfillmentLabel !== (ORDER_STATUS_LABEL[order.statusId] ?? order.statusName) && (
+              <span className="text-sm text-gray-500 dark:text-gray-400" title="Fulfillment">
+                {order.fulfillmentLabel}
+              </span>
+            )}
             <PaymentBadge status={order.paymentStatus} />
           </div>
+          {isPaidCancelledAnomaly(order.paymentStatus, order.statusId) && (
+            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
+              Order is cancelled but payment still shows PAID. Check for an open system refund
+              (Approve → Complete) or wallet credit from order cancellation.
+            </div>
+          )}
           <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-2">
             <span>Assigned:</span>
             {order.assignedToStaffName ? (
@@ -304,7 +360,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
         {order.statusName === ORDER_STATUS.CANCELLED && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800/50 dark:bg-red-900/20">
             <p className="text-sm font-medium text-red-700 dark:text-red-300">
-              Cancelled by: {order.cancelledByName ?? "—"} at {fmtDt(order.cancelledAt)}
+              Cancelled by: {order.cancelledByName ?? "System"} at {fmtDt(order.cancelledAt)}
             </p>
             {order.cancelReason && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -338,6 +394,28 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
         {/* ── TAB: Tổng quan ─────────────────────────────────────────── */}
         {activeTab === "overview" && (
           <div className="space-y-6">
+            {isReturnFlow && (
+              <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-800/50 dark:bg-orange-900/20">
+                <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                  Package return to warehouse (GHN)
+                </p>
+                <p className="mt-1 text-sm text-orange-700 dark:text-orange-300">
+                  {order.statusId === ORDER_STATUS_ID.RETURNING &&
+                    "Goods are being returned. Monitor GHN shipping history for carrier updates."}
+                  {order.statusId === ORDER_STATUS_ID.RETURN_COMPLETED &&
+                    (order.paymentMethod === "SHIP_COD"
+                      ? "Goods returned. COD order may already be cancelled — verify payment and stock."
+                      : "Goods returned. Prepaid order may need refund approval — check Refunds." )}
+                  {order.statusName === ORDER_STATUS.CANCELLED &&
+                    order.cancelReason &&
+                    `Order cancelled: ${order.cancelReason}. Use Order History and Shipping History for the full timeline.`}
+                  {order.statusId === ORDER_STATUS_ID.DELIVERING &&
+                    isGhnReturnFlowStatus(ghnStatus) &&
+                    `GHN status: ${formatGhnShippingLabel(ghnStatus)}. Order may still show Delivering until the webhook updates internal status.`}
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Section title="Shipping Info">
                 <InfoRow label="Recipient" value={order.shippingName} />
@@ -377,37 +455,52 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
               </div>
             </Section>
 
-            {order.shipping && (
+            {(order.shipping || ghnStatus) && (
               <Section title="Shipping info">
                 <div className="grid grid-cols-1 gap-1 md:grid-cols-2">
                   <div>
-                    <InfoRow label="Carrier" value={order.shipping.provider} />
-                    <InfoRow label="Tracking No." value={order.shipping.providerOrderCode ?? "—"} />
-                    <InfoRow label="Tracking" value={order.shipping.trackingNumber ?? "—"} />
+                    <InfoRow label="Carrier" value={order.shipping?.provider ?? "GHN"} />
+                    <InfoRow label="Tracking No." value={order.shipping?.providerOrderCode ?? "—"} />
+                    <InfoRow label="Tracking" value={order.shipping?.trackingNumber ?? "—"} />
                   </div>
                   <div>
+                    <InfoRow
+                      label="GHN status"
+                      value={
+                        <span className={`rounded-full px-2.5 py-1 text-xs ${
+                          isGhnReturnFlowStatus(ghnStatus)
+                            ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+                            : "bg-gray-100 dark:bg-gray-800"
+                        }`}>
+                          {formatGhnShippingLabel(ghnStatus) || "—"}
+                        </span>
+                      }
+                    />
+                    {order.statusName === ORDER_STATUS.CANCELLED && order.cancelReason && (
+                      <InfoRow label="Cancel reason" value={order.cancelReason} />
+                    )}
                     <InfoRow
                       label="Status"
                       value={
                         <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs dark:bg-gray-800">
-                          {SHIPPING_STATUS_LABEL[order.shipping.status?.toLowerCase() ?? ""] ?? order.shipping.status ?? "—"}
+                          {formatGhnShippingLabel(order.shipping?.status) || "—"}
                         </span>
                       }
                     />
                     <InfoRow
                       label="Shipping Fee"
                       value={
-                        order.shipping.shippingFee !== null ? (
+                        order.shipping?.shippingFee != null ? (
                           <span className="font-semibold text-brand-600 dark:text-brand-400">
                             {fmtCurrency(order.shipping.shippingFee)}
                           </span>
                         ) : "—"
                       }
                     />
-                    <InfoRow label="Est. Delivery" value={fmtDt(order.shipping.estimatedDelivery)} />
+                    <InfoRow label="Est. Delivery" value={fmtDt(order.shipping?.estimatedDelivery)} />
                   </div>
                 </div>
-                {order.shipping.lastErrorMessage && (
+                {order.shipping?.lastErrorMessage && (
                   <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300">
                     Provider Error: {order.shipping.lastErrorMessage}
                   </div>
@@ -520,7 +613,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                         </p>
                         {h.note && (
                           <p className="mt-3 border-l-2 border-gray-200 pl-3 text-sm italic text-gray-600 dark:border-gray-700 dark:text-gray-300">
-                            "{h.note}"
+                            &ldquo;{h.note}&rdquo;
                           </p>
                         )}
                       </div>
@@ -552,11 +645,11 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                     {order.shippingHistory.map((sh, idx) => (
                       <tr key={idx} className="bg-white hover:bg-gray-50/50 dark:bg-transparent dark:hover:bg-white/[0.01]">
                         <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                          {SHIPPING_STATUS_LABEL[sh.previousStatus?.toLowerCase()] ?? sh.previousStatus}
+                          {formatGhnShippingLabel(sh.previousStatus) || sh.previousStatus}
                         </td>
                         <td className="px-5 py-4">
                           <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-medium text-brand-800 dark:bg-brand-900/30 dark:text-brand-300">
-                            {SHIPPING_STATUS_LABEL[sh.newStatus?.toLowerCase()] ?? sh.newStatus}
+                            {formatGhnShippingLabel(sh.newStatus) || sh.newStatus}
                           </span>
                         </td>
                         <td className="px-5 py-4 text-xs uppercase text-gray-400 dark:text-gray-500">

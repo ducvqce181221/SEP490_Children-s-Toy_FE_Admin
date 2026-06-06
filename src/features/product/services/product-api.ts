@@ -49,7 +49,7 @@ export const productApi = {
     payload: InventoryReportRequest,
   ): Promise<Blob> => {
     return axiosClient.post<Blob, InventoryReportRequest>(
-      "/products/inventory-report",
+      "/products/product-quantity-report",
       payload,
       {
         responseType: "blob",

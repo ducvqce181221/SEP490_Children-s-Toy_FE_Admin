@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import Button from "@/components/ui/button/Button";
@@ -7,9 +7,16 @@ import Badge from "@/components/ui/badge/Badge";
 import { useRefundDetail } from "../hooks/useRefundDetail";
 import { formatDisplayDate } from "@/utils/date-utils";
 import { useRefundMutations } from "../hooks/useRefundMutations";
-import { RefundStatusModal } from "./RefundStatusModal";
+import { RefundStatusModal, getNextStatus } from "./RefundStatusModal";
 import { formatCurrency } from "@/utils/format-utils";
 import { useAuthContext } from "@/context/AuthContext";
+import { Modal } from "@/components/ui/modal";
+import Label from "@/components/form/Label";
+import { OrderAssignModal } from "@/features/order/components/OrderActionModals";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import TextArea from "@/components/form/input/TextArea";
 
 interface RefundEditViewProps {
   refundId: number;
@@ -71,7 +78,78 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-type TabKey = "overview" | "history";
+type TabKey = "overview" | "history" | "shipping-history";
+
+const rejectRefundSchema = z.object({
+  rejectReason: z.string().min(1, "Please enter rejection reason").max(500, "Reason must not exceed 500 characters"),
+});
+
+type RejectRefundFormData = z.infer<typeof rejectRefundSchema>;
+
+// ─── Rejection Modal Component ────────────────────────────────────────────────
+interface RejectModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  isSubmitting: boolean;
+  onReject: (reason: string) => void;
+}
+
+export const RefundRejectModal: React.FC<RejectModalProps> = ({
+  isOpen,
+  onClose,
+  isSubmitting,
+  onReject,
+}) => {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<RejectRefundFormData>({
+    resolver: zodResolver(rejectRefundSchema),
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({ rejectReason: "" });
+    }
+  }, [isOpen, reset]);
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8 animate-fade-in">
+      <div className="mb-5">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Reject Refund Request</h2>
+        <p className="mt-2 text-sm text-error-500 dark:text-error-400">
+          Are you sure you want to reject this refund request? This action cannot be undone.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit((data) => onReject(data.rejectReason))}>
+        <div className="mb-6">
+          <Label htmlFor="reject-reason">Reason for Rejection (Required)</Label>
+          <TextArea
+            id="reject-reason"
+            className="mt-2"
+            {...register("rejectReason")}
+            rows={3}
+            placeholder="Enter reason for rejection..."
+            error={!!errors.rejectReason}
+            hint={errors.rejectReason?.message}
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-3">
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" disabled={isSubmitting} className="!bg-error-600 hover:!bg-error-700">
+            {isSubmitting ? "Rejecting..." : "Confirm Rejection"}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
 
 export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isViewOnly = false }) => {
   const router = useRouter();
@@ -79,9 +157,13 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
   const { refundDetail: refund, isLoading, error, refetch } = useRefundDetail(refundId);
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
-  const { isSubmitting, updateStatus } = useRefundMutations(() => {
+  const { isSubmitting, updateStatus, reassign, isReassigning } = useRefundMutations(() => {
     setIsStatusModalOpen(false);
+    setIsRejectModalOpen(false);
+    setIsAssignModalOpen(false);
     refetch();
   });
 
@@ -90,6 +172,25 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
       router.back();
     } else {
       router.push("/admin/refunds");
+    }
+  };
+
+  const handleReject = async (reason: string) => {
+    await updateStatus(refundId, {
+      status: "RefundRejected",
+      rejectReason: reason,
+    });
+  };
+
+  const handleAssign = async (data: any) => {
+    const result = await reassign(refundId, {
+      roleId: data.roleId,
+      newScheduleId: data.targetScheduleId,
+      notes: data.note || undefined,
+    });
+    if (result.success) {
+      setIsAssignModalOpen(false);
+      refetch();
     }
   };
 
@@ -119,22 +220,68 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
   const isMerchandise = role === "Merchandise";
   const isAdmin = role === "Admin";
   
-  const isCurrentStatusInspectionPending = refund.refundStatus === "RefundInspectionPending";
+  const isShippingStage = refund.refundStatus === "RefundShipping";
+  const isReceivedStage = refund.refundStatus === "RefundReceived";
+  const isInspectionStage = refund.refundStatus === "RefundInspectionPending";
+
+  /** System refund mis-rejected: Admin may Reopen (Rejected → Approved → Complete). */
+  const canReopenSystemRejected =
+    refund.refundStatus === "RefundRejected" &&
+    !!refund.isSystemReturn &&
+    isAdmin;
 
   const canChangeStatus =
     !isViewOnly &&
     refund.refundStatus !== "RefundCompleted" &&
     refund.refundStatus !== "RefundCancelled" &&
-    refund.refundStatus !== "RefundRejected" &&
-    (
-      isAdmin ||
-      (isMerchandise && isCurrentStatusInspectionPending) ||
-      (isStaff && !isCurrentStatusInspectionPending)
-    );
+    (canReopenSystemRejected ||
+      (refund.refundStatus !== "RefundRejected" &&
+        (isAdmin ||
+          ((isShippingStage || isReceivedStage) && isMerchandise) ||
+          (isInspectionStage && isStaff) ||
+          (!isShippingStage && !isReceivedStage && !isInspectionStage && isStaff))));
 
-  const tabs: { key: TabKey; label: string }[] = [
-    { key: "overview", label: "Overview" },
-    { key: "history", label: `Refund History (${refund.statusHistory?.length ?? 0})` },
+  const canReject =
+    !isViewOnly &&
+    refund.refundStatus !== "RefundCompleted" &&
+    refund.refundStatus !== "RefundCancelled" &&
+    refund.refundStatus !== "RefundRejected" &&
+    !refund.isSystemReturn &&
+    (isAdmin || isStaff);
+
+  const canAssign =
+    isAdmin &&
+    refund.refundStatus !== "RefundCompleted" &&
+    refund.refundStatus !== "RefundCancelled" &&
+    refund.refundStatus !== "RefundRejected";
+
+  const nextStatus = getNextStatus(refund.refundStatus, refund.isSystemReturn);
+
+  const getChangeStatusButtonLabel = (status: string | null) => {
+    if (!status) return "Change Status";
+    switch (status) {
+      case "RefundApproved": return refund.refundStatus === "RefundRejected" ? "Reopen & Approve" : "Approve Refund";
+      case "RefundPickupCreated": return "Create Waybill (GHN)";
+      case "RefundShipping": return "Ship Return Package";
+      case "RefundReceived": return "Receive Return Package";
+      case "RefundInspectionPending": return "Send to Quality Inspection";
+      case "RefundCompleted": return "Complete Refund";
+      default: return "Change Status";
+    }
+  };
+
+  const changeStatusButtonLabel = getChangeStatusButtonLabel(nextStatus);
+
+  const latestShippingStatus = refund.shippingHistory?.[0]?.newStatus?.toLowerCase() ?? "";
+  const isCarrierDelivered = latestShippingStatus === "delivered" || latestShippingStatus === "returned";
+
+  const hasShippingHistory = (refund.shippingHistory?.length ?? 0) > 0;
+  const showShippingTab = !!refund.shippingOrderCode || hasShippingHistory;
+
+  const tabs: { key: TabKey; label: string; show: boolean }[] = [
+    { key: "overview", label: "Overview", show: true },
+    { key: "history", label: `Refund History (${refund.statusHistory?.length ?? 0})`, show: true },
+    { key: "shipping-history", label: `Shipping History (${refund.shippingHistory?.length ?? 0})`, show: showShippingTab },
   ];
 
   return (
@@ -156,6 +303,11 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
             </h2>
             {getStatusBadge(refund.refundStatus)}
             <PaymentBadge status={refund.paymentStatus} />
+            {refund.isSystemReturn && (
+              <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                ⚙ System Return
+              </span>
+            )}
           </div>
           <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-2">
             <span>Linked Order:</span>
@@ -188,7 +340,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
 
       {/* Tabs */}
       <div className="mb-6 flex gap-1 border-b border-gray-200 dark:border-gray-800">
-        {tabs.map((t) => (
+        {tabs.filter((t) => t.show).map((t) => (
           <button
             key={t.key}
             type="button"
@@ -229,8 +381,16 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                               <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.01]">
                                 <td className="px-5 py-4">
                                   <div className="flex items-center gap-4">
-                                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs text-gray-400 font-bold border border-slate-100">
-                                      📦
+                                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-slate-100">
+                                      {item.productImage ? (
+                                        <img
+                                          src={item.productImage}
+                                          alt={item.productName}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <span className="text-gray-400 text-lg">📦</span>
+                                      )}
                                     </div>
                                     <span className="text-sm font-medium text-gray-800 dark:text-white/90">{item.productName}</span>
                                   </div>
@@ -368,6 +528,48 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
             )}
           </div>
         )}
+
+        {/* ── TAB: Shipping History ────────────────────────────────── */}
+        {activeTab === "shipping-history" && (
+          <div>
+            {!refund.shippingHistory || refund.shippingHistory.length === 0 ? (
+              <p className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">No updates from carrier yet.</p>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
+                <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+                  <thead className="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">From</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">To</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Source</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
+                    {refund.shippingHistory.map((sh, idx) => (
+                      <tr key={idx} className="bg-white hover:bg-gray-50/50 dark:bg-transparent dark:hover:bg-white/[0.01]">
+                        <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                          {sh.previousStatus}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-medium text-brand-800 dark:bg-brand-900/30 dark:text-brand-300">
+                            {sh.newStatus}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-xs uppercase text-gray-400 dark:text-gray-500">
+                          {sh.source}
+                        </td>
+                        <td className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">
+                          {fmtDt(sh.processedAt)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Actions Footer */}
@@ -376,18 +578,47 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
           <Button variant="outline" onClick={handleBack}>
             Back
           </Button>
+          {canReject && (
+            <Button
+              variant="outline"
+              onClick={() => setIsRejectModalOpen(true)}
+              className="!border-error-400 !text-error-500 hover:!bg-error-50 dark:hover:!bg-error-900/20"
+            >
+              Reject
+            </Button>
+          )}
+          {canAssign && (
+            <Button variant="outline" onClick={() => setIsAssignModalOpen(true)}>
+              Reassign
+            </Button>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-3">
           {!canChangeStatus && !isLoading && (
             <span className="self-center text-sm text-gray-400 dark:text-gray-500 mr-2">
-              No actions available
+              {refund.refundStatus === "RefundRejected" &&
+              refund.isSystemReturn &&
+              !isAdmin
+                ? "System refund was rejected — contact Admin to reopen (Approve → Complete)."
+                : "No actions available"}
             </span>
           )}
-          {canChangeStatus && (
-            <Button variant="primary" onClick={() => setIsStatusModalOpen(true)}>
-              Change Status
-            </Button>
+          {canChangeStatus && nextStatus && (
+            <div className="flex items-center gap-3">
+              {refund.refundStatus === "RefundShipping" && !isCarrierDelivered && (
+                <span className="text-xs text-amber-600 dark:text-amber-500 font-medium bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-900/30">
+                  Waiting for carrier delivery confirmation
+                </span>
+              )}
+              <Button
+                variant="primary"
+                onClick={() => setIsStatusModalOpen(true)}
+                disabled={refund.refundStatus === "RefundShipping" && !isCarrierDelivered}
+              >
+                {changeStatusButtonLabel}
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -398,7 +629,26 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
         currentStatus={refund.refundStatus}
         isSubmitting={isSubmitting}
         onSave={(data) => updateStatus(refund.refundId, data)}
+        isSystemReturn={refund.isSystemReturn}
+      />
+
+      <RefundRejectModal
+        isOpen={isRejectModalOpen}
+        onClose={() => setIsRejectModalOpen(false)}
+        isSubmitting={isSubmitting}
+        onReject={handleReject}
+      />
+
+      <OrderAssignModal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        isSubmitting={isReassigning}
+        onAssign={handleAssign}
+        currentStatusName={isInspectionStage ? "Confirmed" : "Pending"}
+        title="Reassign Refund"
+        description={`Admin reassigns the ${isInspectionStage ? "Merchandise" : "Staff"} slot for this refund request using an on-duty schedule.`}
       />
     </div>
   );
 };
+

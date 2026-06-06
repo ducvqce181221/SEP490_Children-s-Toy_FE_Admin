@@ -36,10 +36,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
 
-  const isGlobalReadOnly = initialData?.status === "Expired";
-  const isActive = initialData?.status === "Active";
-  const isGeneralLocked = isGlobalReadOnly || isActive;
-  const isNew = !initialData;
+
 
 
 
@@ -82,6 +79,55 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
   });
 
   const { fields, append, remove: removeField } = fieldArray;
+
+  const isNew = !initialData;
+  const isGlobalReadOnly = initialData?.status === "Expired";
+  const currentStatus = watch("status") || "Scheduled";
+  const isActive = currentStatus === "Active";
+  const isExpired = currentStatus === "Expired" || isGlobalReadOnly;
+
+  // Check if the promotion has transactions (soldQuantity > 0)
+  const hasTransactions = React.useMemo(() => {
+    if (!initialData) return false;
+    const hasDiscountSales = initialData.productPromotions?.some(p => p.soldQuantity > 0) ?? false;
+    const hasFlashSaleSales = initialData.promotionTimeSlots?.some(ts => 
+      ts.promotionProductSlots?.some(ps => ps.soldQuantity > 0)
+    ) ?? false;
+    return hasDiscountSales || hasFlashSaleSales;
+  }, [initialData]);
+
+  // Safeguard Locks:
+  const isPricingProductsLocked = isExpired || isActive || hasTransactions;
+  const isTypeLocked = isExpired || isActive || hasTransactions;
+  const isStartDateLocked = isExpired || isActive || hasTransactions;
+  const isCosmeticLocked = isExpired;
+
+  // Status Select dropdown options
+  const statusOptions = React.useMemo(() => {
+    const currentStatusVal = initialData?.status || "Scheduled";
+    switch (currentStatusVal) {
+      case "Scheduled":
+        return [
+          { value: "Scheduled", label: "Scheduled" },
+          { value: "Active", label: "Active (Start Now)" },
+          { value: "Inactive", label: "Inactive (Pause)" },
+        ];
+      case "Active":
+        return [
+          { value: "Active", label: "Active" },
+          { value: "Inactive", label: "Inactive (Pause)" },
+        ];
+      case "Inactive":
+        return [
+          { value: "Inactive", label: "Inactive" },
+          { value: "Scheduled", label: "Scheduled (Reschedule)" },
+          { value: "Active", label: "Active (Resume Now)" },
+        ];
+      case "Expired":
+      default:
+        return [{ value: currentStatusVal, label: currentStatusVal }];
+    }
+  }, [initialData]);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
@@ -157,19 +203,19 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
       });
       quillRef.current = quill;
       setDescriptionEditorContent(pendingDescriptionRef.current);
-      quill.enable(!isGlobalReadOnly);
+      quill.enable(!isCosmeticLocked);
     };
     void initializeDescriptionEditor();
     return () => {
       cancelled = true;
     };
-  }, [toolbarId, isGlobalReadOnly, setDescriptionEditorContent, setValue, toDescriptionFormValue]);
+  }, [toolbarId, isCosmeticLocked, setDescriptionEditorContent, setValue, toDescriptionFormValue]);
 
   useEffect(() => {
     if (quillRef.current) {
-      quillRef.current.enable(!isGlobalReadOnly && !isSubmitting);
+      quillRef.current.enable(!isCosmeticLocked && !isSubmitting);
     }
-  }, [isGlobalReadOnly, isSubmitting]);
+  }, [isCosmeticLocked, isSubmitting]);
 
   useEffect(() => {
     if (initialData) {
@@ -353,7 +399,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     hint={errors.promotionName?.message}
                     placeholder="Enter promotion name..."
                     {...register("promotionName")}
-                    disabled={isGeneralLocked}
+                    disabled={isCosmeticLocked}
                   />
                 </div>
 
@@ -366,7 +412,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     onChange={(e) => setValue("promotionType", e.target.value)}
                     error={!!errors.promotionType}
                     hint={errors.promotionType?.message}
-                    disabled={isGeneralLocked}
+                    disabled={isTypeLocked}
                   />
                 </div>
 
@@ -378,7 +424,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     error={!!errors.startDate}
                     hint={errors.startDate?.message}
                     {...register("startDate")}
-                    disabled={isGeneralLocked}
+                    disabled={isStartDateLocked}
                   />
                 </div>
 
@@ -390,16 +436,28 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     error={!!errors.endDate}
                     hint={errors.endDate?.message}
                     {...register("endDate")}
-                    disabled={isGeneralLocked}
+                    disabled={isCosmeticLocked}
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="status">Status <span className="text-error-500">*</span></Label>
-                  <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
-                    <input type="hidden" {...register("status")} />
-                    <span className="font-medium text-gray-900 dark:text-white">{watch("status") || "Scheduled"}</span>
-                  </div>
+                  {isNew ? (
+                    <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-800 dark:text-white/90">
+                      <input type="hidden" {...register("status")} />
+                      <span className="font-medium text-gray-900 dark:text-white">{watch("status") || "Scheduled"}</span>
+                    </div>
+                  ) : (
+                    <Select
+                      id="status"
+                      options={statusOptions}
+                      value={watch("status")}
+                      onChange={(e) => setValue("status", e.target.value)}
+                      error={!!errors.status}
+                      hint={errors.status?.message}
+                      disabled={isCosmeticLocked}
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -410,7 +468,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                     error={!!errors.priority}
                     hint={errors.priority?.message}
                     {...register("priority")}
-                    disabled={isGlobalReadOnly}
+                    disabled={isCosmeticLocked}
                   />
                 </div>
 
@@ -454,7 +512,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
 
             {PROMOTION_TYPE_CONFIG[watch("promotionType")]?.hasTimeSlots && (
               <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
-                <PromotionTimeSlotsSection form={form} readonly={isGlobalReadOnly} isNew={isNew} />
+                <PromotionTimeSlotsSection form={form} readonly={isPricingProductsLocked} isNew={isNew} hasTransactions={hasTransactions} />
               </div>
             )}
 
@@ -483,7 +541,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
               >
                 Cancel
               </Button>
-              {!isGlobalReadOnly && (
+              {!isCosmeticLocked && (
                 <Button 
                   type="submit" 
                   variant="outline" 
@@ -503,11 +561,11 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
         {currentStep === 2 && (
           <div className="space-y-6">
             {PROMOTION_TYPE_CONFIG[watch("promotionType")]?.hasTimeSlots ? (
-              <PromotionProductSlotsSection form={form} readonly={isGlobalReadOnly} />
+              <PromotionProductSlotsSection form={form} readonly={isPricingProductsLocked} />
             ) : (
               <>
                 <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
-                  {!isGlobalReadOnly && !isActive && (
+                  {!isPricingProductsLocked && (
                     <ProductCatalogSection
                       onConfirm={handleSyncProducts}
                       selectedProductIds={fields.map((f) => f.productId)}
@@ -519,7 +577,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
                   <ProductPromotionTable
                     form={form}
                     fieldArray={fieldArray}
-                    readonly={isGlobalReadOnly || isActive}
+                    readonly={isPricingProductsLocked}
                   />
                 </div>
               </>
@@ -529,7 +587,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
               <Button type="button" variant="outline" onClick={handlePrevStep}>
                 Back
               </Button>
-              {!isGlobalReadOnly && (
+              {!isCosmeticLocked && (
                 <Button
                   type="submit"
                   variant="primary"

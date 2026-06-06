@@ -38,6 +38,7 @@ export interface BlogListItem {
 
 export interface BlogDetail extends BlogListItem {
   blogContent: string;
+  description?: string | null;
   reason: string | null;
 }
 
@@ -197,6 +198,7 @@ export interface AiBlogGenerateRequest {
   defaultTone?: string | null;
   defaultCategoryId: number;
   isActive?: boolean;
+  sourceContent?: string | null;
 }
 
 export interface AiBlogGenerateResult {
@@ -210,7 +212,7 @@ export interface AiBlogGenerateResult {
   aiError?: string | null;
 }
 
-export type AiBlockedViolationType = "brand_external" | "topic_restricted" | "out_of_scope";
+export type AiBlockedViolationType = "brand_external" | "topic_restricted" | "out_of_scope" | "unsafe_content";
 
 export interface AiBlockedResponse {
   status: "blocked";

@@ -3,8 +3,7 @@ import React from "react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Label from "@/components/form/Label";
-import Select from "@/components/form/Select";
-import Input from "@/components/form/input/InputField";
+import TextArea from "@/components/form/input/TextArea";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UpdateRefundStatusData, UpdateRefundStatusSchema } from "../types/refund.schema";
@@ -15,7 +14,43 @@ interface RefundStatusModalProps {
   currentStatus: string;
   isSubmitting: boolean;
   onSave: (data: UpdateRefundStatusData) => void;
+  isSystemReturn?: boolean;
 }
+
+// Helper to determine the single next valid status transition
+export const getNextStatus = (currentStatus: string, isSystemReturn: boolean = false): UpdateRefundStatusData["status"] | null => {
+  switch (currentStatus) {
+    case "RefundRequested":
+      return "RefundApproved";
+    case "RefundRejected":
+      if (isSystemReturn) return "RefundApproved";
+      return null;
+    case "RefundApproved":
+      return isSystemReturn ? "RefundCompleted" : "RefundPickupCreated";
+    case "RefundPickupCreated":
+      return null; // Automatic flow via GHN webhook
+    case "RefundShipping":
+      return "RefundReceived"; // Manually confirmed by Merchandiser upon arrival
+    case "RefundReceived":
+      return "RefundInspectionPending";
+    case "RefundInspectionPending":
+      return "RefundCompleted";
+    default:
+      return null;
+  }
+};
+
+const getRefundStatusLabel = (status: string) => {
+  switch (status) {
+    case "RefundApproved": return "Approve Refund Request";
+    case "RefundPickupCreated": return "Create Return Shipping Order";
+    case "RefundShipping": return "Ship Return Package";
+    case "RefundReceived": return "Receive Return Package";
+    case "RefundInspectionPending": return "Send to Quality Inspection";
+    case "RefundCompleted": return "Complete Refund & Disburse";
+    default: return status;
+  }
+};
 
 export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
   isOpen,
@@ -23,188 +58,126 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
   currentStatus,
   isSubmitting,
   onSave,
+  isSystemReturn = false,
 }) => {
+  const nextStatus = getNextStatus(currentStatus, isSystemReturn);
+
   const {
     control,
+    register,
     handleSubmit,
-    watch,
     reset,
     formState: { errors },
   } = useForm<UpdateRefundStatusData>({
     resolver: zodResolver(UpdateRefundStatusSchema),
     defaultValues: {
-      status: (["RefundApproved", "RefundRejected", "RefundPickupCreated", "RefundShipping", "RefundReceived", "RefundInspectionPending", "RefundCompleted", "RefundCancelled"].includes(currentStatus)
-        ? currentStatus
-        : "RefundApproved") as UpdateRefundStatusData["status"],
+      status: (nextStatus || "RefundApproved") as UpdateRefundStatusData["status"],
       rejectReason: "",
-      shippingOrderCode: "",
       adminNote: "",
     },
   });
 
-  const selectedStatus = watch("status");
-
-  // Only allow specific transitions based on current status
-  const availableOptions = () => {
-    switch (currentStatus) {
-      case "RefundRequested":
-        return [
-          { value: "RefundApproved", label: "Approve Refund Request" },
-          { value: "RefundRejected", label: "Reject Request" },
-        ];
-      case "RefundApproved":
-        return [
-          { value: "RefundPickupCreated", label: "Create Return Shipping Order" },
-          { value: "RefundRejected", label: "Reject Request" },
-        ];
-      case "RefundPickupCreated":
-        return [
-          { value: "RefundShipping", label: "Ship Return Package" },
-          { value: "RefundRejected", label: "Reject Request" },
-        ];
-      case "RefundShipping":
-        return [
-          { value: "RefundReceived", label: "Receive Return Package" },
-          { value: "RefundRejected", label: "Reject Request" },
-        ];
-      case "RefundReceived":
-        return [
-          { value: "RefundInspectionPending", label: "Send to Quality Inspection" },
-          { value: "RefundRejected", label: "Reject Request" },
-        ];
-      case "RefundInspectionPending":
-        return [
-          { value: "RefundCompleted", label: "Complete Refund & Disburse" },
-          { value: "RefundRejected", label: "Reject Request" },
-        ];
-      default:
-        return [];
-    }
-  };
-
-  const options = availableOptions();
-
   // Reset form when modal opens
   React.useEffect(() => {
-    if (isOpen) {
+    if (isOpen && nextStatus) {
       reset({
-        status: options.length > 0
-          ? (options[0].value as UpdateRefundStatusData["status"])
-          : (["RefundApproved", "RefundRejected", "RefundPickupCreated", "RefundShipping", "RefundReceived", "RefundInspectionPending", "RefundCompleted", "RefundCancelled"].includes(currentStatus)
-            ? currentStatus as UpdateRefundStatusData["status"]
-            : "RefundApproved"),
+        status: nextStatus,
         rejectReason: "",
-        shippingOrderCode: "",
         adminNote: "",
       });
     }
-  }, [isOpen, currentStatus, reset, options.length]);
+  }, [isOpen, nextStatus, reset]);
+
+  if (!nextStatus) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-6">
+        <div>
+          <h3 className="mb-4 text-lg font-bold text-gray-800 dark:text-white/90">
+            No Transitions Available
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Cannot change status from <strong>{currentStatus}</strong>.
+          </p>
+          <div className="mt-6 flex justify-end">
+            <Button variant="outline" onClick={onClose} type="button">
+              Close
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
+  // Get action-specific details
+  const title = getRefundStatusLabel(nextStatus);
+  let description = `Are you sure you want to change the status to ${getRefundStatusLabel(nextStatus)}?`;
+  
+  if (nextStatus === "RefundApproved") {
+    description = "Confirming this action will approve the customer's refund request. The refund will proceed to the next step.";
+  } else if (nextStatus === "RefundPickupCreated") {
+    description = "The return shipment will be created. If the shipping API fails, the action will be rolled back.";
+  } else if (nextStatus === "RefundCompleted") {
+    description = "Are you sure you want to complete this refund? The approved amount will be credited to the customer's wallet and stock inventory will be updated.";
+  }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px]">
-      <div className="p-6">
-        <h3 className="mb-5 text-lg font-bold text-gray-800 dark:text-white/90">
-          Update Refund Status
-        </h3>
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
+      <div>
+        <div className="mb-5">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white/90">
+            {title}
+          </h3>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            {description}
+          </p>
+        </div>
 
-        {options.length === 0 ? (
-          <div className="text-gray-500 mb-6 text-sm">
-            Cannot change status from <strong>{currentStatus}</strong>.
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit(onSave)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSave)} className="space-y-4">
+          <Controller
+            name="status"
+            control={control}
+            render={({ field }) => <input type="hidden" {...field} />}
+          />
+
+          {nextStatus === "RefundPickupCreated" && (
             <div>
-              <Label>New Status <span className="text-error-500">*</span></Label>
-              <Controller
-                name="status"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    options={options}
-                  />
-                )}
-              />
-              {errors.status && (
-                <p className="mt-1 text-sm text-error-500">{errors.status.message}</p>
-              )}
+              <Label htmlFor="provider">Carrier</Label>
+              <select
+                id="provider"
+                disabled
+                className="mt-2 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+              >
+                <option value="GHN">Giao Hang Nhanh (GHN)</option>
+              </select>
             </div>
+          )}
 
-            {selectedStatus === "RefundRejected" && (
-              <div>
-                <Label>Reason for Rejection <span className="text-error-500">*</span></Label>
-                <Controller
-                  name="rejectReason"
-                  control={control}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      type="text"
-                      placeholder="Enter the reason for rejection..."
-                      className={errors.rejectReason ? "border-error-500" : ""}
-                    />
-                  )}
-                />
-                {errors.rejectReason && (
-                  <p className="mt-1 text-sm text-error-500">{errors.rejectReason.message}</p>
-                )}
-              </div>
-            )}
+          <div>
+            <Label htmlFor="adminNote">Note (Optional)</Label>
+            <TextArea
+              id="adminNote"
+              className="mt-2"
+              {...register("adminNote")}
+              rows={3}
+              placeholder={
+                nextStatus === "RefundCompleted" 
+                  ? "Enter quality check or warehouse inspection notes..."
+                  : "Enter details or comments about this transition..."
+              }
+              error={!!errors.adminNote}
+              hint={errors.adminNote?.message}
+            />
+          </div>
 
-            {selectedStatus === "RefundPickupCreated" && (
-              <div>
-                <Label>Shipping Order Tracking Code</Label>
-                <Controller
-                  name="shippingOrderCode"
-                  control={control}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      type="text"
-                      placeholder="Enter GHN/Courier tracking code..."
-                      className={errors.shippingOrderCode ? "border-error-500" : ""}
-                    />
-                  )}
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Leave empty to automatically call GHN API to create a return shipping order. Enter a code if you want to fill it manually.
-                </p>
-                {errors.shippingOrderCode && (
-                  <p className="mt-1 text-sm text-error-500">{errors.shippingOrderCode.message}</p>
-                )}
-              </div>
-            )}
-
-            {(selectedStatus === "RefundInspectionPending" || selectedStatus === "RefundCompleted") && (
-              <div>
-                <Label>Quality Inspection / Warehouse Note</Label>
-                <Controller
-                  name="adminNote"
-                  control={control}
-                  render={({ field }) => (
-                    <textarea
-                      {...field}
-                      placeholder="Enter details about returned items quality check..."
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm resize-none outline-none focus:border-brand-500 h-24"
-                    />
-                  )}
-                />
-                {errors.adminNote && (
-                  <p className="mt-1 text-sm text-error-500">{errors.adminNote.message}</p>
-                )}
-              </div>
-            )}
-
-            <div className="mt-6 flex justify-end gap-3">
-              <Button variant="outline" onClick={onClose} type="button" disabled={isSubmitting}>
-                Cancel
-              </Button>
-              <Button variant="primary" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Updating..." : "Update Status"}
-              </Button>
-            </div>
-          </form>
-        )}
+          <div className="mt-6 flex justify-end gap-3">
+            <Button variant="outline" onClick={onClose} type="button" disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Processing..." : title}
+            </Button>
+          </div>
+        </form>
       </div>
     </Modal>
   );

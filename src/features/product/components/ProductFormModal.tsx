@@ -492,7 +492,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   ];
 
   const brandOptions = [
-    { value: "", label: "None" },
+    { value: "", label: "Select Brand..." },
     ...brands.map((b) => ({
       value: String(b.brandId),
       label: b.brandName,
@@ -508,7 +508,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   ];
 
   const materialOptions = [
-    { value: "", label: "None" },
+    { value: "", label: "Select Material..." },
     ...materials.map((item) => ({
       value: String(item.id),
       label: item.label,
@@ -516,7 +516,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   ];
 
   const ageOptions = [
-    { value: "", label: "None" },
+    { value: "", label: "Select Age Range..." },
     ...ages.map((item) => ({
       value: String(item.id),
       label: item.label,
@@ -524,7 +524,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   ];
 
   const sexOptions = [
-    { value: "", label: "None" },
+    { value: "", label: "Select Sex..." },
     ...sexes.map((item) => ({
       value: String(item.id),
       label: item.label,
@@ -532,7 +532,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   ];
 
   const originOptions = [
-    { value: "", label: "None" },
+    { value: "", label: "Select Origin..." },
     ...origins.map((item) => ({
       value: String(item.id),
       label: item.label,
@@ -597,7 +597,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
 
             <div>
-              <Label>Brand</Label>
+              <Label>
+                Brand <span className="text-error-500">*</span>
+              </Label>
               <Select
                 value={selectedBrandId === null || selectedBrandId === undefined ? "" : String(selectedBrandId)}
                 onChange={(e) =>
@@ -608,6 +610,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 options={brandOptions}
                 disabled={isFormDisabled}
               />
+              {errors.brandId && (
+                <p className="mt-1.5 text-sm text-error-500">{errors.brandId.message}</p>
+              )}
             </div>
 
             <div>
@@ -680,7 +685,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
 
             <div>
-              <Label>Launch Date</Label>
+              <Label>
+                Launch Date <span className="text-error-500">*</span>
+              </Label>
               <Input
                 type="date"
                 value={launchDateValue ? launchDateValue.slice(0, 10) : ""}
@@ -705,7 +712,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
 
             <div>
-              <Label>Material</Label>
+              <Label>
+                Material <span className="text-error-500">*</span>
+              </Label>
               <Select
                 value={materialIdValue === null || materialIdValue === undefined ? "" : String(materialIdValue)}
                 onChange={(e) =>
@@ -724,7 +733,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
 
             <div>
-              <Label>Age Range</Label>
+              <Label>
+                Age Range <span className="text-error-500">*</span>
+              </Label>
               <Select
                 value={ageIdValue === null || ageIdValue === undefined ? "" : String(ageIdValue)}
                 onChange={(e) =>
@@ -741,7 +752,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
 
             <div>
-              <Label>Sex</Label>
+              <Label>
+                Sex <span className="text-error-500">*</span>
+              </Label>
               <Select
                 value={sexIdValue === null || sexIdValue === undefined ? "" : String(sexIdValue)}
                 onChange={(e) =>
@@ -758,7 +771,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
 
             <div>
-              <Label>Origin</Label>
+              <Label>
+                Origin <span className="text-error-500">*</span>
+              </Label>
               <Select
                 value={originIdValue === null || originIdValue === undefined ? "" : String(originIdValue)}
                 onChange={(e) =>

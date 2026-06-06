@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AxiosError } from "axios";
-import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import type Quill from "quill";
 import Button from "@/components/ui/button/Button";
@@ -74,6 +74,22 @@ const normalizeIncomingBlogContent = (rawValue: unknown) => {
   }
 
   return trimmed;
+};
+
+const stripHtmlTags = (value: string) => value.replace(/<[^>]*>/g, " ");
+
+const countWordsFromHtml = (html: string) => {
+  const plainText = stripHtmlTags(decodeHtmlEntities(html))
+    .replace(/&nbsp;/gi, " ")
+    .trim();
+
+  if (plainText.length === 0) {
+    return 0;
+  }
+
+  // Count contiguous letter/number tokens only; punctuation/symbols/spaces are excluded.
+  const words = plainText.match(/[\p{L}\p{N}]+/gu);
+  return words?.length ?? 0;
 };
 
 const toDateTimeLocal = (dateValue: string | null) => {
@@ -160,6 +176,8 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
     defaultValues,
   });
   const currentThumbnail = useWatch({ control, name: "blogThumbnail" });
+  const blogContent = useWatch({ control, name: "blogContent" });
+  const wordCount = useMemo(() => countWordsFromHtml(blogContent ?? ""), [blogContent]);
 
   const setQuillContent = useCallback(
     (html: string) => {
@@ -603,6 +621,9 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
                 ref={editorRef}
                 className="min-h-[180px] text-sm text-gray-800 dark:text-white/90"
               />
+              <div className="border-t border-gray-200 px-3 py-1.5 text-right text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                {wordCount} words
+              </div>
             </div>
             <input type="hidden" {...register("blogContent")} />
             {errors.blogContent?.message && (

@@ -214,7 +214,7 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
   const awaitingBounds = campaignId != null && boundsLoading && loadBounds;
   const infeasibleWindow = scheduleBounds !== null && !scheduleBounds.isFeasible;
 
-  const title = mode === "reschedule" ? "Reschedule Delivery" : "Schedule Delivery";
+  const title = mode === "reschedule" ? "Reschedule Send Time" : "Schedule Send Time";
 
   return (
     <form id={CAMPAIGN_SCHEDULE_FORM_ID} onSubmit={(e) => void handleSubmitForm(e)} className={className}>
@@ -232,15 +232,15 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
           </div>
           <h3 className="mb-1 text-lg font-bold text-gray-800 dark:text-white/90">{title}</h3>
           <p className="mb-1 text-center text-sm text-gray-600 dark:text-gray-400 px-2 leading-relaxed">
-            This is the time when the background worker sends notifications to the selected audience. The date picker displays times based on your local machine;{" "}
+            This is the time when the background worker sends notifications to the selected audience. The date picker displays times in your local machine timezone;{" "}
             <span className="font-medium text-gray-700 dark:text-gray-300">
-              the allowed scheduling range is shown below the "Send time" input
+              the allowed scheduling range is displayed in the panel below
             </span>{" "}
-            (synced with the server).
+            (synchronized with the server — in Vietnam Time).
           </p>
           <p className="mb-2 text-center text-xs text-gray-500 dark:text-gray-400 px-2 leading-relaxed">
-            Open the "Detailed Scheduling Guide" below to view eligibility requirements by campaign type (vouchers, sales, flash sales, etc.).
-            If the API returns an error after clicking Confirm, read the toast notification — it usually identifies the violated time limit.
+            See the "Detailed Scheduling Guide" below to learn about specific constraints for each campaign type (vouchers, sales, flash sales...).
+            If the server returns an error after confirmation, read the toast warning to see which validation rule was violated.
           </p>
           {context?.campaignName ? (
             <p className="mb-4 text-xs text-gray-500 dark:text-gray-400 text-center">
@@ -286,7 +286,7 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
       </details>
 
       <div className="w-full mb-6 text-left">
-        <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">Quick pick</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">Quick select</label>
         <div className="flex flex-wrap gap-2 mb-4">
           <button
             type="button"
@@ -313,6 +313,7 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
 
         <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
           Send time <span className="text-error-500">*</span>
+          <span className="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400">(select in your local timezone; stored as UTC on server)</span>
         </label>
         <DatePicker
           id={`campaign-schedule-at-${mode}`}
@@ -329,7 +330,7 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
 
         {campaignId != null ? (
           <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-left text-xs dark:border-gray-700 dark:bg-gray-900/40">
-            <p className="mb-1 font-semibold text-gray-800 dark:text-gray-200">Allowed Time Range (VN Time)</p>
+            <p className="mb-1 font-semibold text-gray-800 dark:text-gray-200">Allowed Scheduling Window (Vietnam Time)</p>
             {boundsLoading ? (
               <p className="text-gray-600 dark:text-gray-400">Loading from server...</p>
             ) : boundsError ? (
@@ -384,7 +385,7 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
         {mode === "schedule" && (
           <div className="mt-4 space-y-3">
             <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-              Valid from / Valid to (optional): Restricts the send time to this range only when both boundaries are specified and 'Valid from' is earlier than 'Valid to'. This does not replace the voucher or promotion expiration dates. For the valid <span className="font-medium">Send time</span>, see the allowed bounds below the Send time field.
+              Valid from / Valid to (optional): Restricts the campaign send time to this range when both are provided and 'Valid from' is earlier than 'Valid to'. This does not affect the voucher or promotion expiration date. The allowed scheduling boundaries are shown in the panel above.
             </p>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">Valid from</label>
@@ -392,6 +393,8 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
                 id="campaign-valid-from"
                 enableTime={true}
                 dateFormat="Y-m-d H:i"
+                minDate={effectiveMinDate}
+                maxDate={effectiveMaxDate}
                 defaultDate={validFrom || undefined}
                 onChange={([date]) => setValidFrom(date ?? null)}
                 placeholder="Optional"
@@ -403,6 +406,8 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
                 id="campaign-valid-to"
                 enableTime={true}
                 dateFormat="Y-m-d H:i"
+                minDate={effectiveMinDate}
+                maxDate={effectiveMaxDate}
                 defaultDate={validTo || undefined}
                 onChange={([date]) => setValidTo(date ?? null)}
                 placeholder="Optional"
@@ -414,7 +419,7 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
         {mode === "reschedule" && (
           <div className="mt-4">
             <label htmlFor="campaign-reschedule-reason" className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
-              Rescheduling reason (optional, max 200 characters)
+              Reschedule reason (optional, max 200 characters)
             </label>
             <TextArea
               id="campaign-reschedule-reason"

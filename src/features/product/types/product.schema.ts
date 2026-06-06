@@ -55,10 +55,12 @@ export const ProductFormSchema = z
       .number()
       .int("Brand must be a valid number")
       .refine((val) => val > 0, {
-        message: "Brand ID must be greater than 0",
+        message: "Please select a brand",
       })
       .nullable()
-      .optional(),
+      .refine((val) => val !== null, {
+        message: "Brand is required",
+      }),
     priceRangeId: z
       .number()
       .int("Price range must be a valid number")
@@ -78,7 +80,7 @@ export const ProductFormSchema = z
     quantity: z
       .number()
       .int("Quantity must be a whole number")
-      .gte(0, "Quantity cannot be negative")
+      .gt(0, "Quantity is required and must be greater than 0")
       .lte(1_000_000, "Quantity must not exceed 1,000,000"),
     productStatus: z
       .string()
@@ -86,7 +88,12 @@ export const ProductFormSchema = z
       .refine((val) => ALLOWED_STATUSES.includes(val as (typeof ALLOWED_STATUSES)[number]), {
         message: "Product status is invalid",
       }),
-    launchDate: z.string().nullable().optional(),
+    launchDate: z
+      .string()
+      .nullable()
+      .refine((val) => val !== null && val !== "", {
+        message: "Launch date is required",
+      }),
     stockThreshold: z
       .number()
       .int("Stock threshold must be a whole number")
@@ -125,34 +132,42 @@ export const ProductFormSchema = z
       .number()
       .int("Material must be a valid number")
       .refine((val) => val > 0, {
-        message: "Material ID must be greater than 0",
+        message: "Please select a material",
       })
       .nullable()
-      .optional(),
+      .refine((val) => val !== null, {
+        message: "Material is required",
+      }),
     ageId: z
       .number()
       .int("Age must be a valid number")
       .refine((val) => val > 0, {
-        message: "Age ID must be greater than 0",
+        message: "Please select an age range",
       })
       .nullable()
-      .optional(),
+      .refine((val) => val !== null, {
+        message: "Age range is required",
+      }),
     sexId: z
       .number()
       .int("Gender must be a valid number")
       .refine((val) => val > 0, {
-        message: "Gender ID must be greater than 0",
+        message: "Please select a sex",
       })
       .nullable()
-      .optional(),
+      .refine((val) => val !== null, {
+        message: "Sex is required",
+      }),
     originId: z
       .number()
       .int("Origin must be a valid number")
       .refine((val) => val > 0, {
-        message: "Origin ID must be greater than 0",
+        message: "Please select an origin",
       })
       .nullable()
-      .optional(),
+      .refine((val) => val !== null, {
+        message: "Origin is required",
+      }),
     weightGram: z
       .number()
       .int("Weight must be a whole number")
@@ -160,15 +175,18 @@ export const ProductFormSchema = z
     lengthCm: z
       .number()
       .int("Length must be a whole number")
-      .gt(0, "Length (cm) must be greater than 0"),
+      .gt(0, "Length (cm) must be greater than 0")
+      .lte(150, "Length (cm) must not exceed 150 cm"),
     widthCm: z
       .number()
       .int("Width must be a whole number")
-      .gt(0, "Width (cm) must be greater than 0"),
+      .gt(0, "Width (cm) must be greater than 0")
+      .lte(150, "Width (cm) must not exceed 150 cm"),
     heightCm: z
       .number()
       .int("Height must be a whole number")
-      .gt(0, "Height (cm) must be greater than 0"),
+      .gt(0, "Height (cm) must be greater than 0")
+      .lte(150, "Height (cm) must not exceed 150 cm"),
     mainImageUrl: z
       .string()
       .refine(

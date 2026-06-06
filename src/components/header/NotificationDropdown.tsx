@@ -22,6 +22,14 @@ function formatTime(iso: string): string {
   return d.toLocaleDateString("en-US");
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  ORDER: "Order",
+  PROMOTION: "Promotion",
+  SYSTEM: "System",
+  BLOG: "Blog",
+  STOCK: "Product Quantity",
+};
+
 type Variant = "admin" | "customer";
 
 export default function NotificationDropdown({
@@ -175,46 +183,50 @@ export default function NotificationDropdown({
             </li>
           )}
           {!loading &&
-            items?.map((item) => (
-              <li key={item.deliveryId}>
-                <DropdownItem
-                  onItemClick={() => void handleItemClick(item)}
-                  className={`flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 ${item.status === "Unread" ? "bg-brand-50/40 dark:bg-white/[0.02]" : ""
-                    }`}
-                >
-                  <span className="relative z-1 block h-10 w-full max-w-10 shrink-0 overflow-hidden rounded-full">
-                    {item.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.imageUrl}
-                        alt=""
-                        className="h-10 w-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                        {item.notificationType.slice(0, 1)}
+            items?.map((item) => {
+              const label = TYPE_LABELS[item.notificationType] ?? item.notificationType;
+              const letter = label.charAt(0).toUpperCase();
+              return (
+                <li key={item.deliveryId}>
+                  <DropdownItem
+                    onItemClick={() => void handleItemClick(item)}
+                    className={`flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 ${item.status === "Unread" ? "bg-brand-50/40 dark:bg-white/[0.02]" : ""
+                      }`}
+                  >
+                    <span className="relative z-1 block h-10 w-full max-w-10 shrink-0 overflow-hidden rounded-full">
+                      {item.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.imageUrl}
+                          alt=""
+                          className="h-10 w-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                          {letter}
+                        </span>
+                      )}
+                      {item.status === "Unread" && (
+                        <span className="absolute bottom-0 right-0 z-10 h-2.5 w-2.5 rounded-full border-[1.5px] border-white bg-orange-500 dark:border-gray-900" />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="mb-1.5 block text-theme-sm text-gray-800 dark:text-white/90">
+                        {item.title}
                       </span>
-                    )}
-                    {item.status === "Unread" && (
-                      <span className="absolute bottom-0 right-0 z-10 h-2.5 w-2.5 rounded-full border-[1.5px] border-white bg-orange-500 dark:border-gray-900" />
-                    )}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="mb-1.5 block text-theme-sm text-gray-800 dark:text-white/90">
-                      {item.title}
+                      <span className="line-clamp-2 text-theme-sm text-gray-500 dark:text-gray-400">
+                        {item.message}
+                      </span>
+                      <span className="mt-1 flex flex-wrap items-center gap-2 text-theme-xs text-gray-500 dark:text-gray-400">
+                        <span>{label}</span>
+                        <span className="h-1 w-1 rounded-full bg-gray-400" />
+                        <span>{formatTime(item.createdAt)}</span>
+                      </span>
                     </span>
-                    <span className="line-clamp-2 text-theme-sm text-gray-500 dark:text-gray-400">
-                      {item.message}
-                    </span>
-                    <span className="mt-1 flex flex-wrap items-center gap-2 text-theme-xs text-gray-500 dark:text-gray-400">
-                      <span>{item.notificationType}</span>
-                      <span className="h-1 w-1 rounded-full bg-gray-400" />
-                      <span>{formatTime(item.createdAt)}</span>
-                    </span>
-                  </span>
-                </DropdownItem>
-              </li>
-            ))}
+                  </DropdownItem>
+                </li>
+              );
+            })}
         </ul>
         <Link
           href={allNotificationsHref}

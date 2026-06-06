@@ -60,8 +60,19 @@ export interface CreateAccountRequest {
   password: string;
 }
 
+export interface UpdateAccountInfoRequest {
+  accountName: string;
+  phoneNumber: string | null;
+  isActive: boolean;
+}
+
 export interface UpdateAccountStatusRequest {
   isActive: boolean;
+}
+
+export interface UpdateAccountPasswordRequest {
+  newPassword: string;
+  confirmNewPassword: string;
 }
 
 export interface ApiErrorResponse {
@@ -80,4 +91,9 @@ export interface MutationResult {
 
 export interface CreateAccountResult extends MutationResult {
   validationErrors?: Record<string, string[]>;
+}
+
+export interface UpdateAccountInfoResult extends MutationResult {
+  validationErrors?: Record<string, string[]>;
+  data?: AccountDetail;
 }

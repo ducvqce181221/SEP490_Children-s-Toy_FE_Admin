@@ -4,7 +4,7 @@
  */
 
 export const SCHEDULE_MIN_LEAD_MINUTES = 30;
-export const SCHEDULE_MAX_LEAD_DAYS = 90;
+export const SCHEDULE_MAX_LEAD_DAYS = 30;
 export const VOUCHER_END_BUFFER_HOURS = 2;
 export const SALE_LEAD_HOURS_BEFORE_START = 24;
 export const VOUCHER_EXPIRING_WARN_HOURS = 24;

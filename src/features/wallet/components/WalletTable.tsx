@@ -4,8 +4,8 @@ import React, { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import Pagination from "@/components/common/Pagination";
 import Button from "@/components/ui/button/Button";
-import { PencilIcon } from "@/icons";
 import { Modal } from "@/components/ui/modal";
+import { PencilIcon } from "@/icons";
 import {
   Table,
   TableBody,
@@ -16,7 +16,7 @@ import {
 import { formatDisplayDate } from "@/utils/date-utils";
 import { useWalletMutations } from "../hooks/useWalletMutations";
 import { useWallets } from "../hooks/useWallets";
-import { WalletListItem, WalletStatus } from "../types/wallet";
+import { WalletListItem } from "../types/wallet";
 import WalletToolbar from "./WalletToolbar";
 
 const headerCellClassName =
@@ -29,6 +29,11 @@ const footerSelectClassName =
 
 const statusSelectClassName =
   "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100";
+
+const statusBadgeClassName: Record<WalletListItem["status"], string> = {
+  Active: "bg-success-50 text-success-700 ring-success-600/20 dark:bg-success-500/10 dark:text-success-400",
+  Frozen: "bg-blue-light-50 text-blue-light-700 ring-blue-light-500/20 dark:bg-blue-light-500/10 dark:text-blue-light-400",
+};
 
 const WalletTable = () => {
   const {
@@ -51,7 +56,6 @@ const WalletTable = () => {
 
   const { updateWalletStatus, updatingWalletId } = useWalletMutations(reloadWallets);
   const [editingWallet, setEditingWallet] = useState<WalletListItem | null>(null);
-  const [editingStatus, setEditingStatus] = useState<Extract<WalletStatus, "Active" | "Frozen">>("Active");
 
   const hasWallets = wallets.length > 0;
   const showInitialLoading = isLoading && !hasWallets;
@@ -67,38 +71,30 @@ const WalletTable = () => {
     return `Showing ${start} - ${end} / ${totalCount} wallets`;
   }, [pageNumber, pageSize, totalCount]);
 
-  const canEditStatus = (wallet: WalletListItem) => wallet.status !== "Closed";
-
-  const handleOpenEditPopup = (wallet: WalletListItem) => {
-    if (!canEditStatus(wallet)) {
+  const handleOpenEditModal = (wallet: WalletListItem) => {
+    if (wallet.status !== "Frozen") {
       return;
     }
 
     setEditingWallet(wallet);
-    setEditingStatus(wallet.status === "Frozen" ? "Frozen" : "Active");
   };
 
-  const handleCloseEditPopup = () => {
+  const handleCloseEditModal = () => {
     setEditingWallet(null);
   };
 
   const handleSaveStatus = async () => {
-    if (!editingWallet) {
-      return;
-    }
-
-    if (editingStatus === editingWallet.status) {
-      handleCloseEditPopup();
+    if (!editingWallet || editingWallet.status === "Active") {
       return;
     }
 
     const result = await updateWalletStatus(editingWallet.walletId, {
-      status: editingStatus,
+      status: "Active",
     });
 
     if (result.success) {
       toast.success(result.message);
-      handleCloseEditPopup();
+      handleCloseEditModal();
       return;
     }
 
@@ -116,13 +112,14 @@ const WalletTable = () => {
       />
 
       <div className="max-w-full overflow-x-auto border-t border-gray-100 dark:border-white/[0.05]">
-        <div className="min-w-[900px]">
+        <div className="min-w-[1020px]">
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
                 <TableCell isHeader className={headerCellClassName}>#</TableCell>
                 <TableCell isHeader className={headerCellClassName}>WalletId</TableCell>
                 <TableCell isHeader className={headerCellClassName}>Account</TableCell>
+                <TableCell isHeader className={headerCellClassName}>Unbanned By</TableCell>
                 <TableCell isHeader className={headerCellClassName}>Status</TableCell>
                 <TableCell isHeader className={headerCellClassName}>CreatedAt</TableCell>
                 <TableCell isHeader className={headerCellClassName}>UpdatedAt</TableCell>
@@ -133,7 +130,7 @@ const WalletTable = () => {
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
               {showInitialLoading && (
                 <TableRow>
-                  <TableCell colSpan={7} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <TableCell colSpan={8} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                     Loading wallet list...
                   </TableCell>
                 </TableRow>
@@ -141,7 +138,7 @@ const WalletTable = () => {
 
               {!showInitialLoading && error && (
                 <TableRow>
-                  <TableCell colSpan={7} className="px-5 py-10 text-center text-sm text-error-600">
+                  <TableCell colSpan={8} className="px-5 py-10 text-center text-sm text-error-600">
                     {error}
                   </TableCell>
                 </TableRow>
@@ -149,7 +146,7 @@ const WalletTable = () => {
 
               {!showInitialLoading && !error && wallets.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <TableCell colSpan={8} className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                     No matching wallets found.
                   </TableCell>
                 </TableRow>
@@ -168,7 +165,14 @@ const WalletTable = () => {
                       {wallet.account}
                     </TableCell>
                     <TableCell className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
-                      {wallet.status}
+                      {wallet.unbannedByName?.trim() || "-"}
+                    </TableCell>
+                    <TableCell className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${statusBadgeClassName[wallet.status]}`}
+                      >
+                        {wallet.status}
+                      </span>
                     </TableCell>
                     <TableCell className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       {formatDisplayDate(wallet.createdAt)}
@@ -177,18 +181,28 @@ const WalletTable = () => {
                       {wallet.updatedAt ? formatDisplayDate(wallet.updatedAt) : "-"}
                     </TableCell>
                     <TableCell className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
-                      {canEditStatus(wallet) ? (
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditPopup(wallet)}
-                          className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
-                          aria-label={`Edit wallet ${wallet.walletId} status`}
-                        >
-                          <PencilIcon className="w-5 h-5" />
-                        </button>
-                      ) : (
-                        <span className="text-xs text-gray-500">Closed wallet</span>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(wallet)}
+                        className={
+                          wallet.status === "Frozen"
+                            ? "rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300"
+                            : "cursor-not-allowed rounded-lg border border-gray-200 p-2 text-gray-300 opacity-50 dark:border-gray-800 dark:text-gray-600"
+                        }
+                        aria-label={
+                          wallet.status === "Frozen"
+                            ? `Edit wallet ${wallet.walletId} status`
+                            : `Wallet ${wallet.walletId} is already active`
+                        }
+                        title={
+                          wallet.status === "Frozen"
+                            ? "Edit wallet status"
+                            : "Only frozen wallets can be edited"
+                        }
+                        disabled={wallet.status !== "Frozen"}
+                      >
+                        <PencilIcon className="h-5 w-5" />
+                      </button>
                     </TableCell>
                   </TableRow>
                 );
@@ -230,7 +244,7 @@ const WalletTable = () => {
 
       <Modal
         isOpen={editingWallet !== null}
-        onClose={handleCloseEditPopup}
+        onClose={handleCloseEditModal}
         className="max-w-[420px] p-5 lg:p-6"
       >
         <div className="mb-5">
@@ -256,24 +270,35 @@ const WalletTable = () => {
 
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Status
+              Current Status
+            </label>
+            <input
+              className="h-11 w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+              value={editingWallet?.status ?? ""}
+              readOnly
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              New Status
             </label>
             <select
               className={statusSelectClassName}
-              value={editingStatus}
-              onChange={(event) =>
-                setEditingStatus(event.target.value as Extract<WalletStatus, "Active" | "Frozen">)
-              }
+              value="Active"
               disabled={editingWallet === null || updatingWalletId === editingWallet.walletId}
             >
               <option value="Active">Active</option>
-              <option value="Frozen">Frozen</option>
             </select>
           </div>
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-3">
-          <Button variant="outline" onClick={handleCloseEditPopup}>
+          <Button
+            variant="outline"
+            onClick={handleCloseEditModal}
+            disabled={editingWallet !== null && updatingWalletId === editingWallet.walletId}
+          >
             Cancel
           </Button>
           <Button
@@ -281,8 +306,8 @@ const WalletTable = () => {
             onClick={() => void handleSaveStatus()}
             disabled={
               editingWallet === null
+              || editingWallet.status === "Active"
               || updatingWalletId === editingWallet.walletId
-              || editingStatus === editingWallet.status
             }
           >
             {editingWallet !== null && updatingWalletId === editingWallet.walletId

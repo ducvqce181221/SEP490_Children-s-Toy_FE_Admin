@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const cancelOrderSchema = z.object({
-  reason: z.string().min(1, "Please enter cancellation reason"),
+  reason: z
+    .string()
+    .min(1, "Please enter cancellation reason")
+    .max(500, "Reason must not exceed 500 characters"),
 });
 
 export type CancelOrderFormData = z.infer<typeof cancelOrderSchema>;
@@ -15,7 +18,8 @@ export const shipOrderSchema = z.object({
 export type ShipOrderFormData = z.infer<typeof shipOrderSchema>;
 
 export const assignOrderSchema = z.object({
-  targetAccountId: z.coerce.number().min(1, "Please select staff"),
+  targetScheduleId: z.coerce.number().min(1, "Please select a schedule"),
+  roleId: z.coerce.number().min(1),
   note: z.string().optional(),
 });
 

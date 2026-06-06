@@ -180,7 +180,7 @@ export const TemplateTable = () => {
       )}
 
       <TemplateFormModal 
-        key={currentTemplateData ? currentTemplateData.templateId : "create"}
+        key={currentTemplateData ? `${currentTemplateData.templateId}-${currentModalMode}` : "create"}
         isOpen={isFormModalOpen} 
         mode={currentModalMode}
         templateData={currentTemplateData}

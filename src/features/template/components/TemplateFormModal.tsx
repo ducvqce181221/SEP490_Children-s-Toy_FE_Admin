@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import type Quill from "quill";
+import "quill/dist/quill.snow.css";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
-import TextArea from "@/components/form/input/TextArea";
 import Button from "@/components/ui/button/Button";
 import { TemplateFormData } from "../types/template";
 import { TemplateFormSchema } from "../types/template.schema";
@@ -62,13 +63,32 @@ function highlightPlaceholders(text: string) {
     part.match(/\{\{[^}]+\}\}/) ? (
       <span
         key={index}
-        className="bg-brand-50 text-brand-600 font-bold px-1 rounded border border-brand-100 mx-0.5"
+        className="bg-brand-50 text-brand-600 font-bold px-1.5 py-0.5 rounded-md border border-brand-100 mx-0.5 inline-block"
+        style={{
+          backgroundColor: "#f0fdf4",
+          color: "#16a34a",
+          padding: "2px 6px",
+          borderRadius: "6px",
+          border: "1px solid #dcfce7",
+          fontFamily: "monospace",
+          fontSize: "11px",
+          fontWeight: "bold",
+          lineHeight: 1
+        }}
       >
         {part}
       </span>
     ) : (
       part
     )
+  );
+}
+
+function highlightPlaceholdersHtml(htmlText: string) {
+  if (!htmlText) return "";
+  return htmlText.replace(
+    /\{\{([^}]+)\}\}/g,
+    `<span class="bg-brand-50 text-brand-600 font-bold px-1.5 py-0.5 rounded-md border border-brand-100 mx-0.5 inline-block" style="background-color: #f0fdf4; color: #16a34a; padding: 0.125rem 0.375rem; border-radius: 0.375rem; border: 1px solid #dcfce7; font-family: monospace; font-size: 11px; font-weight: bold; line-height: 1;">{{$1}}</span>`
   );
 }
 
@@ -85,12 +105,17 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
   // State để quản lý việc mở/đóng danh sách drop list của từng nhóm
   const [expandedGroup, setExpandedGroup] = useState<string | null>(PLACEHOLDER_GROUPS[0].title);
 
-  const isSystemTemplate = templateData?.usageScope?.toUpperCase() === "SYSTEM";
-  const isEditMode = mode === "edit" && !isSystemTemplate;
-  const isDetailMode = mode === "detail" || isSystemTemplate;
+  const isEditMode = mode === "edit";
+  const isDetailMode = mode === "detail";
   const isReadOnly = isDetailMode;
 
-  const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
+  const quillRef = useRef<Quill | null>(null);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const [lastFocusedField, setLastFocusedField] = useState<"title" | "message">("message");
+  
+  const pendingMessageRef = useRef("");
+  const isApplyingMessageRef = useRef(false);
+  const toolbarId = `template-message-toolbar`;
 
   const {
     register,
@@ -106,15 +131,68 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
     mode: "onTouched",
   });
 
-  const { ref: registerRef, ...messageRegister } = register("messageTemplate");
+  const { ref: titleRegisterRef, ...titleRegister } = register("titleTemplate");
 
   const watchedTitle = watchForm("titleTemplate");
   const watchedMessage = watchForm("messageTemplate");
+
+  const normalizeMessageHtml = useCallback((rawValue: unknown) => {
+    if (typeof rawValue !== "string") {
+      return "";
+    }
+
+    const trimmed = rawValue.trim();
+    if (trimmed.length === 0 || trimmed === "<p><br></p>") {
+      return "";
+    }
+
+    return trimmed;
+  }, []);
+
+  const toMessageFormValue = useCallback(
+    (html: string): string | null => {
+      const normalizedHtml = normalizeMessageHtml(html);
+      if (normalizedHtml.length === 0) {
+        return null;
+      }
+
+      if (typeof window === "undefined") {
+        return normalizedHtml;
+      }
+
+      const parser = document.createElement("div");
+      parser.innerHTML = normalizedHtml;
+      const plainText = parser.textContent?.replace(/\u00a0/g, " ").trim() ?? "";
+      return plainText.length === 0 ? null : normalizedHtml;
+    },
+    [normalizeMessageHtml],
+  );
+
+  const setMessageEditorContent = useCallback(
+    (html: string) => {
+      const normalizedContent = normalizeMessageHtml(html);
+      if (!quillRef.current) {
+        pendingMessageRef.current = normalizedContent;
+        return;
+      }
+
+      isApplyingMessageRef.current = true;
+      
+      // Sử dụng innerHTML trực tiếp cho Quill 2.x cực kỳ an toàn và ổn định
+      quillRef.current.root.innerHTML = normalizedContent;
+
+      queueMicrotask(() => {
+        isApplyingMessageRef.current = false;
+      });
+    },
+    [normalizeMessageHtml],
+  );
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Reset form 1 lần duy nhất khi mở modal
   useEffect(() => {
     if (!isOpen) return;
 
@@ -130,7 +208,71 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
     }
   }, [isOpen, templateData, isEditMode, isDetailMode, reset]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // Callback Ref để khởi tạo Quill cực kỳ an toàn và đồng bộ với DOM React
+  const editorRefCallback = useCallback((node: HTMLDivElement | null) => {
+    if (!node) {
+      quillRef.current = null;
+      return;
+    }
+
+    if (quillRef.current) {
+      return;
+    }
+
+    const initQuill = async () => {
+      const QuillModule = await import("quill");
+      if (!node || quillRef.current) return;
+
+      const Quill = QuillModule.default;
+      const quill = new Quill(node, {
+        theme: "snow",
+        modules: {
+          toolbar: isReadOnly ? false : [
+            ["bold", "italic", "underline", "strike"],
+            [{ color: [] }, { background: [] }],
+            [{ list: "ordered" }, { list: "bullet" }],
+            ["clean"]
+          ],
+        },
+        placeholder: "Write your message here...",
+        readOnly: isReadOnly,
+      });
+
+      quill.on("text-change", (_delta, _oldDelta, source) => {
+        if (source !== "user" || isApplyingMessageRef.current) {
+          return;
+        }
+        setValue("messageTemplate", toMessageFormValue(quill.root.innerHTML) || "", {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      });
+
+      quill.on("selection-change", (range) => {
+        if (range) {
+          setLastFocusedField("message");
+        }
+      });
+
+      quillRef.current = quill;
+
+      // Nạp dữ liệu ban đầu ĐÚNG 1 LẦN DUY NHẤT khi khởi tạo thành công
+      if ((isEditMode || isDetailMode) && templateData) {
+        const initialContent = normalizeMessageHtml(templateData.messageTemplate);
+        quill.root.innerHTML = initialContent;
+        pendingMessageRef.current = initialContent;
+      } else {
+        quill.root.innerHTML = "";
+        pendingMessageRef.current = "";
+      }
+
+      quill.enable(!isReadOnly && !isSubmitting);
+    };
+
+    void initQuill();
+  }, [isOpen, isReadOnly, isEditMode, isDetailMode, templateData, isSubmitting, normalizeMessageHtml, setValue, toMessageFormValue]);
+
+  // Handlers
   const onFormSubmit = (data: TemplateFormData) => {
     if (isReadOnly) return;
     onSave?.(data);
@@ -143,20 +285,33 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
 
   const insertPlaceholder = (placeholder: string) => {
     if (isReadOnly) return;
-    const current = getValues("messageTemplate") || "";
-    const ta = textAreaRef.current;
 
-    if (ta) {
-      const start = ta.selectionStart;
-      const end = ta.selectionEnd;
-      const next = current.substring(0, start) + placeholder + current.substring(end);
-      setValue("messageTemplate", next, { shouldValidate: true, shouldDirty: true });
+    if (lastFocusedField === "title" && titleInputRef.current) {
+      const input = titleInputRef.current;
+      const start = input.selectionStart ?? 0;
+      const end = input.selectionEnd ?? 0;
+      const currentValue = getValues("titleTemplate") || "";
+      const next = currentValue.substring(0, start) + placeholder + currentValue.substring(end);
+      
+      setValue("titleTemplate", next, { shouldValidate: true, shouldDirty: true });
       setTimeout(() => {
-        ta.focus();
-        ta.setSelectionRange(start + placeholder.length, start + placeholder.length);
+        input.focus();
+        input.setSelectionRange(start + placeholder.length, start + placeholder.length);
       }, 0);
-    } else {
-      setValue("messageTemplate", current + placeholder, { shouldValidate: true, shouldDirty: true });
+    } else if (quillRef.current) {
+      const range = quillRef.current.getSelection();
+      if (range) {
+        quillRef.current.insertText(range.index, placeholder, "user");
+        quillRef.current.setSelection(range.index + placeholder.length, 0, "user");
+      } else {
+        const length = quillRef.current.getLength();
+        quillRef.current.insertText(Math.max(0, length - 1), placeholder, "user");
+      }
+
+      setValue("messageTemplate", toMessageFormValue(quillRef.current.root.innerHTML) || "", {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     }
   };
 
@@ -165,34 +320,34 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
   const title = isDetailMode ? "Template Details" : isEditMode ? "Edit Template" : "Add New Template";
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[1250px] p-0 overflow-hidden">
-      <div className="grid grid-cols-12 min-h-[350px]">
+    <>
+      <style>{`
+        .ql-container.ql-snow,
+        .ql-container.ql-snow *,
+        .ql-editor,
+        .ql-editor *,
+        .ql-editor span,
+        .ql-editor [style*="font-family"] {
+          font-family: Outfit, sans-serif !important;
+        }
+        .ql-editor {
+          font-size: 14px !important;
+          line-height: 1.6 !important;
+        }
+        .ql-editor.ql-blank::before {
+          font-style: normal !important;
+          color: #9ca3af !important;
+        }
+      `}</style>
+      <Modal isOpen={isOpen} onClose={onClose} className="max-w-[1000px] p-0 overflow-hidden rounded-xl">
+        <div className="grid grid-cols-12 h-[620px] overflow-hidden">
 
         {/* ── Left: Form ── */}
-        <div className="col-span-12 lg:col-span-7 p-8 flex flex-col border-r border-gray-100 dark:border-gray-800">
+        <div className="col-span-12 lg:col-span-7 p-8 flex flex-col border-r border-gray-100 dark:border-gray-800 overflow-y-auto max-h-full">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white/90 mb-1">
               {title}
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {isDetailMode
-                ? "Review template details and structure."
-                : "Craft your message template with dynamic placeholders."}
-            </p>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-              For <strong className="font-medium text-gray-600 dark:text-gray-300">campaigns</strong>, tokens must match the
-              campaign reference type (Voucher, Product, Sale, Blog). Only placeholders resolved for that reference are
-              replaced at send time; others stay as plain text. Use{" "}
-              <code className="text-[11px] bg-gray-100 dark:bg-gray-800 px-1 rounded">{"{{Name}}"}</code> style — see{" "}
-              <strong className="font-medium">Campaign → Reference types</strong> in the API/docs for the full list per type.
-              Transactional (system) templates may also use{" "}
-              <code className="text-[11px] bg-gray-100 dark:bg-gray-800 px-1 rounded">{"[Key]"}</code> where supported by the notifier.
-            </p>
-            {isSystemTemplate && (
-              <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-                SYSTEM templates are view-only and cannot be edited.
-              </p>
-            )}
           </div>
 
           <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col gap-5 flex-1">
@@ -232,7 +387,14 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
                   error={!!errors.titleTemplate}
                   hint={errors.titleTemplate?.message}
                   disabled={isReadOnly}
-                  {...register("titleTemplate")}
+                  {...titleRegister}
+                  ref={(e) => {
+                    titleRegisterRef(e);
+                    titleInputRef.current = e;
+                  }}
+                  onFocus={() => {
+                    setLastFocusedField("title");
+                  }}
                 />
               </div>
             </div>
@@ -242,7 +404,7 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
                 <Label className="mb-0 flex items-center gap-2">
                   <span>Message Content <span className="text-error-500">*</span></span>
                   <span className="text-[10px] text-gray-400 font-normal mt-0.5">
-                    {(watchedMessage || "").length}/500
+                    {(watchedMessage || "").length}/4000
                   </span>
                 </Label>
                 {!isReadOnly && (
@@ -300,19 +462,27 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
                 </div>
               )}
 
-              <TextArea
-                placeholder="Write your message here..."
-                rows={isReadOnly ? 10 : 4}
-                maxLength={500}
-                error={!!errors.messageTemplate}
-                hint={errors.messageTemplate?.message}
-                readOnly={isReadOnly}
-                {...messageRegister}
-                ref={(e) => {
-                  registerRef(e);
-                  textAreaRef.current = e;
-                }}
-              />
+              {isReadOnly ? (
+                <div
+                  className="min-h-[180px] p-4 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-800 dark:text-white/90 overflow-y-auto ql-editor prose dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: highlightPlaceholdersHtml(watchedMessage || "") }}
+                />
+              ) : (
+                <div className={`rounded-xl border transition-all overflow-hidden bg-white dark:bg-gray-900 ${
+                  errors.messageTemplate ? "border-error-500 ring-1 ring-error-500" : "border-gray-200 dark:border-gray-700"
+                }`}>
+                  <div
+                    ref={editorRefCallback}
+                    className="min-h-[180px] text-sm text-gray-800 dark:text-white/90"
+                  />
+                </div>
+              )}
+              <input type="hidden" {...register("messageTemplate")} />
+              {errors.messageTemplate && (
+                <p className="mt-1.5 text-sm text-error-500">
+                  {errors.messageTemplate.message}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center gap-2.5 mt-1">
@@ -342,7 +512,7 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
         </div>
 
         {/* ── Right: Preview ── */}
-        <div className="col-span-12 lg:col-span-5 bg-gray-50 dark:bg-gray-900/40 p-6 lg:p-8 flex flex-col">
+        <div className="col-span-12 lg:col-span-5 bg-gray-50 dark:bg-gray-900/40 p-6 lg:p-8 flex flex-col overflow-y-auto max-h-full">
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -380,16 +550,18 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
                 </div>
 
                 <h3 className="text-lg font-black text-gray-900 dark:text-white mb-4 leading-tight break-words">
-                  {watchedTitle || (
+                  {watchedTitle ? (
+                    highlightPlaceholders(watchedTitle)
+                  ) : (
                     <span className="text-gray-300 dark:text-gray-600 font-medium italic">
                       Title will appear here…
                     </span>
                   )}
                 </h3>
 
-                <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap break-words flex-1">
+                <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed break-words flex-1 ql-editor p-0 prose dark:prose-invert max-w-none">
                   {watchedMessage ? (
-                    highlightPlaceholders(watchedMessage)
+                    <div dangerouslySetInnerHTML={{ __html: highlightPlaceholdersHtml(watchedMessage) }} />
                   ) : (
                     <span className="text-gray-300 dark:text-gray-600 italic">
                       Your message will appear here as you type…
@@ -408,5 +580,6 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
 
       </div>
     </Modal>
+    </>
   );
 };
