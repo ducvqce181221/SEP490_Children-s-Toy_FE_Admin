@@ -1,11 +1,19 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuthContext } from "@/context/AuthContext";
-import { Refund, RefundFilter, RefundStatusType } from "../types/refund";
+import { Refund, RefundFilter, RefundStatusType, REFUND_WORK_TAB, RefundWorkTab } from "../types/refund";
 import { refundApi } from "../services/refund-api";
 
 const DEFAULT_PAGE_NUMBER = 1;
 const DEFAULT_PAGE_SIZE = 10;
+
+const isOperationalRole = (role: string) =>
+  role === "Staff" || role === "Merchandise";
+
+const parseWorkTabFromUrl = (value: string | null): RefundWorkTab => {
+  if (value === REFUND_WORK_TAB.COMPLETED) return REFUND_WORK_TAB.COMPLETED;
+  return REFUND_WORK_TAB.IN_PROGRESS;
+};
 
 export const useRefunds = (initialQuery?: RefundFilter) => {
   const { account } = useAuthContext();
@@ -24,7 +32,9 @@ export const useRefunds = (initialQuery?: RefundFilter) => {
   const [refundStatus, setRefundStatus] = useState<RefundStatusType | "">(
     (searchParams?.get("status") as RefundStatusType) || ""
   );
-  const [assignedToMe, setAssignedToMe] = useState(searchParams?.get("assigned") === "true");
+  const [workTab, setWorkTab] = useState<RefundWorkTab>(() =>
+    parseWorkTabFromUrl(searchParams?.get("tab") ?? null)
+  );
   const [fromDate, setFromDate] = useState<string>(searchParams?.get("from") || "");
   const [toDate, setToDate] = useState<string>(searchParams?.get("to") || "");
 
@@ -45,8 +55,18 @@ export const useRefunds = (initialQuery?: RefundFilter) => {
     if (refundStatus !== "") { params.set("status", refundStatus); changed = true; }
     else if (params.has("status")) { params.delete("status"); changed = true; }
 
-    if (assignedToMe) { params.set("assigned", "true"); changed = true; }
-    else if (params.has("assigned")) { params.delete("assigned"); changed = true; }
+    if (isOperationalRole(roleName)) {
+      if (workTab !== REFUND_WORK_TAB.IN_PROGRESS) {
+        params.set("tab", workTab);
+        changed = true;
+      } else if (params.has("tab")) {
+        params.delete("tab");
+        changed = true;
+      }
+    } else if (params.has("tab")) {
+      params.delete("tab");
+      changed = true;
+    }
 
     if (fromDate) { params.set("from", fromDate); changed = true; }
     else if (params.has("from")) { params.delete("from"); changed = true; }
@@ -66,7 +86,7 @@ export const useRefunds = (initialQuery?: RefundFilter) => {
     } else if (window.location.search) {
       window.history.replaceState(null, "", window.location.pathname);
     }
-  }, [searchKeyword, refundStatus, assignedToMe, fromDate, toDate, pageNumber, pageSize]);
+  }, [searchKeyword, refundStatus, workTab, roleName, fromDate, toDate, pageNumber, pageSize]);
 
   // -- Reload trigger --
   const [reloadToken, setReloadToken] = useState(0);
@@ -88,7 +108,7 @@ export const useRefunds = (initialQuery?: RefundFilter) => {
       sortBy: "CreatedAt",
       sortDir: "desc",
       ...(refundStatus !== "" && { refundStatus: refundStatus as RefundStatusType }),
-      ...(assignedToMe && { assignedToMe }),
+      ...(isOperationalRole(roleName) && { assignmentScope: workTab }),
       ...(searchKeyword && { keyword: searchKeyword }),
       ...(fromDate && { fromDate }),
       ...(toDate && { toDate }),
@@ -106,7 +126,7 @@ export const useRefunds = (initialQuery?: RefundFilter) => {
     } finally {
       setIsLoading(false);
     }
-  }, [pageNumber, pageSize, refundStatus, assignedToMe, searchKeyword, fromDate, toDate, reloadToken, initialQuery]);
+  }, [pageNumber, pageSize, refundStatus, workTab, roleName, searchKeyword, fromDate, toDate, reloadToken, initialQuery]);
 
   useEffect(() => {
     fetchRefunds();
@@ -121,8 +141,8 @@ export const useRefunds = (initialQuery?: RefundFilter) => {
     setPageNumber(DEFAULT_PAGE_NUMBER);
   }, []);
 
-  const handleAssignedToMeChange = useCallback((value: boolean) => {
-    setAssignedToMe(value);
+  const handleWorkTabChange = useCallback((tab: RefundWorkTab) => {
+    setWorkTab(tab);
     setPageNumber(DEFAULT_PAGE_NUMBER);
   }, []);
 
@@ -153,7 +173,7 @@ export const useRefunds = (initialQuery?: RefundFilter) => {
     error,
     keyword,
     refundStatus,
-    assignedToMe,
+    workTab,
     fromDate,
     toDate,
     pageNumber,
@@ -164,7 +184,7 @@ export const useRefunds = (initialQuery?: RefundFilter) => {
     handleKeywordChange,
     handleSearchSubmit,
     handleStatusChange,
-    handleAssignedToMeChange,
+    handleWorkTabChange,
     handleFromDateChange,
     handleToDateChange,
     handlePageSizeChange,

@@ -1,15 +1,18 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import Badge from "@/components/ui/badge/Badge";
+import Button from "@/components/ui/button/Button";
 import { Review } from "../types/review";
-import { EyeIcon, PencilIcon } from "@/icons/index";
+import { EyeIcon, PencilIcon, TrashBinIcon } from "@/icons/index";
 import { formatDisplayDate } from "@/utils/date-utils";
+import { Popover } from "@/components/ui/popover/Popover";
 import Link from "next/link";
 
 interface ReviewRowProps {
   review: Review;
   rowNumber: number;
   onView: () => void;
+  onDelete?: () => void;
 }
 
 const StarRating = ({ rating }: { rating: number }) => {
@@ -33,7 +36,10 @@ export const ReviewRow = React.memo(function ReviewRow({
   review,
   rowNumber,
   onView,
+  onDelete,
 }: ReviewRowProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteBtnRef = useRef<HTMLButtonElement>(null);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -112,6 +118,53 @@ export const ReviewRow = React.memo(function ReviewRow({
               <PencilIcon className="w-5 h-5" />
             </button>
           </Link>
+          {onDelete && (
+            <>
+              <button
+                ref={deleteBtnRef}
+                onClick={() => setIsDeleting(true)}
+                className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-error-400 hover:text-error-500 dark:border-gray-700 dark:text-gray-300"
+                title="Delete Review"
+              >
+                <TrashBinIcon className="w-5 h-5" />
+              </button>
+              <Popover
+                isOpen={isDeleting}
+                onClose={() => setIsDeleting(false)}
+                triggerRef={deleteBtnRef}
+                position="top-end"
+                className="p-4"
+              >
+                <div className="w-[200px]">
+                  <h4 className="text-sm font-semibold text-gray-800 dark:text-white/90 mb-1">Confirm Delete</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 text-start">
+                    Are you sure you want to delete this review? This action will also delete all attached images.
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setIsDeleting(false)}
+                      className="h-8 text-xs px-3"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="primary" 
+                      size="sm" 
+                      onClick={() => {
+                        setIsDeleting(false);
+                        onDelete();
+                      }}
+                      className="h-8 text-xs px-3 bg-error-500 hover:bg-error-600 border-error-500"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </Popover>
+            </>
+          )}
         </div>
       </TableCell>
     </TableRow>
