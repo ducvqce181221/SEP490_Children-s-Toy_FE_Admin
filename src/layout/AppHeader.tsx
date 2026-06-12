@@ -68,20 +68,28 @@ const AppHeader: React.FC = () => {
           </button>
 
           <Link href="/" className="lg:hidden">
-            <Image
-              width={154}
-              height={32}
-              className="dark:hidden"
-              src="./images/logo/logo.svg"
-              alt="Logo"
-            />
-            <Image
-              width={154}
-              height={32}
-              className="hidden dark:block"
-              src="./images/logo/logo-dark.svg"
-              alt="Logo"
-            />
+            <div className="flex items-center gap-2">
+              <Image
+                width={38}
+                height={38}
+                className="h-[38px] w-[38px] rounded-lg object-contain"
+                src="/images/logo/Logo.jpg"
+                alt="ToyStore"
+                priority
+              />
+              <div className="leading-none">
+                <p className="text-[12px] font-semibold text-gray-950 dark:text-white">
+                  children&apos;s
+                </p>
+                <p className="mt-0.5 text-[12px] font-semibold">
+                  <span className="text-[#ff6a00]">toy</span>{" "}
+                  <span className="text-gray-500 dark:text-gray-400">store</span>
+                  <span className="ml-1 text-gray-700 dark:text-gray-300">
+                    admin
+                  </span>
+                </p>
+              </div>
+            </div>
           </Link>
 
           <button
