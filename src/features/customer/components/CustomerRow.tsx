@@ -17,12 +17,12 @@ interface CustomerRowProps {
 
 const formatDateTime = (dateValue: string | null) => {
   if (!dateValue) {
-    return "--";
+    return "---";
   }
 
   const parsedDate = new Date(dateValue);
   if (Number.isNaN(parsedDate.getTime())) {
-    return "--";
+    return "---";
   }
 
   return new Intl.DateTimeFormat("en-GB", {
@@ -121,7 +121,7 @@ const CustomerRowComponent: React.FC<CustomerRowProps> = ({
             )}
           </div>
         ) : (
-          <span className="text-theme-sm text-gray-500 dark:text-gray-400">Clear</span>
+          <span className="text-theme-sm text-gray-500 dark:text-gray-400">No COD risk</span>
         )}
       </TableCell>
 

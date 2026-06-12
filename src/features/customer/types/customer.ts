@@ -18,7 +18,7 @@ export interface CustomerListItem {
   isManualBlockRecommended: boolean;
   lastSuspiciousGHNFailCode: string | null;
   lastSuspiciousOrderDate: string | null;
-  createdAt: string;
+  createdAt: string | null;
   updatedAt: string | null;
 }
 
@@ -40,7 +40,7 @@ export interface CustomerDetail {
   isManualBlockRecommended: boolean;
   lastSuspiciousGHNFailCode: string | null;
   lastSuspiciousOrderDate: string | null;
-  createdAt: string;
+  createdAt: string | null;
   updatedAt: string | null;
 }
 
