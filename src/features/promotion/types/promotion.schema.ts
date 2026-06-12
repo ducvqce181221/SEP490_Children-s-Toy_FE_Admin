@@ -36,7 +36,7 @@ export const productPromotionSchema = z.object({
   }
   return true;
 }, {
-  message: "Quantity cannot exceed available stock",
+  message: "Quantity cannot exceed available quantity",
   path: ["saleQuantity"]
 });
 
@@ -131,7 +131,7 @@ export const promotionFormSchema = z
   .superRefine((data, ctx) => {
     // Thời điểm bắt buộc (áp dụng +9 phút thay vì +10 để bù trừ cho phần giây bị cắt của input form)
     const minimumFutureTime = getMinimumFutureTime();
-    
+
     // 1. StartDate past validation
     const currentStatus = data.status || "Scheduled";
     if (new Date(data.startDate).getTime() < minimumFutureTime && currentStatus === "Scheduled") {
@@ -154,11 +154,11 @@ export const promotionFormSchema = z
     if (data.promotionType !== "FLASH_SALE" || !data.startDate || !data.endDate) return;
     const promStart = new Date(data.startDate).getTime();
     const promEnd = new Date(data.endDate).getTime();
-    
+
     data.promotionTimeSlots.forEach((slot, index) => {
       const slotStart = new Date(slot.startAt).getTime();
       const slotEnd = new Date(slot.endAt).getTime();
-      
+
       if (slotStart < promStart || slotStart > promEnd) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -166,7 +166,7 @@ export const promotionFormSchema = z
           path: ["promotionTimeSlots", index, "startAt"],
         });
       }
-      
+
       if (slotEnd < promStart || slotEnd > promEnd) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -208,7 +208,7 @@ export const promotionFormSchema = z
       for (let j = i + 1; j < data.promotionTimeSlots.length; j++) {
         const slotA = data.promotionTimeSlots[i];
         const slotB = data.promotionTimeSlots[j];
-        
+
         if (slotA.status === "Expired" || slotB.status === "Expired") continue;
 
         const startA = new Date(slotA.startAt).getTime();
