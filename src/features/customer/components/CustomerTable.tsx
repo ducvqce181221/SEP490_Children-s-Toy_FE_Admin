@@ -148,6 +148,9 @@ const CustomerTable = () => {
                   Delivery Abuse
                 </TableCell>
                 <TableCell isHeader className={headerCellClassName}>
+                  Risk Status
+                </TableCell>
+                <TableCell isHeader className={headerCellClassName}>
                   Created At
                 </TableCell>
                 <TableCell
@@ -163,7 +166,7 @@ const CustomerTable = () => {
               {showInitialLoading && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
                     Loading customer list...
@@ -174,7 +177,7 @@ const CustomerTable = () => {
               {!showInitialLoading && error && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="px-5 py-10 text-center text-sm text-error-600"
                   >
                     {error}
@@ -185,7 +188,7 @@ const CustomerTable = () => {
               {!showInitialLoading && !error && customers.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
                     No matching customers found.

@@ -8,7 +8,10 @@ import type {
 
 export const authApi = {
   login: async (payload: LoginRequest): Promise<AuthResponse> => {
-    return axiosClient.post<AuthResponse, LoginRequest>("/auth/login", payload);
+    return axiosClient.post<AuthResponse, LoginRequest>("/auth/login", {
+      ...payload,
+      allowedRoleIds: [2, 3, 4],
+    });
   },
 
   forgotPassword: async (payload: ForgotPasswordRequest): Promise<void> => {
