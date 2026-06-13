@@ -97,6 +97,19 @@ export interface PromotionListDto {
   createdAt: string;
 }
 
+export interface ProductPromotionInfoDto {
+  promotionId: number;
+  promotionName: string;
+  promotionType: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  salePrice: number;
+  discountPercent: number | null;
+  saleQuantity: number | null;
+  soldQuantity: number;
+}
+
 // ─── Create/Update DTOs (gửi lên API) ─────────────────────────────────────────
 
 export interface CreateProductPromotionDto {

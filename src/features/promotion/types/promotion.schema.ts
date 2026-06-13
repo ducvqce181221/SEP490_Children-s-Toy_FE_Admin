@@ -22,6 +22,7 @@ export const productPromotionSchema = z.object({
     (val) => (val === "" || val === undefined || (typeof val === "number" && isNaN(val)) ? null : val),
     z.number().min(1, "Quantity must be greater than 0").nullable()
   ),
+  soldQuantity: z.number().optional(),
 }).refine(data => {
   if (data.originalPrice !== undefined) {
     return data.salePrice <= data.originalPrice;
@@ -62,6 +63,7 @@ export const promotionProductSlotSchema = z.object({
     (val) => (val === "" || val === undefined || (typeof val === "number" && isNaN(val)) ? null : val),
     z.number().min(1, "Quantity must be at least 1")
   ),
+  soldQuantity: z.number().optional(),
 }).refine(data => {
   if (data.originalPrice !== undefined) {
     return data.salePrice <= data.originalPrice;
