@@ -112,6 +112,30 @@ export const getVoucherFormSchema = (isEdit: boolean = false) => {
       path: ["endDate"]
     })
     .refine(data => {
+      const start = new Date(data.startDate);
+      const end = new Date(data.endDate);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        const diffInDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+        return diffInDays >= 1.0;
+      }
+      return true;
+    }, {
+      message: "Voucher duration must be at least 1 day.",
+      path: ["endDate"]
+    })
+    .refine(data => {
+      const start = new Date(data.startDate);
+      const end = new Date(data.endDate);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        const diffInDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+        return diffInDays <= 30.0;
+      }
+      return true;
+    }, {
+      message: "Voucher duration must not exceed 30 days.",
+      path: ["endDate"]
+    })
+    .refine(data => {
       if (data.totalQuantity !== null && data.totalQuantity !== undefined && data.maxUsagePerUser !== null && data.maxUsagePerUser !== undefined) {
         return data.maxUsagePerUser <= data.totalQuantity;
       }

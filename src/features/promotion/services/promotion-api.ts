@@ -4,6 +4,7 @@ import {
   PromotionFormData,
   PromotionListDto,
   PaginatedResponse,
+  ProductPromotionInfoDto,
 } from "../types/promotion";
 
 export interface GetPromotionsParams {
@@ -29,4 +30,7 @@ export const promotionApi = {
 
   delete: (id: number) =>
     axiosClient.put(`/promotions/${id}`, { isDeleted: true }),
+
+  getPromotionsByProductId: (productId: number) =>
+    axiosClient.get<ProductPromotionInfoDto[]>(`/promotions/product/${productId}`),
 };
