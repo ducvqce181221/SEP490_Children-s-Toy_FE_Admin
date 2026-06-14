@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import type { FieldArrayWithId, UseFormReturn } from "react-hook-form";
 import type { PromotionFormData } from "../types/promotion";
 import Input from "@/components/form/input/InputField";
@@ -12,7 +12,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TrashBinIcon } from "@/icons";
-import ProductDetailModal from "@/features/product/components/ProductDetailModal";
 
 interface PromotionProductSlotTableProps {
   form: UseFormReturn<PromotionFormData>;
@@ -29,7 +28,6 @@ export function PromotionProductSlotTable({
   remove,
   readonly = false,
 }: PromotionProductSlotTableProps) {
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
 
   return (
     <div className="space-y-4">
@@ -118,13 +116,7 @@ export function PromotionProductSlotTable({
                       {index + 1}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedProductId(field.productId)}
-                        className="text-left font-medium text-brand-500 hover:underline hover:text-brand-600 transition-colors cursor-pointer"
-                      >
-                        {field.productName || `Product #${field.productId}`}
-                      </button>
+                      {field.productName || `Product #${field.productId}`}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       {field.originalPrice?.toLocaleString("vi-VN")}
@@ -235,14 +227,6 @@ export function PromotionProductSlotTable({
           </TableBody>
         </Table>
       </div>
-
-      {selectedProductId !== null && (
-        <ProductDetailModal
-          isOpen={true}
-          productId={selectedProductId}
-          onClose={() => setSelectedProductId(null)}
-        />
-      )}
     </div>
   );
 }

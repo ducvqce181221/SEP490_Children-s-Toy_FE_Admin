@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import type { UseFieldArrayReturn, UseFormReturn } from "react-hook-form";
 import type { PromotionFormData } from "../types/promotion";
 import Input from "@/components/form/input/InputField";
@@ -12,7 +12,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TrashBinIcon } from "@/icons";
-import ProductDetailModal from "@/features/product/components/ProductDetailModal";
 
 interface ProductPromotionTableProps {
   form: UseFormReturn<PromotionFormData>;
@@ -28,7 +27,6 @@ export function ProductPromotionTable({
   const { fields, remove } = fieldArray;
   const promotionType = form.watch("promotionType");
   const isDiscount = promotionType === "DISCOUNT" || promotionType === "Discount";
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
 
   return (
     <div className="space-y-4">
@@ -117,13 +115,7 @@ export function ProductPromotionTable({
                     {index + 1}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedProductId(field.productId)}
-                      className="text-left font-medium text-brand-500 hover:underline hover:text-brand-600 transition-colors cursor-pointer"
-                    >
-                      {field.productName || `Product #${field.productId}`}
-                    </button>
+                    {field.productName || `Product #${field.productId}`}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                     {field.originalPrice?.toLocaleString("vi-VN")}
@@ -237,14 +229,6 @@ export function ProductPromotionTable({
           </TableBody>
         </Table>
       </div>
-
-      {selectedProductId !== null && (
-        <ProductDetailModal
-          isOpen={true}
-          productId={selectedProductId}
-          onClose={() => setSelectedProductId(null)}
-        />
-      )}
     </div>
   );
 }
