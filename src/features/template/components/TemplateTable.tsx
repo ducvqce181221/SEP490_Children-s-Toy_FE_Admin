@@ -15,6 +15,8 @@ import { useTemplates } from "../hooks/useTemplates";
 import { useTemplateMutations } from "../hooks/useTemplateMutations";
 import { TemplateRow } from "./TemplateRow";
 import { TemplateFormData } from "../types/template";
+import { useAuthContext } from "@/context/AuthContext";
+import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 
 export const TemplateTable = () => {
   const {
@@ -38,13 +40,36 @@ export const TemplateTable = () => {
     refetch
   } = useTemplates();
 
-  const { createTemplate, updateTemplate, isSubmitting } = useTemplateMutations(() => {
+  const { account } = useAuthContext();
+  const isAdmin = account?.roleName === "Admin";
+
+  const [confirmDeleteState, setConfirmDeleteState] = React.useState<{ isOpen: boolean; template: any | null }>({ isOpen: false, template: null });
+  const [deletingId, setDeletingId] = React.useState<number | null>(null);
+
+  const { createTemplate, updateTemplate, deleteTemplate, isSubmitting } = useTemplateMutations(() => {
     // on success reload list
     refetch();
     setIsModalOpen(false);
     setEditTemplate(null);
     setViewTemplate(null);
+    setConfirmDeleteState({ isOpen: false, template: null });
   });
+
+  const handleDeleteClick = (template: any) => {
+    setConfirmDeleteState({ isOpen: true, template });
+  };
+
+  const handleConfirmDelete = async () => {
+    const template = confirmDeleteState.template;
+    if (!template) return;
+
+    setDeletingId(template.templateId);
+    const success = await deleteTemplate(template.templateId);
+    if (success) {
+      setConfirmDeleteState({ isOpen: false, template: null });
+    }
+    setDeletingId(null);
+  };
 
   const handleSave = async (formData: TemplateFormData) => {
     if (editTemplate) {
@@ -137,6 +162,8 @@ export const TemplateTable = () => {
                     template={template}
                     onView={() => setViewTemplate(template)}
                     onEdit={() => setEditTemplate(template)}
+                    onDelete={() => handleDeleteClick(template)}
+                    isAdmin={isAdmin}
                   />
                 ))
               ) : (
@@ -191,6 +218,17 @@ export const TemplateTable = () => {
           setEditTemplate(null);
           setViewTemplate(null);
         }} 
+      />
+
+      <ConfirmModal
+        isOpen={confirmDeleteState.isOpen}
+        onClose={() => setConfirmDeleteState({ isOpen: false, template: null })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Template"
+        message={`Are you sure you want to delete template "${confirmDeleteState.template?.templateCode}"? This action is permanent and cannot be undone.`}
+        confirmText="Delete"
+        isDestructive={true}
+        isLoading={deletingId !== null}
       />
     </div>
   );

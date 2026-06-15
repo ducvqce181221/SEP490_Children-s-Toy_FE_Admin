@@ -151,6 +151,22 @@ export const useCampaignMutations = (onSuccess?: () => void) => {
     }
   };
 
+  const deleteCampaign = async (id: number): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      await campaignApi.deleteCampaign(id);
+      toast.success("Campaign deleted successfully!");
+      onSuccess?.();
+      return true;
+    } catch (error) {
+      const message = getCampaignMutationErrorMessage(error, "Unable to delete campaign.");
+      if (message) toast.error(message);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return {
     createCampaign,
     updateCampaign,
@@ -160,6 +176,7 @@ export const useCampaignMutations = (onSuccess?: () => void) => {
     scheduleCampaign,
     rescheduleCampaign,
     recallCampaign,
+    deleteCampaign,
     isSubmitting,
   };
 };

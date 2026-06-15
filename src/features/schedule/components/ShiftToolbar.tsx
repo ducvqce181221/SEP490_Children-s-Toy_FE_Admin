@@ -21,13 +21,12 @@ const ShiftToolbar: React.FC<ShiftToolbarProps> = ({ onAddClick, isAdmin = false
         </div>
         {isAdmin && (
           <div className="flex items-center gap-3">
-            <Button 
-              variant="primary" 
-              startIcon={<PlusIcon className="w-5 h-5" />} 
+            <Button
+              variant="primary"
               onClick={onAddClick}
               className="shadow-sm hover:shadow-md transition-shadow"
             >
-              Add New Shift
+              +Add New Shift
             </Button>
           </div>
         )}

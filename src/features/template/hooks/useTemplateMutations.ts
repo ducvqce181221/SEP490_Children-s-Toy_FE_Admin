@@ -43,5 +43,23 @@ export const useTemplateMutations = (onSuccess?: () => void) => {
     }
   };
 
-  return { createTemplate, updateTemplate, isSubmitting };
+  const deleteTemplate = async (id: number) => {
+    setIsSubmitting(true);
+    try {
+      await templateApi.deleteTemplate(id);
+      toast.success("Template deleted successfully");
+      onSuccess?.();
+      return true;
+    } catch (error) {
+      toast.error(getTemplateMutationErrorMessage(error, "Failed to delete template"));
+      if (process.env.NODE_ENV === "development") {
+        console.error("[useTemplateMutations.deleteTemplate]", error);
+      }
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { createTemplate, updateTemplate, deleteTemplate, isSubmitting };
 };
