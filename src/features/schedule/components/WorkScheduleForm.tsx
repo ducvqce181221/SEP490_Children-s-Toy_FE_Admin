@@ -8,6 +8,7 @@ import { AccountListItem } from "@/features/account/types/account";
 import { scheduleApi } from "../services/schedule-api";
 import toast from "react-hot-toast";
 import StaffPicker from "./StaffPicker";
+import Select from "@/components/form/Select";
 import { CalenderIcon, TimeIcon, ChevronLeftIcon, UserCircleIcon } from "@/icons";
 
 function getApiErrorMessage(err: unknown): string {
@@ -342,26 +343,19 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
                 </h3>
 
                 <div>
-                  <label className="mb-2 block text-xs font-black text-gray-400 uppercase tracking-widest">
+                  <label className="mb-2 block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">
                     Shift Template <span className="text-error-500">*</span>
                   </label>
-                  <div className="relative">
-                    <select
-                      value={selectedShiftId}
-                      onChange={(e) => setSelectedShiftId(Number(e.target.value))}
-                      className={`${inputClassName} appearance-none pr-10`}
-                    >
-                      <option value="0">-- Choose Shift --</option>
-                      {activeShifts.map((shift) => (
-                        <option key={shift.shiftTemplateId} value={shift.shiftTemplateId}>
-                          {shift.shiftName}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                      <TimeIcon className="w-5 h-5" />
-                    </div>
-                  </div>
+                  <Select
+                    value={selectedShiftId ? String(selectedShiftId) : ""}
+                    onChange={(e) => setSelectedShiftId(Number(e.target.value) || 0)}
+                    options={activeShifts.map((shift) => ({
+                      value: String(shift.shiftTemplateId),
+                      label: shift.shiftName,
+                    }))}
+                    placeholder="-- Choose Shift --"
+                    error={!!errors.shiftId}
+                  />
                   {errors.shiftId && <p className="mt-2 text-xs text-error-500 font-bold">{errors.shiftId}</p>}
                 </div>
 

@@ -24,11 +24,6 @@ const StaffPicker: React.FC<StaffPickerProps> = ({
 }) => {
   const isWarning = accentColor === "warning";
 
-  const selectedAccount = accounts.find((a) => a.accountId === selectedId);
-
-  const accentBg = isWarning
-    ? "bg-warning-50/60 border-warning-300 dark:bg-warning-500/10 dark:border-warning-500/30"
-    : "bg-brand-50/60 border-brand-300 dark:bg-brand-500/10 dark:border-brand-500/30";
   const accentRing = isWarning ? "ring-warning-500/20" : "ring-brand-500/20";
   const accentText = isWarning ? "text-warning-500" : "text-brand-500";
   const accentDot = isWarning ? "bg-warning-500" : "bg-brand-500";
@@ -48,30 +43,6 @@ const StaffPicker: React.FC<StaffPickerProps> = ({
           </span>
         )}
       </div>
-
-      {/* Selected preview */}
-      {selectedAccount && (
-        <div className={`flex items-center gap-3 p-3 rounded-xl border ${accentBg} ring-1 ${accentRing} transition-all`}>
-          <div className={`relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-black text-white shadow-sm ${accentAvatar}`}>
-            {selectedAccount.imageUrl ? (
-              <Image
-                src={selectedAccount.imageUrl}
-                alt={selectedAccount.accountName}
-                width={36}
-                height={36}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              selectedAccount.accountName[0]?.toUpperCase()
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className={`text-sm font-bold truncate ${accentText}`}>{selectedAccount.accountName}</p>
-            <p className="text-[10px] text-gray-500 truncate">{selectedAccount.email}</p>
-          </div>
-          <CheckCircleIcon className={`w-6 h-6 shrink-0 ${accentText}`} />
-        </div>
-      )}
 
       {/* Scrollable list */}
       <div
