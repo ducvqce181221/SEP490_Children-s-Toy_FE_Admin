@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import Image from "next/image";
 import Badge from "@/components/ui/badge/Badge";
 import Link from "next/link";
+import { useAuthContext } from "@/context/AuthContext";
 import { promotionApi } from "@/features/promotion/services/promotion-api";
 import { ProductPromotionInfoDto } from "@/features/promotion/types/promotion";
 import { formatDisplayDate } from "@/utils/date-utils";
@@ -23,6 +24,7 @@ const ProductDetailModal = ({
   productId,
   onClose,
 }: ProductDetailModalProps) => {
+  const { account } = useAuthContext();
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,9 @@ const ProductDetailModal = ({
     };
 
     const fetchAppliedPromotions = async () => {
+      const isAuthorized = account?.roleName === "Admin" || account?.roleName === "Staff";
+      if (!isAuthorized) return;
+
       setIsPromotionsLoading(true);
       try {
         const response = await promotionApi.getPromotionsByProductId(productId) as unknown as ProductPromotionInfoDto[];
@@ -60,7 +65,7 @@ const ProductDetailModal = ({
 
     fetchProductDetails();
     fetchAppliedPromotions();
-  }, [isOpen, productId]);
+  }, [isOpen, productId, account?.roleName]);
 
   const getPromotionStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -365,86 +370,88 @@ const ProductDetailModal = ({
             )}
 
             {/* Applied Promotions */}
-            <div className="border-t border-gray-200 pt-6 dark:border-gray-700">
-              <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white">
-                Applied Promotions
-              </h3>
-              {isPromotionsLoading ? (
-                <div className="text-sm text-gray-500 dark:text-gray-400">Loading applied promotions...</div>
-              ) : promotions && promotions.length > 0 ? (
-                <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-white/[0.05]">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-white/[0.05]">
-                    <thead className="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                          Promotion Name
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                          Type
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                          Duration
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                          Sale Price (VND)
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                          Discount
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                          Sold
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-white/[0.05]">
-                      {promotions.map((promo, index) => (
-                        <tr key={`${promo.promotionId}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                            <Link
-                              href={`/admin/promotions/${promo.promotionId}`}
-                              onClick={onClose}
-                              className="text-brand-500 hover:underline hover:text-brand-600 transition-colors"
-                            >
-                              {promo.promotionName}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                            {promo.promotionType === "FLASH_SALE" ? "Flash Sale" : "Discount"}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-xs">From: {formatDisplayDate(promo.startDate)}</span>
-                              <span className="text-xs">To: {formatDisplayDate(promo.endDate)}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
-                            {promo.salePrice.toLocaleString("vi-VN")}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
-                            {promo.discountPercent !== null && promo.discountPercent !== undefined
-                              ? `${promo.discountPercent}%`
-                              : "-"}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                            {promo.soldQuantity} / {promo.saleQuantity !== null && promo.saleQuantity !== undefined ? promo.saleQuantity : "∞"}
-                          </td>
-                          <td className="px-4 py-3 text-sm whitespace-nowrap">
-                            {getPromotionStatusBadge(promo.status)}
-                          </td>
+            {(account?.roleName === "Admin" || account?.roleName === "Staff") && (
+              <div className="border-t border-gray-200 pt-6 dark:border-gray-700">
+                <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white">
+                  Applied Promotions
+                </h3>
+                {isPromotionsLoading ? (
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Loading applied promotions...</div>
+                ) : promotions && promotions.length > 0 ? (
+                  <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-white/[0.05]">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-white/[0.05]">
+                      <thead className="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            Promotion Name
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            Type
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            Duration
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            Sale Price (VND)
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            Discount
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            Sold
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            Status
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/40 rounded-lg p-4 text-center">
-                  This product is not currently applied to any promotions.
-                </div>
-              )}
-            </div>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-white/[0.05]">
+                        {promotions.map((promo, index) => (
+                          <tr key={`${promo.promotionId}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                              <Link
+                                href={`/admin/promotions/${promo.promotionId}`}
+                                onClick={onClose}
+                                className="text-brand-500 hover:underline hover:text-brand-600 transition-colors"
+                              >
+                                {promo.promotionName}
+                              </Link>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                              {promo.promotionType === "FLASH_SALE" ? "Flash Sale" : "Discount"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-xs">From: {formatDisplayDate(promo.startDate)}</span>
+                                <span className="text-xs">To: {formatDisplayDate(promo.endDate)}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                              {promo.salePrice.toLocaleString("vi-VN")}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                              {promo.discountPercent !== null && promo.discountPercent !== undefined
+                                ? `${promo.discountPercent}%`
+                                : "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                              {promo.soldQuantity} / {promo.saleQuantity !== null && promo.saleQuantity !== undefined ? promo.saleQuantity : "∞"}
+                            </td>
+                            <td className="px-4 py-3 text-sm whitespace-nowrap">
+                              {getPromotionStatusBadge(promo.status)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/40 rounded-lg p-4 text-center">
+                    This product is not currently applied to any promotions.
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Metadata */}
             <div>
