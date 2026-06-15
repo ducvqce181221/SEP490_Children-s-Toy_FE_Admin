@@ -33,4 +33,7 @@ export const templateApi = {
 
   updateTemplate: (id: number, data: TemplateFormData) =>
     axiosClient.put<Template, TemplateFormData>(`/templates/${id}`, data),
+
+  deleteTemplate: (id: number) =>
+    axiosClient.delete<void>(`/templates/${id}`),
 };

@@ -11,6 +11,7 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   error?: boolean;
   hint?: string;
   onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  showDropdownIcon?: boolean;
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
@@ -23,6 +24,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       hint,
       value,
       defaultValue,
+      showDropdownIcon = true,
       ...props
     },
     ref
@@ -30,7 +32,9 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
     // Determine the selected value for styling purposes
     const hasValue = value !== undefined && value !== "" || defaultValue !== undefined && defaultValue !== "";
     
-    let selectClasses = `h-11 w-full appearance-none rounded-lg border border-gray-300 px-4 py-2.5 pr-11 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 ${
+    let selectClasses = `h-11 w-full appearance-none rounded-lg border border-gray-300 px-4 py-2.5 ${
+      showDropdownIcon ? "pr-11" : "pr-4"
+    } text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 ${
       hasValue
         ? "text-gray-800 dark:text-white/90"
         : "text-gray-500 dark:text-gray-400"
@@ -70,11 +74,13 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         </select>
         
         {/* Dropdown Icon */}
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 dark:text-gray-400">
-          <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-          </svg>
-        </div>
+        {showDropdownIcon && (
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 dark:text-gray-400">
+            <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+            </svg>
+          </div>
+        )}
 
         {hint && (
           <p className={`mt-1.5 text-xs ${error ? "text-error-500" : "text-gray-500"}`}>

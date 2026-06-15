@@ -90,6 +90,9 @@ export const campaignApi = {
   cancelCampaign: (id: number) =>
     axiosClient.post<void>(`/campaigns/${id}/cancel`),
 
+  deleteCampaign: (id: number) =>
+    axiosClient.delete<void>(`/campaigns/${id}`),
+
   submitCampaign: (id: number) =>
     axiosClient.post<void>(`/campaigns/${id}/submit`),
 

@@ -2,7 +2,7 @@ import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import Badge from "@/components/ui/badge/Badge";
 import { Template } from "../types/template";
-import { PencilIcon, EyeIcon } from "@/icons/index";
+import { PencilIcon, EyeIcon, TrashBinIcon } from "@/icons/index";
 import { format } from "date-fns";
 
 interface TemplateRowProps {
@@ -10,6 +10,8 @@ interface TemplateRowProps {
   rowNumber: number;
   onView: () => void;
   onEdit: () => void;
+  onDelete?: () => void;
+  isAdmin?: boolean;
 }
 
 export const TemplateRow = React.memo(function TemplateRow({
@@ -17,6 +19,8 @@ export const TemplateRow = React.memo(function TemplateRow({
   rowNumber,
   onView,
   onEdit,
+  onDelete,
+  isAdmin,
 }: TemplateRowProps) {
   const isSystem = template.usageScope?.toUpperCase() === "SYSTEM";
 
@@ -93,6 +97,20 @@ export const TemplateRow = React.memo(function TemplateRow({
           >
             <PencilIcon className="w-5 h-5" />
           </button>
+          {isAdmin && (
+            <button
+              onClick={!template.isUsed ? onDelete : undefined}
+              disabled={template.isUsed}
+              className={`rounded-lg border p-2 transition-colors ${
+                template.isUsed
+                  ? "border-gray-200 text-gray-300 cursor-not-allowed opacity-40 dark:border-gray-700 dark:text-gray-600"
+                  : "border-gray-300 text-gray-500 hover:border-red-400 hover:text-red-500 dark:border-gray-700 dark:text-gray-300"
+              }`}
+              title={template.isUsed ? "This template is currently in use and cannot be deleted" : "Delete template"}
+            >
+              <TrashBinIcon className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </TableCell>
     </TableRow>

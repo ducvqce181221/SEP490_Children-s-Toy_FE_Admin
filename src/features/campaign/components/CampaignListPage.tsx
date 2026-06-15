@@ -291,6 +291,8 @@ export const CampaignListPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [confirmCancelState, setConfirmCancelState] = useState<{ isOpen: boolean; campaign: CampaignListItem | null }>({ isOpen: false, campaign: null });
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmDeleteState, setConfirmDeleteState] = useState<{ isOpen: boolean; campaign: CampaignListItem | null }>({ isOpen: false, campaign: null });
   const [submitId, setSubmitId] = useState<number | null>(null);
   const [reviewId, setReviewId] = useState<number | null>(null);
 
@@ -342,6 +344,28 @@ export const CampaignListPage: React.FC = () => {
       toast.error("Failed to cancel campaign. Please try again.");
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handleDeleteClick = (campaign: CampaignListItem) => {
+    setConfirmDeleteState({ isOpen: true, campaign });
+  };
+
+  const handleConfirmDelete = async () => {
+    const campaign = confirmDeleteState.campaign;
+    if (!campaign) return;
+
+    setDeletingId(campaign.campaignId);
+    try {
+      await campaignApi.deleteCampaign(campaign.campaignId);
+      toast.success("Campaign deleted successfully");
+      fetchData();
+      setConfirmDeleteState({ isOpen: false, campaign: null });
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || "Failed to delete campaign. Please try again.";
+      toast.error(errorMsg);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -656,6 +680,26 @@ export const CampaignListPage: React.FC = () => {
                             )}
                           </button>
                         )}
+
+                        {/* Sent/Cancelled/Failed → delete */}
+                        {["Sent", "Cancelled", "Failed"].includes(campaign.status) &&
+                          (account?.roleName === "Admin" || campaign.createdByAccountId === account?.accountId) && (
+                            <button
+                              onClick={() => handleDeleteClick(campaign)}
+                              disabled={deletingId === campaign.campaignId}
+                              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-red-400 hover:text-red-500 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
+                              title="Delete campaign"
+                            >
+                              {deletingId === campaign.campaignId ? (
+                                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                              ) : (
+                                <TrashBinIcon className="w-5 h-5" />
+                              )}
+                            </button>
+                          )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -707,6 +751,17 @@ export const CampaignListPage: React.FC = () => {
         confirmText="Cancel Campaign"
         isDestructive={true}
         isLoading={cancellingId !== null}
+      />
+
+      <ConfirmModal
+        isOpen={confirmDeleteState.isOpen}
+        onClose={() => setConfirmDeleteState({ isOpen: false, campaign: null })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Campaign"
+        message={`Are you sure you want to delete campaign "${confirmDeleteState.campaign?.campaignName}"? This action is permanent and cannot be undone.`}
+        confirmText="Delete"
+        isDestructive={true}
+        isLoading={deletingId !== null}
       />
 
       <ConfirmModal

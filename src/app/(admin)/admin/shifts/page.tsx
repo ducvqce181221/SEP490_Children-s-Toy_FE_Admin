@@ -9,6 +9,7 @@ import ShiftFormModal from "@/features/schedule/components/ShiftFormModal";
 import { scheduleApi } from "@/features/schedule/services/schedule-api";
 import toast from "react-hot-toast";
 import { ShiftTemplate, ShiftTemplateFormData } from "@/features/schedule/types/shift";
+import { buildCreatePayload, buildUpdatePayload } from "@/features/schedule/utils/shift-payload";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 import { useAuthContext } from "@/context/AuthContext";
 
@@ -23,7 +24,13 @@ function getApiErrorMessage(err: unknown): string {
       const first = Object.values(data.errors).flat().find(Boolean);
       if (first) return first;
     }
-    return data?.errorMessage ?? data?.message ?? "Operation failed";
+    const raw = data?.errorMessage ?? data?.message ?? "";
+    if (raw.includes("overlaps")) return "Shift time overlaps with another active shift template.";
+    if (raw.includes("Scheduled or On Duty")) return "Cannot modify shift while work schedules are Scheduled or On Duty.";
+    if (raw.includes("already exists")) return "Shift name already exists.";
+    if (raw.includes("End time must be later")) return "End time must be later than start time.";
+    if (raw) return raw;
+    return "Operation failed";
   }
   return "Operation failed";
 }
@@ -52,10 +59,19 @@ export default function ShiftsPage() {
     setIsSubmitting(true);
     try {
       if (editingShift) {
-        await scheduleApi.updateShiftTemplate(editingShift.shiftTemplateId, data);
+        const timeLocked = (editingShift.activeScheduleCount ?? 0) > 0;
+        const payload = buildUpdatePayload(data, editingShift, { timeLocked });
+
+        if (!payload) {
+          toast("No changes to save.");
+          setIsModalOpen(false);
+          return;
+        }
+
+        await scheduleApi.updateShiftTemplate(editingShift.shiftTemplateId, payload);
         toast.success("Shift updated successfully");
       } else {
-        await scheduleApi.createShiftTemplate(data);
+        await scheduleApi.createShiftTemplate(buildCreatePayload(data));
         toast.success("Shift created successfully");
       }
       setIsModalOpen(false);
@@ -70,13 +86,7 @@ export default function ShiftsPage() {
   const handleDeactivate = async () => {
     if (!deactivateTarget) return;
     try {
-      await scheduleApi.deactivateShiftTemplate(deactivateTarget.shiftTemplateId, {
-        shiftName: deactivateTarget.shiftName,
-        startTime: deactivateTarget.startTime,
-        endTime: deactivateTarget.endTime,
-        maxOrdersPerShift: deactivateTarget.maxOrdersPerShift,
-        isActive: false,
-      });
+      await scheduleApi.deactivateShiftTemplate(deactivateTarget.shiftTemplateId);
       toast.success("Shift deactivated successfully");
       refetch();
     } catch (err) {
@@ -88,13 +98,7 @@ export default function ShiftsPage() {
 
   const handleReactivate = async (shift: ShiftTemplate) => {
     try {
-      await scheduleApi.updateShiftTemplate(shift.shiftTemplateId, {
-        shiftName: shift.shiftName,
-        startTime: shift.startTime,
-        endTime: shift.endTime,
-        maxOrdersPerShift: shift.maxOrdersPerShift,
-        isActive: true,
-      });
+      await scheduleApi.updateShiftTemplate(shift.shiftTemplateId, { isActive: true });
       toast.success("Shift reactivated successfully");
       refetch();
     } catch (err) {
