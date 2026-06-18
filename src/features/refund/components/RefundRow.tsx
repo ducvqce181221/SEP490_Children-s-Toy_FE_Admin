@@ -84,6 +84,8 @@ export const RefundRow = React.memo(function RefundRow({
       case "RefundRejected":
       case "Rejected":
         return <Badge size="sm" color="error">Rejected</Badge>;
+      case "RefundDamage":
+        return <Badge size="sm" color="error">Damaged</Badge>;
       default:
         return <Badge size="sm" color="light">{status}</Badge>;
     }

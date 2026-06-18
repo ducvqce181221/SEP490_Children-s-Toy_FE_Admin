@@ -7,7 +7,8 @@ export type RefundStatusType =
   | "RefundInspectionPending" 
   | "RefundCompleted" 
   | "RefundCancelled" 
-  | "RefundRejected";
+  | "RefundRejected"
+  | "RefundDamage";
 
 export interface RefundDetailItem {
   productId: number;
