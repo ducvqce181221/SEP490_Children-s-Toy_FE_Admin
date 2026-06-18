@@ -35,6 +35,8 @@ export const getNextStatus = (currentStatus: string, isSystemReturn: boolean = f
       return "RefundInspectionPending";
     case "RefundInspectionPending":
       return "RefundCompleted";
+    case "RefundDamage":
+      return "RefundCompleted";
     default:
       return null;
   }
@@ -86,7 +88,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
         adminNote: "",
       });
     }
-  }, [isOpen, nextStatus, reset]);
+  }, [isOpen, nextStatus, reset, currentStatus]);
 
   if (!nextStatus) {
     return (
@@ -111,13 +113,13 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
   // Get action-specific details
   const title = getRefundStatusLabel(nextStatus);
   let description = `Are you sure you want to change the status to ${getRefundStatusLabel(nextStatus)}?`;
-  
+
   if (nextStatus === "RefundApproved") {
     description = "Confirming this action will approve the customer's refund request. The refund will proceed to the next step.";
   } else if (nextStatus === "RefundPickupCreated") {
     description = "The return shipment will be created. If the shipping API fails, the action will be rolled back.";
   } else if (nextStatus === "RefundCompleted") {
-    description = "Are you sure you want to complete this refund? The approved amount will be credited to the customer's wallet and stock inventory will be updated.";
+    description = "Are you sure you want to complete this refund? The approved amount will be credited to the customer's wallet and product quantity will be updated.";
   }
 
   return (
@@ -160,7 +162,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
               {...register("adminNote")}
               rows={3}
               placeholder={
-                nextStatus === "RefundCompleted" 
+                nextStatus === "RefundCompleted"
                   ? "Enter quality check or warehouse inspection notes..."
                   : "Enter details or comments about this transition..."
               }

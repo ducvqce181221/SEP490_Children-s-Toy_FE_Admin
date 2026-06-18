@@ -40,6 +40,7 @@ const REFUND_STATUS_OPTIONS = [
   { value: "RefundCompleted", label: "Completed" },
   { value: "RefundCancelled", label: "Cancelled" },
   { value: "RefundRejected", label: "Rejected" },
+  { value: "RefundDamage", label: "Damaged" },
 ];
 
 function getRoleBadge(roleName: string) {

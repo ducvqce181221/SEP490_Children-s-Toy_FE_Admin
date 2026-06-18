@@ -26,6 +26,26 @@ interface RefundEditViewProps {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtDt = (v: string | null | undefined) => formatDisplayDate(v, "—");
 
+function cleanStatusName(status: string) {
+  switch (status) {
+    case "RefundRequested": return "Requested";
+    case "RefundApproved": return "Approved";
+    case "RefundPickupCreated": return "Pickup Created";
+    case "RefundShipping": return "Shipping";
+    case "RefundReceived": return "Received";
+    case "RefundInspectionPending": return "Inspection Pending";
+    case "RefundCompleted": return "Completed";
+    case "RefundCancelled": return "Cancelled";
+    case "RefundRejected": return "Rejected";
+    case "RefundDamage": return "Damaged";
+    default:
+      if (status && status.startsWith("Refund")) {
+        return status.substring(6);
+      }
+      return status;
+  }
+}
+
 // ─── Inline badge components ───────────────────────────────────────────────────
 function getStatusBadge(status: string) {
   switch (status) {
@@ -38,6 +58,7 @@ function getStatusBadge(status: string) {
     case "RefundShipping": return <Badge size="sm" color="primary">Shipping</Badge>;
     case "RefundReceived": return <Badge size="sm" color="primary">Received</Badge>;
     case "RefundInspectionPending": return <Badge size="sm" color="warning">Inspection Pending</Badge>;
+    case "RefundDamage": return <Badge size="sm" color="error">Damaged</Badge>;
     default: return <Badge size="sm" color="light">{status}</Badge>;
   }
 }
@@ -219,7 +240,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
   const isStaff = role === "Staff";
   const isMerchandise = role === "Merchandise";
   const isAdmin = role === "Admin";
-  
+
   const isShippingStage = refund.refundStatus === "RefundShipping";
   const isReceivedStage = refund.refundStatus === "RefundReceived";
   const isInspectionStage = refund.refundStatus === "RefundInspectionPending";
@@ -475,7 +496,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                         {refund.adminNote}
                       </span>
                     ) : (
-                      <span className="text-gray-400 italic text-xs">No warehouse inspection notes</span>
+                      <span className="text-gray-400 italic text-xs">No shop inspection notes</span>
                     )
                   } />
                 </Section>
@@ -508,16 +529,16 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                       <div className={`rounded-xl border p-4 ${isSystem ? "border-dashed border-gray-200 bg-gray-50/50 dark:border-gray-800 dark:bg-transparent" : "border-gray-100 bg-white shadow-xs dark:border-gray-800 dark:bg-gray-900/50"}`}>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="text-base font-semibold text-gray-800 dark:text-white/90">
-                            {h.statusName}
+                            {cleanStatusName(h.statusName)}
                           </span>
                           <span className="text-sm text-gray-400 dark:text-gray-500">{fmtDt(h.createdAt)}</span>
                         </div>
                         <p className={`mt-1 text-sm ${isSystem ? "italic text-gray-400 dark:text-gray-500" : "text-gray-500 dark:text-gray-400"}`}>
-                          Performed by: {isSystem ? "⚙ System (auto)" : h.changedByName}
+                          By: {isSystem ? "⚙ System (auto)" : h.changedByName}
                         </p>
                         {h.note && (
                           <p className="mt-3 border-l-2 border-gray-200 pl-3 text-sm italic text-gray-600 dark:border-gray-700 dark:text-gray-300">
-                            "{h.note}"
+                            &ldquo;{h.note}&rdquo;
                           </p>
                         )}
                       </div>
@@ -598,8 +619,8 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
           {!canChangeStatus && !isLoading && (
             <span className="self-center text-sm text-gray-400 dark:text-gray-500 mr-2">
               {refund.refundStatus === "RefundRejected" &&
-              refund.isSystemReturn &&
-              !isAdmin
+                refund.isSystemReturn &&
+                !isAdmin
                 ? "System refund was rejected — contact Admin to reopen (Approve → Complete)."
                 : "No actions available"}
             </span>

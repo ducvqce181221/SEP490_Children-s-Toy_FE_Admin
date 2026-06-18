@@ -49,16 +49,16 @@ const fmtCurrency = (n: number) =>
 // ─── Inline badge components ───────────────────────────────────────────────────
 function OrderStatusBadge({ statusId, statusName }: { statusId: number; statusName: string }) {
   const styles: Record<number, string> = {
-    [ORDER_STATUS_ID.PENDING]:    "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800",
-    [ORDER_STATUS_ID.CONFIRMED]:  "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
+    [ORDER_STATUS_ID.PENDING]: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800",
+    [ORDER_STATUS_ID.CONFIRMED]: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
     [ORDER_STATUS_ID.PROCESSING]: "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800",
-    [ORDER_STATUS_ID.SHIPPED]:    "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800",
+    [ORDER_STATUS_ID.SHIPPED]: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800",
     [ORDER_STATUS_ID.DELIVERING]: "bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800",
     [ORDER_STATUS_ID.RETURNING]: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800",
     [ORDER_STATUS_ID.RETURN_COMPLETED]: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800",
-    [ORDER_STATUS_ID.DELIVERED]:  "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
-    [ORDER_STATUS_ID.COMPLETED]:  "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800",
-    [ORDER_STATUS_ID.CANCELLED]:  "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800",
+    [ORDER_STATUS_ID.DELIVERED]: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
+    [ORDER_STATUS_ID.COMPLETED]: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800",
+    [ORDER_STATUS_ID.CANCELLED]: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800",
   };
   const cls = styles[statusId] ?? "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
   return (
@@ -70,10 +70,10 @@ function OrderStatusBadge({ statusId, statusName }: { statusId: number; statusNa
 
 function PaymentBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    PAID:     "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
-    FAILED:   "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800",
+    PAID: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
+    FAILED: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800",
     REFUNDED: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
-    PENDING:  "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800",
+    PENDING: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800",
   };
   return (
     <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.PENDING}`}>
@@ -107,7 +107,7 @@ type TabKey = "overview" | "history" | "shipping-history";
 export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   const router = useRouter();
   const { account } = useAuthContext();
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<OrderDetail | null>(null);
@@ -260,9 +260,9 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     isAdmin
       ? !isTerminalStatus && !!order
       : isAssignedToMe &&
-        (order?.statusName === ORDER_STATUS.PENDING ||
-          order?.statusName === ORDER_STATUS.CONFIRMED) &&
-        role === ROLE_NAME.STAFF;
+      (order?.statusName === ORDER_STATUS.PENDING ||
+        order?.statusName === ORDER_STATUS.CONFIRMED) &&
+      role === ROLE_NAME.STAFF;
 
   const canAssign =
     isAdmin &&
@@ -378,11 +378,10 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             key={t.key}
             type="button"
             onClick={() => setActiveTab(t.key)}
-            className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              activeTab === t.key
+            className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === t.key
                 ? "border-brand-500 text-brand-600 dark:border-brand-400 dark:text-brand-400"
                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            }`}
+              }`}
           >
             {t.label}
           </button>
@@ -397,7 +396,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             {isReturnFlow && (
               <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-800/50 dark:bg-orange-900/20">
                 <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
-                  Package return to warehouse (GHN)
+                  Package return to shop (GHN)
                 </p>
                 <p className="mt-1 text-sm text-orange-700 dark:text-orange-300">
                   {order.statusId === ORDER_STATUS_ID.RETURNING &&
@@ -405,7 +404,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                   {order.statusId === ORDER_STATUS_ID.RETURN_COMPLETED &&
                     (order.paymentMethod === "SHIP_COD"
                       ? "Goods returned. COD order may already be cancelled — verify payment and stock."
-                      : "Goods returned. Prepaid order may need refund approval — check Refunds." )}
+                      : "Goods returned. Prepaid order may need refund approval — check Refunds.")}
                   {order.statusName === ORDER_STATUS.CANCELLED &&
                     order.cancelReason &&
                     `Order cancelled: ${order.cancelReason}. Use Order History and Shipping History for the full timeline.`}
@@ -467,11 +466,10 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                     <InfoRow
                       label="GHN status"
                       value={
-                        <span className={`rounded-full px-2.5 py-1 text-xs ${
-                          isGhnReturnFlowStatus(ghnStatus)
+                        <span className={`rounded-full px-2.5 py-1 text-xs ${isGhnReturnFlowStatus(ghnStatus)
                             ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
                             : "bg-gray-100 dark:bg-gray-800"
-                        }`}>
+                          }`}>
                           {formatGhnShippingLabel(ghnStatus) || "—"}
                         </span>
                       }
@@ -595,11 +593,10 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                         <span className="absolute left-[-15px] top-4 h-full w-0.5 bg-gray-200 dark:bg-gray-800" />
                       )}
                       <span
-                        className={`absolute left-[-21px] top-1.5 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 ${
-                          isSystem
+                        className={`absolute left-[-21px] top-1.5 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 ${isSystem
                             ? "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900"
                             : "border-brand-500 bg-brand-500"
-                        }`}
+                          }`}
                       />
                       <div className={`rounded-xl border p-4 ${isSystem ? "border-dashed border-gray-200 bg-gray-50/50 dark:border-gray-800 dark:bg-transparent" : "border-gray-100 bg-white shadow-xs dark:border-gray-800 dark:bg-gray-900/50"}`}>
                         <div className="flex flex-wrap items-center justify-between gap-2">
