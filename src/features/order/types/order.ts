@@ -52,7 +52,7 @@ export const ORDER_STATUS_LABEL: Record<number, string> = {
   2: "Confirmed",
   3: "Processing",
   4: "Shipped",
-  5: "Delivering (incl. return flow)",
+  5: "Delivering",
   6: "Delivered",
   7: "Completed",
   8: "Cancelled",
