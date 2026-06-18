@@ -11,6 +11,7 @@ export const UpdateRefundStatusSchema = z.object({
     "RefundInspectionPending",
     "RefundCompleted",
     "RefundCancelled",
+    "RefundDamage",
   ]),
   rejectReason: z.string().optional(),
   adminNote: z.string().optional(),
