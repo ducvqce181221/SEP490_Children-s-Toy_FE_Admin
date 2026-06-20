@@ -56,14 +56,6 @@ export interface DashboardNewCustomerStatistics {
   details: DashboardCountChartPoint[];
 }
 
-export interface DashboardCompletedOrderStatistics {
-  range: DashboardTimeRange;
-  totalCompletedOrders: number;
-  previousPeriodCompletedOrders: number;
-  growthPercentage: number;
-  details: DashboardCountChartPoint[];
-}
-
 export interface DashboardGrowthStatistics {
   range: DashboardTimeRange;
   revenueCurrent: number;
@@ -72,15 +64,6 @@ export interface DashboardGrowthStatistics {
   ordersCurrent: number;
   ordersPrevious: number;
   ordersGrowthPercentage: number;
-}
-
-export interface DashboardOrderRateStatistics {
-  range: DashboardTimeRange;
-  totalOrders: number;
-  refundedOrders: number;
-  cancelledOrders: number;
-  refundRatePercentage: number;
-  cancellationRatePercentage: number;
 }
 
 export interface DashboardTotalProducts {
