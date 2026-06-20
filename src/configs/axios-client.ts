@@ -34,8 +34,9 @@ function redirectToLogin(): void {
   const isAlreadyOnLogin = LOGIN_PATHS.some((p) => currentPath.startsWith(p));
 
   if (!isAlreadyOnLogin) {
-    const target = currentPath.startsWith("/admin") ? "/admin/login" : "/login";
-    window.location.replace(target);
+    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+    const base = currentPath.startsWith("/admin") ? "/admin/login" : "/login";
+    window.location.replace(`${base}?returnTo=${returnTo}`);
   }
 }
 

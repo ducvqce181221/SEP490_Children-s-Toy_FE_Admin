@@ -6,8 +6,9 @@ import Button from "@/components/ui/button/Button";
 import { EyeCloseIcon, EyeIcon } from "@/icons";
 import { authApi } from "@/features/auth/services/auth-api";
 import { useAuthContext } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import { getSafeAdminReturnTo } from "@/features/auth/utils/admin-access";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
@@ -24,8 +25,17 @@ const ADMIN_ROLE_IDS = [2, 3, 4];
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { setAuth } = useAuthContext();
+  const { account, isAuthenticated, isInitialized, setAuth } = useAuthContext();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnToParam = searchParams?.get("returnTo") ?? null;
+
+  // Redirect already-authenticated users away from login page (fixes Back-to-login bug)
+  useEffect(() => {
+    if (isInitialized && isAuthenticated) {
+      router.replace(getSafeAdminReturnTo(returnToParam, account));
+    }
+  }, [isInitialized, isAuthenticated, account, returnToParam, router]);
 
   const {
     register,
@@ -51,7 +61,7 @@ export default function SignInForm() {
 
       setAuth(response.account, response.accessToken);
       toast.success(`Welcome, ${response.account.accountName}!`);
-      router.push("/admin");
+      router.replace(getSafeAdminReturnTo(returnToParam, response.account));
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       const message = err?.response?.data?.message ?? "Sign-in failed. Please try again.";
