@@ -277,7 +277,8 @@ export const OrderCancelModal: React.FC<CancelModalProps> = ({
 // ── Assign Modal ────────────────────────────────────────────────────────────
 interface AssignModalProps extends ActionModalProps {
   onAssign: (data: AssignOrderFormData) => void;
-  currentStatusName: string; // Truyền vào để biết nên load Staff hay Merchandise
+  currentStatusName?: string; // Truyền vào để biết nên load Staff hay Merchandise
+  targetRoleId?: number;
   title?: string;
   description?: string;
 }
@@ -288,12 +289,12 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
   isSubmitting,
   onAssign,
   currentStatusName,
+  targetRoleId: targetRoleIdProp,
   title,
   description,
 }) => {
   const [schedules, setSchedules] = useState<WorkSchedule[]>([]);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [targetRoleId, setTargetRoleId] = useState(3);
 
   const {
@@ -310,26 +311,27 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       reset({ targetScheduleId: 0, roleId: 3, note: "" });
-      setSearchTerm("");
     }
   }, [isOpen, reset]);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    let roleId = 3;
-    if (
-      currentStatusName === ORDER_STATUS.CONFIRMED ||
-      currentStatusName === ORDER_STATUS.PROCESSING ||
-      currentStatusName === ORDER_STATUS.DELIVERY_FAILED
-    ) {
-      roleId = 4;
-    } else if (
-      currentStatusName === ORDER_STATUS.SHIPPED ||
-      currentStatusName === ORDER_STATUS.DELIVERING ||
-      currentStatusName === ORDER_STATUS.DELIVERED
-    ) {
-      roleId = 4;
+    let roleId = targetRoleIdProp !== undefined ? targetRoleIdProp : 3;
+    if (targetRoleIdProp === undefined && currentStatusName) {
+      if (
+        currentStatusName === ORDER_STATUS.CONFIRMED ||
+        currentStatusName === ORDER_STATUS.PROCESSING ||
+        currentStatusName === ORDER_STATUS.DELIVERY_FAILED
+      ) {
+        roleId = 4;
+      } else if (
+        currentStatusName === ORDER_STATUS.SHIPPED ||
+        currentStatusName === ORDER_STATUS.DELIVERING ||
+        currentStatusName === ORDER_STATUS.DELIVERED
+      ) {
+        roleId = 4;
+      }
     }
 
     setTargetRoleId(roleId);
@@ -352,11 +354,7 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
     };
 
     fetchSchedules();
-  }, [isOpen, currentStatusName, setValue]);
-
-  const filteredSchedules = schedules.filter((schedule) =>
-    schedule.accountName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  }, [isOpen, currentStatusName, targetRoleIdProp, setValue]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
@@ -370,17 +368,6 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
       </div>
 
       <form onSubmit={handleSubmit((data: any) => onAssign(data as AssignOrderFormData))} className="space-y-4">
-        <div>
-          <Label htmlFor="staff-search">Search Staff (Name, Phone...)</Label>
-          <Input
-            id="staff-search"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Type to search staff..."
-            className="mt-2"
-          />
-        </div>
-
         <input type="hidden" {...register("roleId")} />
 
         <div>
@@ -395,12 +382,12 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
               errors.targetScheduleId ? "border-error-500" : "border-gray-300 dark:border-gray-700"
             } bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`}
           >
-            {filteredSchedules.length === 0 ? (
+            {schedules.length === 0 ? (
               <option value="0" disabled>-- No on-duty schedules --</option>
             ) : (
               <>
                 <option value="0" disabled>-- Select schedule --</option>
-                {filteredSchedules.map((schedule) => (
+                {schedules.map((schedule) => (
                   <option key={schedule.scheduleId} value={schedule.scheduleId}>
                     {schedule.accountName} (Shift: {schedule.shiftName}, Load: {schedule.currentLoad}/{schedule.maxLoad})
                   </option>

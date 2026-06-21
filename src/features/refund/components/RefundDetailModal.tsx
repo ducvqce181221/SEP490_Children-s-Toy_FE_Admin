@@ -22,12 +22,45 @@ export const RefundDetailModal: React.FC<RefundDetailModalProps> = ({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "Approved": return <Badge size="sm" color="success">Approved</Badge>;
-      case "Completed": return <Badge size="sm" color="success">Completed</Badge>;
-      case "Requested": return <Badge size="sm" color="warning">Requested</Badge>;
-      case "Rejected": return <Badge size="sm" color="error">Rejected</Badge>;
-      case "Cancelled": return <Badge size="sm" color="light">Cancelled</Badge>;
-      default: return <Badge size="sm" color="light">{status}</Badge>;
+      case "RefundRequested":
+      case "Requested":
+        return <Badge size="sm" color="warning">Requested</Badge>;
+      case "RefundApproved":
+      case "Approved":
+        return <Badge size="sm" color="success">Approved</Badge>;
+      case "RefundPickupCreated":
+      case "PickupCreated":
+        return <Badge size="sm" color="info">Pickup Created</Badge>;
+      case "RefundShipping":
+      case "Shipping":
+        return <Badge size="sm" color="info">Shipping</Badge>;
+      case "RefundReceived":
+      case "Received":
+        return <Badge size="sm" color="info">Received</Badge>;
+      case "RefundInspectionPending":
+      case "InspectionPending":
+        return <Badge size="sm" color="warning">Inspecting</Badge>;
+      case "RefundCompleted":
+      case "Completed":
+        return <Badge size="sm" color="success">Completed</Badge>;
+      case "RefundCancelled":
+      case "Cancelled":
+        return <Badge size="sm" color="light">Cancelled</Badge>;
+      case "RefundRejected":
+      case "Rejected":
+        return <Badge size="sm" color="error">Rejected</Badge>;
+      case "RefundDamage":
+        return <Badge size="sm" color="error">Damaged</Badge>;
+      case "RefundReturnShipmentCreated":
+        return <Badge size="sm" color="info">Return Created</Badge>;
+      case "RefundReturningToCustomer":
+        return <Badge size="sm" color="info">Returning</Badge>;
+      case "RefundReturnedToCustomer":
+        return <Badge size="sm" color="success">Returned (Rejected)</Badge>;
+      case "RefundReturnToCustomerFailed":
+        return <Badge size="sm" color="error">Return Failed</Badge>;
+      default:
+        return <Badge size="sm" color="light">{status}</Badge>;
     }
   };
 
@@ -66,13 +99,23 @@ export const RefundDetailModal: React.FC<RefundDetailModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 mb-6 dark:bg-gray-700/50 rounded-lg p-3 bg-gray-50">
-                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold">
+                  <div className="flex items-center gap-3 mb-4 dark:bg-gray-700/50 rounded-lg p-3 bg-gray-50">
+                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold shrink-0">
                       {refund.customerName.charAt(0).toUpperCase()}
                     </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">{refund.customerName}</div>
-                      <div className="text-[10px] text-gray-500">{refund.customerPhone} | {refund.customerEmail}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-gray-800 dark:text-white/90 truncate">{refund.customerName}</div>
+                      <div className="text-xs text-gray-500 truncate">{refund.customerEmail}</div>
+                    </div>
+                  </div>
+                  <div className="space-y-2 border-b border-gray-100 dark:border-gray-700 pb-4 mb-4 text-xs">
+                    <div className="flex justify-between py-1 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                      <span className="text-gray-500">Phone Number</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200">{refund.customerPhone || "—"}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                      <span className="text-gray-500 shrink-0">Address</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200 text-right ml-4">{refund.customerAddress || "—"}</span>
                     </div>
                   </div>
 

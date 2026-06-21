@@ -127,14 +127,6 @@ const othersItems: NavItem[] = [
     name: "User Profile",
     path: "/admin/profile",
   },
-  {
-    icon: <LockIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-    ],
-  },
 ];
 
 const AppSidebar: React.FC = () => {
