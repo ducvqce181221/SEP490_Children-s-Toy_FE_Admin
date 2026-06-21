@@ -89,7 +89,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
   // Check if the promotion has transactions (soldQuantity > 0)
   const hasTransactions = React.useMemo(() => {
     if (!initialData) return false;
-    const hasDiscountSales = initialData.productPromotions?.some(p => p.soldQuantity > 0) ?? false;
+    const hasDiscountSales = false;
     const hasFlashSaleSales = initialData.promotionTimeSlots?.some(ts => 
       ts.promotionProductSlots?.some(ps => ps.soldQuantity > 0)
     ) ?? false;
@@ -235,8 +235,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
           stock: p.stock,
           salePrice: p.salePrice,
           discountPercent: p.discountPercent,
-          saleQuantity: p.saleQuantity,
-          soldQuantity: p.soldQuantity,
         })),
         // Map startAt/endAt từ UTC (API) → local (datetime-local input)
         promotionTimeSlots: initialData.promotionTimeSlots?.map((ts) => ({
@@ -288,7 +286,6 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
           stock: p.quantity,
           salePrice: p.price,
           discountPercent: 0,
-          saleQuantity: null as number | null,
         }));
         append(newItems);
       }
@@ -303,10 +300,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
       endDate: formatLocalToUTC(data.endDate),
       status: isNew ? "Scheduled" : data.status,
       productPromotions: data.productPromotions.map(
-        ({ productName: _pn, originalPrice: _op, stock: _st, saleQuantity, ...rest }) => ({
-          ...rest,
-          saleQuantity: data.promotionType === "DISCOUNT" ? null : saleQuantity,
-        })
+        ({ productName: _pn, originalPrice: _op, stock: _st, ...rest }) => rest
       ),
       promotionTimeSlots: PROMOTION_TYPE_CONFIG[data.promotionType]?.hasTimeSlots
         ? data.promotionTimeSlots.map((ts) => ({

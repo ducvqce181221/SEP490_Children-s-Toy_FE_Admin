@@ -75,22 +75,7 @@ export function ProductPromotionTable({
               >
                 Discount (%)
               </TableCell>
-              {!isDiscount && (
-                <TableCell
-                  isHeader
-                  className="px-4 py-3 w-36 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
-                >
-                  Sale Quantity
-                </TableCell>
-              )}
-              {readonly && (
-                <TableCell
-                  isHeader
-                  className="px-4 py-3 w-36 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
-                >
-                  Sold Quantity
-                </TableCell>
-              )}
+
               {!readonly && (
                 <TableCell
                   isHeader
@@ -105,7 +90,7 @@ export function ProductPromotionTable({
             {fields.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={readonly ? (isDiscount ? 6 : 7) : (isDiscount ? 6 : 7)}
+                  colSpan={readonly ? 5 : 6}
                   className="px-4 py-10 text-center text-sm text-gray-400 dark:text-gray-500"
                 >
                   {readonly
@@ -197,35 +182,7 @@ export function ProductPromotionTable({
                       />
                     )}
                   </TableCell>
-                  {!isDiscount && (
-                    <TableCell className="px-4 py-3">
-                      {readonly ? (
-                        <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                          {field.saleQuantity !== null && field.saleQuantity !== undefined
-                            ? field.saleQuantity
-                            : "-"}
-                        </span>
-                      ) : (
-                        <Input
-                          type="number"
-                          absoluteHint={true}
-                          {...form.register(`productPromotions.${index}.saleQuantity`, {
-                            setValueAs: (v) => (v === "" ? null : parseInt(v, 10)),
-                          })}
-                          placeholder={`Max ${field.stock || 0}`}
-                          error={!!form.formState.errors.productPromotions?.[index]?.saleQuantity}
-                          hint={form.formState.errors.productPromotions?.[index]?.saleQuantity?.message}
-                        />
-                      )}
-                    </TableCell>
-                  )}
-                  {readonly && (
-                    <TableCell className="px-4 py-3">
-                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                        {field.soldQuantity ?? 0}
-                      </span>
-                    </TableCell>
-                  )}
+
                   {!readonly && (
                     <TableCell className="px-4 py-3 text-center">
                       <button

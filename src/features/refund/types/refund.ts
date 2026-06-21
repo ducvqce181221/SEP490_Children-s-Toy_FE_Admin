@@ -40,6 +40,7 @@ export interface Refund {
   customerName: string;
   customerPhone: string;
   customerEmail: string;
+  customerAddress?: string | null;
   requestedBy: number | null;
   requestedByName: string | null;
   approvedBy: number | null;

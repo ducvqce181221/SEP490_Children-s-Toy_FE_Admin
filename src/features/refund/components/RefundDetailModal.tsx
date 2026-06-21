@@ -99,13 +99,23 @@ export const RefundDetailModal: React.FC<RefundDetailModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 mb-6 dark:bg-gray-700/50 rounded-lg p-3 bg-gray-50">
-                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold">
+                  <div className="flex items-center gap-3 mb-4 dark:bg-gray-700/50 rounded-lg p-3 bg-gray-50">
+                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold shrink-0">
                       {refund.customerName.charAt(0).toUpperCase()}
                     </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">{refund.customerName}</div>
-                      <div className="text-[10px] text-gray-500">{refund.customerPhone} | {refund.customerEmail}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-gray-800 dark:text-white/90 truncate">{refund.customerName}</div>
+                      <div className="text-xs text-gray-500 truncate">{refund.customerEmail}</div>
+                    </div>
+                  </div>
+                  <div className="space-y-2 border-b border-gray-100 dark:border-gray-700 pb-4 mb-4 text-xs">
+                    <div className="flex justify-between py-1 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                      <span className="text-gray-500">Phone Number</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200">{refund.customerPhone || "—"}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                      <span className="text-gray-500 shrink-0">Address</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200 text-right ml-4">{refund.customerAddress || "—"}</span>
                     </div>
                   </div>
 

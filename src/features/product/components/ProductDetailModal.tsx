@@ -435,7 +435,9 @@ const ProductDetailModal = ({
                                 : "-"}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                              {promo.soldQuantity} / {promo.saleQuantity !== null && promo.saleQuantity !== undefined ? promo.saleQuantity : "∞"}
+                              {promo.promotionType === "FLASH_SALE"
+                                ? `${promo.soldQuantity ?? 0} / ${promo.saleQuantity ?? 0}`
+                                : "Unlimited"}
                             </td>
                             <td className="px-4 py-3 text-sm whitespace-nowrap">
                               {getPromotionStatusBadge(promo.status)}

@@ -252,6 +252,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
   const isShippingStage = refund.refundStatus === "RefundShipping";
   const isReceivedStage = refund.refundStatus === "RefundReceived";
   const isInspectionStage = refund.refundStatus === "RefundInspectionPending";
+  const isMerchandiseStage = isShippingStage || isReceivedStage;
 
   /** System refund mis-rejected: Admin may Reopen (Rejected → Approved → Complete). */
   const canReopenSystemRejected =
@@ -467,16 +468,17 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
               {/* Right Column: Customer Info & Refund Meta (lg:col-span-1) */}
               <div className="lg:col-span-1 space-y-6">
                 <Section title="Customer Info">
-                  <div className="flex items-center gap-4 dark:bg-gray-700/30 rounded-xl p-3 bg-gray-50">
-                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-[#ff6a00] font-bold text-lg">
+                  <div className="flex items-center gap-4 dark:bg-gray-700/30 rounded-xl p-3 bg-gray-50 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-[#ff6a00] font-bold text-lg shrink-0">
                       {refund.customerName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-gray-800 dark:text-white/90 truncate">{refund.customerName}</div>
-                      <div className="text-xs text-gray-500 truncate">{refund.customerPhone}</div>
                       <div className="text-xs text-gray-500 truncate">{refund.customerEmail}</div>
                     </div>
                   </div>
+                  <InfoRow label="Phone Number" value={refund.customerPhone || "—"} />
+                  <InfoRow label="Address" value={refund.customerAddress || "—"} />
                 </Section>
 
                 <Section title="Refund Details">
@@ -698,9 +700,9 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
         onClose={() => setIsAssignModalOpen(false)}
         isSubmitting={isReassigning}
         onAssign={handleAssign}
-        currentStatusName={isInspectionStage ? "Confirmed" : "Pending"}
+        targetRoleId={isMerchandiseStage ? 4 : 3}
         title="Reassign Refund"
-        description={`Admin reassigns the ${isInspectionStage ? "Merchandise" : "Staff"} slot for this refund request using an on-duty schedule.`}
+        description={`Admin reassigns the ${isMerchandiseStage ? "Merchandise" : "Staff"} slot for this refund request using an on-duty schedule.`}
       />
     </div>
   );
