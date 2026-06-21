@@ -8,7 +8,11 @@ export type RefundStatusType =
   | "RefundCompleted" 
   | "RefundCancelled" 
   | "RefundRejected"
-  | "RefundDamage";
+  | "RefundDamage"
+  | "RefundReturnShipmentCreated"
+  | "RefundReturningToCustomer"
+  | "RefundReturnedToCustomer"
+  | "RefundReturnToCustomerFailed";
 
 export interface RefundDetailItem {
   productId: number;
@@ -49,6 +53,9 @@ export interface Refund {
   images: string[];
   refundCode?: string | null;
   shippingOrderCode?: string | null;
+  returnShippingOrderCode?: string | null;
+  inspectionPassed?: boolean | null;
+  inspectionNote?: string | null;
   shippingFee?: number;
   subTotal?: number;
   totalAmount?: number;

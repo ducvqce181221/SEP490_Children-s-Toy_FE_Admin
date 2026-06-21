@@ -12,9 +12,15 @@ export const UpdateRefundStatusSchema = z.object({
     "RefundCompleted",
     "RefundCancelled",
     "RefundDamage",
+    "RefundReturnShipmentCreated",
+    "RefundReturningToCustomer",
+    "RefundReturnedToCustomer",
+    "RefundReturnToCustomerFailed",
   ]),
   rejectReason: z.string().optional(),
   adminNote: z.string().optional(),
+  inspectionPassed: z.boolean().optional(),
+  inspectionNote: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.status === "RefundRejected" && (!data.rejectReason || !data.rejectReason.trim())) {
     ctx.addIssue({

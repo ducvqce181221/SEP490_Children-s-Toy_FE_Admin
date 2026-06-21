@@ -22,12 +22,45 @@ export const RefundDetailModal: React.FC<RefundDetailModalProps> = ({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "Approved": return <Badge size="sm" color="success">Approved</Badge>;
-      case "Completed": return <Badge size="sm" color="success">Completed</Badge>;
-      case "Requested": return <Badge size="sm" color="warning">Requested</Badge>;
-      case "Rejected": return <Badge size="sm" color="error">Rejected</Badge>;
-      case "Cancelled": return <Badge size="sm" color="light">Cancelled</Badge>;
-      default: return <Badge size="sm" color="light">{status}</Badge>;
+      case "RefundRequested":
+      case "Requested":
+        return <Badge size="sm" color="warning">Requested</Badge>;
+      case "RefundApproved":
+      case "Approved":
+        return <Badge size="sm" color="success">Approved</Badge>;
+      case "RefundPickupCreated":
+      case "PickupCreated":
+        return <Badge size="sm" color="info">Pickup Created</Badge>;
+      case "RefundShipping":
+      case "Shipping":
+        return <Badge size="sm" color="info">Shipping</Badge>;
+      case "RefundReceived":
+      case "Received":
+        return <Badge size="sm" color="info">Received</Badge>;
+      case "RefundInspectionPending":
+      case "InspectionPending":
+        return <Badge size="sm" color="warning">Inspecting</Badge>;
+      case "RefundCompleted":
+      case "Completed":
+        return <Badge size="sm" color="success">Completed</Badge>;
+      case "RefundCancelled":
+      case "Cancelled":
+        return <Badge size="sm" color="light">Cancelled</Badge>;
+      case "RefundRejected":
+      case "Rejected":
+        return <Badge size="sm" color="error">Rejected</Badge>;
+      case "RefundDamage":
+        return <Badge size="sm" color="error">Damaged</Badge>;
+      case "RefundReturnShipmentCreated":
+        return <Badge size="sm" color="info">Return Created</Badge>;
+      case "RefundReturningToCustomer":
+        return <Badge size="sm" color="info">Returning</Badge>;
+      case "RefundReturnedToCustomer":
+        return <Badge size="sm" color="success">Returned (Rejected)</Badge>;
+      case "RefundReturnToCustomerFailed":
+        return <Badge size="sm" color="error">Return Failed</Badge>;
+      default:
+        return <Badge size="sm" color="light">{status}</Badge>;
     }
   };
 

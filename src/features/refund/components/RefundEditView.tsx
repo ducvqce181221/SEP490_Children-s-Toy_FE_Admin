@@ -38,6 +38,10 @@ function cleanStatusName(status: string) {
     case "RefundCancelled": return "Cancelled";
     case "RefundRejected": return "Rejected";
     case "RefundDamage": return "Damaged";
+    case "RefundReturnShipmentCreated": return "Return Shipment Created";
+    case "RefundReturningToCustomer": return "Returning to Customer";
+    case "RefundReturnedToCustomer": return "Returned to Customer (Rejected)";
+    case "RefundReturnToCustomerFailed": return "Return to Customer Failed";
     default:
       if (status && status.startsWith("Refund")) {
         return status.substring(6);
@@ -57,8 +61,12 @@ function getStatusBadge(status: string) {
     case "RefundPickupCreated": return <Badge size="sm" color="primary">Pickup Created</Badge>;
     case "RefundShipping": return <Badge size="sm" color="primary">Shipping</Badge>;
     case "RefundReceived": return <Badge size="sm" color="primary">Received</Badge>;
-    case "RefundInspectionPending": return <Badge size="sm" color="warning">Inspection Pending</Badge>;
+    case "RefundInspectionPending": return <Badge size="sm" color="warning">Inspecting</Badge>;
     case "RefundDamage": return <Badge size="sm" color="error">Damaged</Badge>;
+    case "RefundReturnShipmentCreated": return <Badge size="sm" color="primary">Return Created</Badge>;
+    case "RefundReturningToCustomer": return <Badge size="sm" color="primary">Returning</Badge>;
+    case "RefundReturnedToCustomer": return <Badge size="sm" color="success">Returned (Rejected)</Badge>;
+    case "RefundReturnToCustomerFailed": return <Badge size="sm" color="error">Return Failed</Badge>;
     default: return <Badge size="sm" color="light">{status}</Badge>;
   }
 }
@@ -483,20 +491,45 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                 </Section>
 
                 <Section title="Shipping & Quality Check">
-                  <InfoRow label="Tracking Code (Courier)" value={
+                  <InfoRow label="Tracking Code" value={
                     refund.shippingOrderCode ? (
                       <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.shippingOrderCode}</span>
                     ) : (
                       <span className="text-gray-400 italic text-xs">Pickup order not created</span>
                     )
                   } />
-                  <InfoRow label="Inspection Report" value={
+                  <InfoRow label="Return Tracking Code" value={
+                    refund.returnShippingOrderCode ? (
+                      <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.returnShippingOrderCode}</span>
+                    ) : (
+                      <span className="text-gray-400 italic text-xs">—</span>
+                    )
+                  } />
+                  <InfoRow label="Quality Inspection Status" value={
+                    refund.inspectionPassed === true ? (
+                      <Badge size="sm" color="success">Passed</Badge>
+                    ) : refund.inspectionPassed === false ? (
+                      <Badge size="sm" color="error">Failed</Badge>
+                    ) : (
+                      <Badge size="sm" color="warning">Pending</Badge>
+                    )
+                  } />
+                  <InfoRow label="Inspection Note" value={
+                    refund.inspectionNote ? (
+                      <span className="italic text-slate-600 bg-white/60 p-2.5 rounded border border-slate-100 block text-xs whitespace-pre-wrap">
+                        {refund.inspectionNote}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 italic text-xs">—</span>
+                    )
+                  } />
+                  <InfoRow label="Admin General Note" value={
                     refund.adminNote ? (
                       <span className="italic text-slate-600 bg-white/60 p-2.5 rounded border border-slate-100 block text-xs whitespace-pre-wrap">
                         {refund.adminNote}
                       </span>
                     ) : (
-                      <span className="text-gray-400 italic text-xs">No shop inspection notes</span>
+                      <span className="text-gray-400 italic text-xs">No shop admin notes</span>
                     )
                   } />
                 </Section>
