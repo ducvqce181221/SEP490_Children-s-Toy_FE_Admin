@@ -40,6 +40,16 @@ export default function ProfilePage() {
     );
   };
 
+  const parseDobDateInputToIso = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const [year, month, day] = trimmed.split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day)).toISOString();
+  };
+
   const handleUpdateImage = async (file: File) => {
     try {
       const uploadResult = await profileApi.uploadMyAvatar(file);
@@ -56,9 +66,11 @@ export default function ProfilePage() {
     }
   };
 
-  const handleUpdateInfo = async (payload: { phoneNumber: string }) => {
+  const handleUpdateInfo = async (payload: { phoneNumber: string; dob: string; sexId: string }) => {
     const result = await updateProfile({
       phoneNumber: payload.phoneNumber.trim() || null,
+      dob: parseDobDateInputToIso(payload.dob),
+      sexId: payload.sexId ? Number(payload.sexId) : null,
     });
 
     if (result.success) {
