@@ -160,8 +160,8 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
 
             <div className="flex items-center gap-3">
               {(resolvedReference.imageUrl || imageUrl) &&
-              referenceType !== "VOUCHER" &&
-              referenceType !== "SALE" ? (
+                referenceType !== "VOUCHER" &&
+                referenceType !== "SALE" ? (
                 <img
                   src={resolvedReference.imageUrl || imageUrl || ""}
                   alt={resolvedReference.displayName || "Reference"}
@@ -222,12 +222,6 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                  Link khi khách bấm TB:{" "}
-                  <span className="font-mono text-gray-700 dark:text-gray-300 break-all">
-                    {resolvedReference.defaultActionTarget}
-                  </span>
-                </p>
               </div>
             ) : null}
           </div>
@@ -269,21 +263,21 @@ export const CampaignReferenceCard: React.FC<CampaignReferenceCardProps> = ({
                       const badge =
                         phase === "live"
                           ? {
-                              label: "Ongoing",
-                              className:
-                                "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/35 dark:text-emerald-100",
-                            }
+                            label: "Ongoing",
+                            className:
+                              "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/35 dark:text-emerald-100",
+                          }
                           : phase === "upcoming"
                             ? {
-                                label: "Upcoming",
-                                className:
-                                  "bg-sky-100 text-sky-900 dark:bg-sky-900/35 dark:text-sky-100",
-                              }
+                              label: "Upcoming",
+                              className:
+                                "bg-sky-100 text-sky-900 dark:bg-sky-900/35 dark:text-sky-100",
+                            }
                             : {
-                                label: "Ended",
-                                className:
-                                  "bg-gray-100 text-gray-600 dark:bg-gray-800/80 dark:text-gray-400",
-                              };
+                              label: "Ended",
+                              className:
+                                "bg-gray-100 text-gray-600 dark:bg-gray-800/80 dark:text-gray-400",
+                            };
                       const lines = slot.productLines ?? [];
                       return (
                         <li

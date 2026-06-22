@@ -76,6 +76,8 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
       status: (nextStatus || "RefundApproved") as UpdateRefundStatusData["status"],
       rejectReason: "",
       adminNote: "",
+      inspectionPassed: true,
+      inspectionNote: "",
     },
   });
 
@@ -86,6 +88,8 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
         status: nextStatus,
         rejectReason: "",
         adminNote: "",
+        inspectionPassed: true,
+        inspectionNote: "",
       });
     }
   }, [isOpen, nextStatus, reset, currentStatus]);
@@ -122,6 +126,15 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
     description = "Are you sure you want to complete this refund? The approved amount will be credited to the customer's wallet and product quantity will be updated.";
   }
 
+  const handleFormSubmit = (data: UpdateRefundStatusData) => {
+    const payload = { ...data };
+    if (nextStatus !== "RefundInspectionPending") {
+      delete payload.inspectionPassed;
+      delete payload.inspectionNote;
+    }
+    onSave(payload);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
       <div>
@@ -134,7 +147,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSave)} className="space-y-4">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <Controller
             name="status"
             control={control}
@@ -154,22 +167,58 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
             </div>
           )}
 
-          <div>
-            <Label htmlFor="adminNote">Note (Optional)</Label>
-            <TextArea
-              id="adminNote"
-              className="mt-2"
-              {...register("adminNote")}
-              rows={3}
-              placeholder={
-                nextStatus === "RefundCompleted"
-                  ? "Enter quality check or warehouse inspection notes..."
-                  : "Enter details or comments about this transition..."
-              }
-              error={!!errors.adminNote}
-              hint={errors.adminNote?.message}
-            />
-          </div>
+          {nextStatus === "RefundInspectionPending" ? (
+            <>
+              <div>
+                <Label htmlFor="inspectionPassed">Quality Inspection Result</Label>
+                <Controller
+                  name="inspectionPassed"
+                  control={control}
+                  render={({ field }) => (
+                    <select
+                      id="inspectionPassed"
+                      className="mt-2 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                      value={field.value ? "true" : "false"}
+                      onChange={(e) => field.onChange(e.target.value === "true")}
+                    >
+                      <option value="true">Passed</option>
+                      <option value="false">Failed</option>
+                    </select>
+                  )}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="inspectionNote">Quality Inspection Note</Label>
+                <TextArea
+                  id="inspectionNote"
+                  className="mt-2"
+                  {...register("inspectionNote")}
+                  rows={3}
+                  placeholder="Enter quality check or warehouse inspection notes..."
+                  error={!!errors.inspectionNote}
+                  hint={errors.inspectionNote?.message}
+                />
+              </div>
+            </>
+          ) : (
+            <div>
+              <Label htmlFor="adminNote">Note (Optional)</Label>
+              <TextArea
+                id="adminNote"
+                className="mt-2"
+                {...register("adminNote")}
+                rows={3}
+                placeholder={
+                  nextStatus === "RefundCompleted"
+                    ? "Enter quality check or warehouse inspection notes..."
+                    : "Enter details or comments about this transition..."
+                }
+                error={!!errors.adminNote}
+                hint={errors.adminNote?.message}
+              />
+            </div>
+          )}
 
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="outline" onClick={onClose} type="button" disabled={isSubmitting}>

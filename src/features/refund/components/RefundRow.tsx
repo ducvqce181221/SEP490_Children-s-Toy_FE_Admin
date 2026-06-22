@@ -74,7 +74,7 @@ export const RefundRow = React.memo(function RefundRow({
         return <Badge size="sm" color="info">Received</Badge>;
       case "RefundInspectionPending":
       case "InspectionPending":
-        return <Badge size="sm" color="light">Inspection Pending</Badge>;
+        return <Badge size="sm" color="warning">Inspecting</Badge>;
       case "RefundCompleted":
       case "Completed":
         return <Badge size="sm" color="success">Completed</Badge>;
@@ -86,6 +86,14 @@ export const RefundRow = React.memo(function RefundRow({
         return <Badge size="sm" color="error">Rejected</Badge>;
       case "RefundDamage":
         return <Badge size="sm" color="error">Damaged</Badge>;
+      case "RefundReturnShipmentCreated":
+        return <Badge size="sm" color="info">Return Created</Badge>;
+      case "RefundReturningToCustomer":
+        return <Badge size="sm" color="info">Returning</Badge>;
+      case "RefundReturnedToCustomer":
+        return <Badge size="sm" color="success">Returned (Rejected)</Badge>;
+      case "RefundReturnToCustomerFailed":
+        return <Badge size="sm" color="error">Return Failed</Badge>;
       default:
         return <Badge size="sm" color="light">{status}</Badge>;
     }
