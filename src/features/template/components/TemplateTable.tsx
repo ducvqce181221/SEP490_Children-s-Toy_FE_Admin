@@ -14,7 +14,7 @@ import Pagination from "@/components/common/Pagination";
 import { useTemplates } from "../hooks/useTemplates";
 import { useTemplateMutations } from "../hooks/useTemplateMutations";
 import { TemplateRow } from "./TemplateRow";
-import { TemplateFormData } from "../types/template";
+import { TemplateFormData, Template } from "../types/template";
 import { useAuthContext } from "@/context/AuthContext";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 
@@ -43,10 +43,10 @@ export const TemplateTable = () => {
   const { account } = useAuthContext();
   const isAdmin = account?.roleName === "Admin";
 
-  const [confirmDeleteState, setConfirmDeleteState] = React.useState<{ isOpen: boolean; template: any | null }>({ isOpen: false, template: null });
+  const [confirmDeleteState, setConfirmDeleteState] = React.useState<{ isOpen: boolean; template: Template | null }>({ isOpen: false, template: null });
   const [deletingId, setDeletingId] = React.useState<number | null>(null);
 
-  const { createTemplate, updateTemplate, deleteTemplate, isSubmitting } = useTemplateMutations(() => {
+  const { createTemplate, saveTemplate, isSubmitting } = useTemplateMutations(() => {
     // on success reload list
     refetch();
     setIsModalOpen(false);
@@ -55,7 +55,7 @@ export const TemplateTable = () => {
     setConfirmDeleteState({ isOpen: false, template: null });
   });
 
-  const handleDeleteClick = (template: any) => {
+  const handleDeleteClick = (template: Template) => {
     setConfirmDeleteState({ isOpen: true, template });
   };
 
@@ -64,7 +64,7 @@ export const TemplateTable = () => {
     if (!template) return;
 
     setDeletingId(template.templateId);
-    const success = await deleteTemplate(template.templateId);
+    const success = await saveTemplate(template.templateId, { isDeleted: true });
     if (success) {
       setConfirmDeleteState({ isOpen: false, template: null });
     }
@@ -73,7 +73,7 @@ export const TemplateTable = () => {
 
   const handleSave = async (formData: TemplateFormData) => {
     if (editTemplate) {
-      await updateTemplate(editTemplate.templateId, formData);
+      await saveTemplate(editTemplate.templateId, formData);
     } else {
       await createTemplate(formData);
     }

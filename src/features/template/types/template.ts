@@ -15,6 +15,8 @@ export interface Template {
 
 export type TemplateFormData = z.infer<typeof TemplateFormSchema>;
 
+export type UpdateTemplatePayload = TemplateFormData | { isDeleted: true };
+
 export interface PaginatedTemplates {
   items: Template[];
   totalCount: number;
