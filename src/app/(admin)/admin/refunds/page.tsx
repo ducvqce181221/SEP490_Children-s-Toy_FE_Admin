@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import React from "react";
+import React, { Suspense } from "react";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { RefundTable } from "@/features/refund/components/RefundTable";
 
@@ -13,7 +13,9 @@ export default function RefundsPage() {
     <div>
       <PageBreadcrumb pageTitle="Refunds Management" />
       <div className="space-y-6">
-        <RefundTable />
+        <Suspense fallback={<div className="p-10 text-center text-gray-500">Loading refunds...</div>}>
+          <RefundTable />
+        </Suspense>
       </div>
     </div>
   );

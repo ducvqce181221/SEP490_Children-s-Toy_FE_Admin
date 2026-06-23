@@ -1,5 +1,6 @@
 import SignInForm from "@/components/auth/SignInForm";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Login | ToyStore Admin",
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function AdminLoginPage() {
-  return <SignInForm />;
+  return (
+    <Suspense fallback={null}>
+      <SignInForm />
+    </Suspense>
+  );
 }

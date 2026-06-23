@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Metadata } from "next";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { VoucherTable } from "@/features/voucher/components/VoucherTable";
@@ -13,7 +13,9 @@ export default function VouchersPage() {
     <div>
       <PageBreadcrumb pageTitle="Voucher Management" />
       <div className="space-y-6">
-        <VoucherTable />
+        <Suspense fallback={<div className="p-10 text-center text-gray-500">Loading vouchers...</div>}>
+          <VoucherTable />
+        </Suspense>
       </div>
     </div>
   );
