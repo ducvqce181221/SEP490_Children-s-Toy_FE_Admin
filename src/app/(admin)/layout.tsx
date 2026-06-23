@@ -34,7 +34,9 @@ export default function AdminLayout({
       } else {
         toast.error("Session expired. Please sign in again.");
       }
-      router.replace("/admin/login");
+      const search = typeof window !== "undefined" ? window.location.search : "";
+      const returnTo = encodeURIComponent(pathname + search);
+      router.replace(`/admin/login?returnTo=${returnTo}`);
     }
   }, [isAuthenticated, isInitialized, pathname, router]);
 

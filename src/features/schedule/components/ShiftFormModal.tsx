@@ -2,27 +2,19 @@
 
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver as zr } from "@hookform/resolvers/zod";
 import { Modal } from "@/components/ui/modal";
-import { ShiftTemplate, ShiftTemplateFormData, ShiftTemplateSchema } from "../types/shift";
+import {
+  ShiftTemplate,
+  ShiftTemplateFormData,
+  ShiftTemplateCreateSchema,
+  ShiftTemplateLockedUpdateSchema,
+  formatDuration,
+  timeToMinutes,
+} from "../types/shift";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
-import DatePicker from "@/components/form/date-picker";
-import { TimeIcon } from "@/icons";
-
-function formatDuration(start: string, end: string): string | null {
-  const timeRe = /^([01]\d|2[0-3]):([0-5]\d)/;
-  if (!timeRe.test(start) || !timeRe.test(end)) return null;
-  const [sh, sm] = start.split(":").map(Number);
-  const [eh, em] = end.split(":").map(Number);
-  const diff = (eh * 60 + em) - (sh * 60 + sm);
-  if (diff <= 0) return null;
-  const h = Math.floor(diff / 60);
-  const m = diff % 60;
-  if (h === 0) return `${m}m`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
-}
+import Select from "@/components/form/Select";
 
 interface ShiftFormModalProps {
   isOpen: boolean;
@@ -32,6 +24,16 @@ interface ShiftFormModalProps {
   isSubmitting: boolean;
 }
 
+const hourOptions = Array.from({ length: 24 }, (_, i) => {
+  const h = i.toString().padStart(2, "0");
+  return { value: h, label: h };
+});
+
+const minuteOptions = Array.from({ length: 60 }, (_, i) => {
+  const m = i.toString().padStart(2, "0");
+  return { value: m, label: m };
+});
+
 const ShiftFormModal: React.FC<ShiftFormModalProps> = ({
   isOpen,
   onClose,
@@ -39,26 +41,51 @@ const ShiftFormModal: React.FC<ShiftFormModalProps> = ({
   initialData,
   isSubmitting,
 }) => {
+  const isEdit = !!initialData;
+  const timeLocked = isEdit && (initialData?.activeScheduleCount ?? 0) > 0;
+
   const {
     register,
     handleSubmit,
     reset,
-    setValue,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ShiftTemplateFormData>({
-    resolver: zodResolver(ShiftTemplateSchema),
+    resolver: zr(timeLocked ? ShiftTemplateLockedUpdateSchema : ShiftTemplateCreateSchema) as any,
     defaultValues: {
       shiftName: "",
-      startTime: "",
-      endTime: "",
+      startTime: "08:00",
+      endTime: "17:00",
       maxOrdersPerShift: 20,
       isActive: true,
     },
   });
 
-  const startTime = watch("startTime");
-  const endTime = watch("endTime");
+  const shiftName = watch("shiftName") || "";
+  const startTime = watch("startTime") || "";
+  const endTime = watch("endTime") || "";
+
+  const startHour = startTime && startTime.includes(":") ? startTime.split(":")[0] : "08";
+  const startMin = startTime && startTime.includes(":") ? startTime.split(":")[1] : "00";
+  const endHour = endTime && endTime.includes(":") ? endTime.split(":")[0] : "17";
+  const endMin = endTime && endTime.includes(":") ? endTime.split(":")[1] : "00";
+
+  const handleStartHourChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setValue("startTime", `${e.target.value}:${startMin}`, { shouldValidate: true });
+  };
+
+  const handleStartMinChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setValue("startTime", `${startHour}:${e.target.value}`, { shouldValidate: true });
+  };
+
+  const handleEndHourChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setValue("endTime", `${e.target.value}:${endMin}`, { shouldValidate: true });
+  };
+
+  const handleEndMinChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setValue("endTime", `${endHour}:${e.target.value}`, { shouldValidate: true });
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -73,8 +100,8 @@ const ShiftFormModal: React.FC<ShiftFormModalProps> = ({
       } else {
         reset({
           shiftName: "",
-          startTime: "",
-          endTime: "",
+          startTime: "08:00",
+          endTime: "17:00",
           maxOrdersPerShift: 20,
           isActive: true,
         });
@@ -82,46 +109,64 @@ const ShiftFormModal: React.FC<ShiftFormModalProps> = ({
     }
   }, [initialData, reset, isOpen]);
 
-  const isEdit = !!initialData;
-  const timeLocked = isEdit && (initialData?.activeScheduleCount ?? 0) > 0;
+  const duration = formatDuration(startTime, endTime);
+  const bothFilled = startTime.length >= 5 && endTime.length >= 5;
+  const endBeforeStart =
+    bothFilled && timeToMinutes(endTime) <= timeToMinutes(startTime);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[520px] p-0 overflow-hidden">
       <div className="bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="p-6 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400">
-              <TimeIcon className="h-6 w-6 fill-current" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                {isEdit ? "Edit Shift Template" : "Create New Shift"}
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                {isEdit ? "Update the operational shift configuration." : "Define a new operational time block for your team."}
-              </p>
-            </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              {isEdit ? "Edit Shift Template" : "Create New Shift"}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              {isEdit
+                ? "Update the operational shift configuration."
+                : "Define a new operational time block for your team."}
+            </p>
           </div>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
+          {/* Lock banner */}
           {timeLocked && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-500/10 dark:text-amber-300">
-              This template has active work schedules. Shift times cannot be changed until those schedules finish.
-              You can still update the name or default max orders for new schedules.
+            <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-500/10">
+              <span className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+                </svg>
+              </span>
+              <div>
+                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                  This template has {initialData?.activeScheduleCount} active work schedule(s).
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                  Shift times and active status are locked until those schedules are completed or cancelled.
+                  You can still update the name or default max orders.
+                </p>
+              </div>
             </div>
           )}
 
           {/* Shift Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-              Shift Name <span className="text-error-500">*</span>
-            </label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Shift Name <span className="text-error-500">*</span>
+              </label>
+              <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
+                {shiftName.length}/50 characters (min 2)
+              </span>
+            </div>
             <Input
               placeholder="e.g. Morning Shift, Afternoon Run..."
               {...register("shiftName")}
+              maxLength={50}
               error={!!errors.shiftName}
               hint={errors.shiftName?.message}
             />
@@ -132,60 +177,145 @@ const ShiftFormModal: React.FC<ShiftFormModalProps> = ({
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
               Time Interval {!timeLocked && <span className="text-error-500">*</span>}
             </label>
-            {timeLocked ? (
-              <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300">
-                <span>{startTime?.slice(0, 5) ?? initialData?.startTime.slice(0, 5)}</span>
-                <span className="text-gray-400">—</span>
-                <span>{endTime?.slice(0, 5) ?? initialData?.endTime.slice(0, 5)}</span>
-              </div>
-            ) : (
-            <div className="flex items-start gap-3">
-              <div className="flex-1 relative">
-                <DatePicker
-                  id="startTime"
-                  mode="time"
-                  dateFormat="H:i"
-                  defaultDate={startTime}
-                  onChange={(_, dateStr) => setValue("startTime", dateStr, { shouldValidate: true })}
-                />
-                {errors.startTime?.message && (
-                  <p className="mt-1 text-[11px] text-error-500 font-medium">{errors.startTime.message}</p>
-                )}
-              </div>
 
-              <div className="flex flex-col items-center justify-start shrink-0 pt-2.5 gap-1">
-                <span className="text-gray-400 dark:text-gray-500 font-medium">—</span>
-                {formatDuration(startTime, endTime) && (
-                  <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 px-1.5 py-0.5 rounded whitespace-nowrap">
-                    {formatDuration(startTime, endTime)}
+            {timeLocked ? (
+              /* Read-only display when locked */
+              <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/50">
+                <span className="text-gray-400 dark:text-gray-500">
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+                  </svg>
+                </span>
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-300 tabular-nums">
+                  {startTime?.slice(0, 5) ?? initialData?.startTime.slice(0, 5)}
+                </span>
+                <span className="text-gray-400 dark:text-gray-500">—</span>
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-300 tabular-nums">
+                  {endTime?.slice(0, 5) ?? initialData?.endTime.slice(0, 5)}
+                </span>
+                {formatDuration(
+                  startTime || initialData?.startTime || "",
+                  endTime || initialData?.endTime || ""
+                ) && (
+                  <span className="ml-auto text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 rounded">
+                    {formatDuration(
+                      startTime || initialData?.startTime || "",
+                      endTime || initialData?.endTime || ""
+                    )}
                   </span>
                 )}
               </div>
+            ) : (
+              /* Editable Hour/Minute dropdowns */
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Start Time */}
+                  <div>
+                    <label htmlFor="start-hour" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                      Start Time
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex-1">
+                        <Select
+                          id="start-hour"
+                          options={hourOptions}
+                          value={startHour}
+                          onChange={handleStartHourChange}
+                          disabled={isSubmitting}
+                          placeholder="Hour"
+                        />
+                      </div>
+                      <span className="text-gray-400 font-bold text-lg select-none">:</span>
+                      <div className="flex-1">
+                        <Select
+                          id="start-minute"
+                          options={minuteOptions}
+                          value={startMin}
+                          onChange={handleStartMinChange}
+                          disabled={isSubmitting}
+                          placeholder="Min"
+                        />
+                      </div>
+                    </div>
+                    {errors.startTime?.message && (
+                      <p className="mt-1 text-[11px] text-error-500 font-medium">{errors.startTime.message}</p>
+                    )}
+                  </div>
 
-              <div className="flex-1 relative">
-                <DatePicker
-                  id="endTime"
-                  mode="time"
-                  dateFormat="H:i"
-                  defaultDate={endTime}
-                  onChange={(_, dateStr) => setValue("endTime", dateStr, { shouldValidate: true })}
-                />
-                {errors.endTime?.message && (
-                  <p className="mt-1 text-[11px] text-error-500 font-medium">{errors.endTime.message}</p>
-                )}
+                  {/* End Time */}
+                  <div>
+                    <label htmlFor="end-hour" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                      End Time
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex-1">
+                        <Select
+                          id="end-hour"
+                          options={hourOptions}
+                          value={endHour}
+                          onChange={handleEndHourChange}
+                          disabled={isSubmitting}
+                          placeholder="Hour"
+                        />
+                      </div>
+                      <span className="text-gray-400 font-bold text-lg select-none">:</span>
+                      <div className="flex-1">
+                        <Select
+                          id="end-minute"
+                          options={minuteOptions}
+                          value={endMin}
+                          onChange={handleEndMinChange}
+                          disabled={isSubmitting}
+                          placeholder="Min"
+                        />
+                      </div>
+                    </div>
+                    {errors.endTime?.message && (
+                      <p className="mt-1 text-[11px] text-error-500 font-medium">{errors.endTime.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Hidden input elements to register startTime and endTime */}
+                <input type="hidden" {...register("startTime")} />
+                <input type="hidden" {...register("endTime")} />
+
+                {/* Duration badge / inline error */}
+                <div>
+                  {bothFilled && (
+                    endBeforeStart ? (
+                      <p className="text-[11px] text-error-500 font-medium">
+                        End time must be later than start time
+                      </p>
+                    ) : duration ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 rounded">
+                        Duration: {duration}
+                      </span>
+                    ) : null
+                  )}
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                    Shifts must be within the same day. Overnight shifts are not supported.
+                  </p>
+                </div>
               </div>
-            </div>
             )}
           </div>
 
           {/* Max Orders */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-              Default Max Orders Per Shift <span className="text-error-500">*</span>
-            </label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Default Max Orders Per Shift <span className="text-error-500">*</span>
+              </label>
+              <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
+                Allowed: 1 - 200
+              </span>
+            </div>
             <Input
               type="number"
               min={1}
+              max={200}
+              placeholder="e.g. 20"
               {...register("maxOrdersPerShift", { valueAsNumber: true })}
               error={!!errors.maxOrdersPerShift}
               hint={errors.maxOrdersPerShift?.message}
@@ -196,26 +326,28 @@ const ShiftFormModal: React.FC<ShiftFormModalProps> = ({
           </div>
 
           {/* Active Toggle */}
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3">
-            <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">Shift Active</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {timeLocked
-                  ? "Cannot deactivate while work schedules are Scheduled or On Duty"
-                  : "Enable this shift for work schedule assignments"}
-              </p>
+          {!timeLocked ? (
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">Shift Active</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Enable this shift for work schedule assignments
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  {...register("isActive")}
+                  disabled={isSubmitting}
+                  className="peer sr-only"
+                />
+                <div className="peer h-6 w-11 rounded-full bg-gray-300 transition-all after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all peer-checked:bg-brand-500 peer-checked:after:translate-x-full dark:bg-gray-600"></div>
+              </label>
             </div>
-            <label className={`relative inline-flex items-center ${timeLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
-              <input
-                type="checkbox"
-                id="isActive"
-                {...register("isActive")}
-                disabled={timeLocked}
-                className="peer sr-only"
-              />
-              <div className="peer h-6 w-11 rounded-full bg-gray-300 transition-all after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all peer-checked:bg-brand-500 peer-checked:after:translate-x-full dark:bg-gray-600"></div>
-            </label>
-          </div>
+          ) : (
+            <input type="hidden" {...register("isActive")} />
+          )}
 
           {/* Footer */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800 mt-2">

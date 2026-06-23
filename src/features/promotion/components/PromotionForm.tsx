@@ -176,7 +176,6 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
           stock: p.stock,
           salePrice: p.salePrice,
           discountPercent: p.discountPercent,
-          saleQuantity: p.saleQuantity,
         })),
         // Map startAt/endAt từ UTC (API) → local (datetime-local input)
         promotionTimeSlots: initialData.promotionTimeSlots?.map((ts) => ({
@@ -192,6 +191,7 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
             salePrice: ps.salePrice,
             discountPercent: ps.discountPercent,
             saleQuantity: ps.saleQuantity,
+            soldQuantity: ps.soldQuantity,
           })),
         })) ?? [],
       });

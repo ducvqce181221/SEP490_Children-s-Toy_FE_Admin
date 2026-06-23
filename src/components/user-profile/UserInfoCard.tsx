@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
@@ -10,7 +10,7 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
-import { EyeCloseIcon, EyeIcon } from "@/icons";
+import { CalenderIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import {
   changePasswordSchema,
   ChangePasswordFormValues,
@@ -18,10 +18,52 @@ import {
   ProfileInfoFormValues,
 } from "@/features/profile/types/profile.schema";
 
+const SEX_OPTIONS = [
+  { id: 1, label: "Nam" },
+  { id: 2, label: "Female" },
+  { id: 3, label: "Other" },
+] as const;
+
+const getSexLabelById = (id: number | null | undefined) => {
+  if (id == null) {
+    return "";
+  }
+
+  return SEX_OPTIONS.find((option) => option.id === id)?.label ?? "";
+};
+
+const getDateInputValue = (value: string | null | undefined) => {
+  if (!value) {
+    return "";
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : "";
+};
+
+const formatDob = (value: string | null | undefined) => {
+  const dateInput = getDateInputValue(value);
+  if (!dateInput) {
+    return "-";
+  }
+
+  const [year, month, day] = dateInput.split("-");
+  return `${day}/${month}/${year}`;
+};
+
+const getTodayLocalDateInput = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
 interface UserInfoCardProps {
   profile: Profile;
   isSaving: boolean;
-  onUpdateInfo: (payload: { phoneNumber: string }) => Promise<{
+  onUpdateInfo: (payload: { phoneNumber: string; dob: string; sexId: string }) => Promise<{
     success: boolean;
     message?: string;
     validationErrors?: Record<string, string[]>;
@@ -48,6 +90,7 @@ export default function UserInfoCard({
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const dobInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
     register: registerInfo,
@@ -57,7 +100,11 @@ export default function UserInfoCard({
     formState: { errors: infoErrors },
   } = useForm<ProfileInfoFormValues>({
     resolver: zodResolver(profileInfoSchema),
-    defaultValues: { phoneNumber: profile.phoneNumber ?? "" },
+    defaultValues: {
+      phoneNumber: profile.phoneNumber ?? "",
+      dob: getDateInputValue(profile.dob),
+      sexId: profile.sexId != null ? String(profile.sexId) : "",
+    },
   });
 
   const {
@@ -76,8 +123,12 @@ export default function UserInfoCard({
   });
 
   useEffect(() => {
-    resetInfoForm({ phoneNumber: profile.phoneNumber ?? "" });
-  }, [profile.phoneNumber, resetInfoForm]);
+    resetInfoForm({
+      phoneNumber: profile.phoneNumber ?? "",
+      dob: getDateInputValue(profile.dob),
+      sexId: profile.sexId != null ? String(profile.sexId) : "",
+    });
+  }, [profile.dob, profile.phoneNumber, profile.sexId, resetInfoForm]);
 
   const getServerValidationMessage = (
     validationErrors: Record<string, string[]> | undefined,
@@ -98,13 +149,27 @@ export default function UserInfoCard({
   };
 
   const submitInfoForm = async (values: ProfileInfoFormValues) => {
-    const result = await onUpdateInfo({ phoneNumber: values.phoneNumber });
+    const result = await onUpdateInfo({
+      phoneNumber: values.phoneNumber,
+      dob: values.dob,
+      sexId: values.sexId,
+    });
 
     if (!result.success) {
       const phoneMessage = getServerValidationMessage(result.validationErrors, ["PhoneNumber", "phoneNumber"]);
+      const dobMessage = getServerValidationMessage(result.validationErrors, ["Dob", "dob"]);
+      const sexMessage = getServerValidationMessage(result.validationErrors, ["SexId", "sexId"]);
 
       if (phoneMessage) {
         setInfoError("phoneNumber", { type: "server", message: phoneMessage });
+      }
+      if (dobMessage) {
+        setInfoError("dob", { type: "server", message: dobMessage });
+      }
+      if (sexMessage) {
+        setInfoError("sexId", { type: "server", message: sexMessage });
+      }
+      if (phoneMessage || dobMessage || sexMessage) {
         return;
       }
 
@@ -149,6 +214,17 @@ export default function UserInfoCard({
     closePasswordModal();
   };
 
+  const dobInputRegistration = registerInfo("dob");
+  const openDobPicker = () => {
+    const input = dobInputRef.current;
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    (input as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
+  };
+
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -167,6 +243,16 @@ export default function UserInfoCard({
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Phone</p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">{profile.phoneNumber ?? "-"}</p>
+            </div>
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Sex</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {(profile.sexName ?? getSexLabelById(profile.sexId)) || "-"}
+              </p>
+            </div>
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Date of Birth</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">{formatDob(profile.dob)}</p>
             </div>
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Role</p>
@@ -225,6 +311,44 @@ export default function UserInfoCard({
                 <Input type="text" {...registerInfo("phoneNumber")} />
                 {infoErrors.phoneNumber && (
                   <p className="mt-1.5 text-xs text-error-500">{infoErrors.phoneNumber.message}</p>
+                )}
+              </div>
+              <div>
+                <Label>Sex</Label>
+                <select
+                  {...registerInfo("sexId")}
+                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                >
+                  <option value="">Select sex</option>
+                  {SEX_OPTIONS.map((option) => (
+                    <option key={option.id} value={String(option.id)}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {infoErrors.sexId && (
+                  <p className="mt-1.5 text-xs text-error-500">{infoErrors.sexId.message}</p>
+                )}
+              </div>
+              <div>
+                <Label>Date of Birth</Label>
+                <div className="relative" onClick={openDobPicker}>
+                  <span className="absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                    <CalenderIcon className="size-5" />
+                  </span>
+                  <Input
+                    type="date"
+                    max={getTodayLocalDateInput()}
+                    className="pl-11"
+                    {...dobInputRegistration}
+                    ref={(element) => {
+                      dobInputRegistration.ref(element);
+                      dobInputRef.current = element;
+                    }}
+                  />
+                </div>
+                {infoErrors.dob && (
+                  <p className="mt-1.5 text-xs text-error-500">{infoErrors.dob.message}</p>
                 )}
               </div>
             </div>

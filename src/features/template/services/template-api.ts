@@ -1,5 +1,5 @@
 import axiosClient from "@/configs/axios-client";
-import { Template, TemplateFormData, PaginatedTemplates } from "../types/template";
+import { Template, UpdateTemplatePayload, TemplateFormData, PaginatedTemplates } from "../types/template";
 
 export const templateApi = {
   getTemplates: (
@@ -28,9 +28,9 @@ export const templateApi = {
     });
   },
 
-  createTemplate: (data: TemplateFormData) => 
+  createTemplate: (data: TemplateFormData) =>
     axiosClient.post<Template, TemplateFormData>("/templates", data),
 
-  updateTemplate: (id: number, data: TemplateFormData) =>
-    axiosClient.put<Template, TemplateFormData>(`/templates/${id}`, data),
+  saveTemplate: (id: number, data: UpdateTemplatePayload) =>
+    axiosClient.put<Template | void, UpdateTemplatePayload>(`/templates/${id}`, data),
 };

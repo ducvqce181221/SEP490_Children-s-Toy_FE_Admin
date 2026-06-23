@@ -18,10 +18,6 @@ export const productPromotionSchema = z.object({
       .max(99, "Discount must be at most 99%")
       .nullable()
   ),
-  saleQuantity: z.preprocess(
-    (val) => (val === "" || val === undefined || (typeof val === "number" && isNaN(val)) ? null : val),
-    z.number().min(1, "Quantity must be greater than 0").nullable()
-  ),
 }).refine(data => {
   if (data.originalPrice !== undefined) {
     return data.salePrice <= data.originalPrice;
@@ -30,14 +26,6 @@ export const productPromotionSchema = z.object({
 }, {
   message: "Sale price must be less than or equal to original price",
   path: ["salePrice"]
-}).refine(data => {
-  if (data.saleQuantity !== null && data.saleQuantity !== undefined && data.stock !== undefined) {
-    return data.saleQuantity <= data.stock;
-  }
-  return true;
-}, {
-  message: "Quantity cannot exceed available quantity",
-  path: ["saleQuantity"]
 });
 
 // ─── promotionProductSlotSchema — dùng cho FLASH_SALE (per-slot product) ─────
@@ -62,6 +50,7 @@ export const promotionProductSlotSchema = z.object({
     (val) => (val === "" || val === undefined || (typeof val === "number" && isNaN(val)) ? null : val),
     z.number().min(1, "Quantity must be at least 1")
   ),
+  soldQuantity: z.number().optional(),
 }).refine(data => {
   if (data.originalPrice !== undefined) {
     return data.salePrice <= data.originalPrice;

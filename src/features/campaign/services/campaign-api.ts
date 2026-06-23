@@ -90,6 +90,9 @@ export const campaignApi = {
   cancelCampaign: (id: number) =>
     axiosClient.post<void>(`/campaigns/${id}/cancel`),
 
+  deleteCampaign: (id: number) =>
+    axiosClient.delete<void>(`/campaigns/${id}`),
+
   submitCampaign: (id: number) =>
     axiosClient.post<void>(`/campaigns/${id}/submit`),
 
@@ -180,8 +183,16 @@ export const audienceApi = {
 
   searchAccounts: (searchTerm: string): Promise<AccountSearchItem[]> =>
     axiosClient
-      .get<{ items: AccountSearchItem[] }>("/accounts", {
+      .get<{ items: any[] }>("/customers", {
         params: { pageNumber: 1, pageSize: 20, searchTerm },
       })
-      .then((res) => res.items || []),
+      .then((res) =>
+        (res.items || []).map((item) => ({
+          accountId: item.accountId,
+          accountName: item.accountName,
+          email: item.email,
+          imageUrl: item.imageUrl,
+          roleId: 1,
+        }))
+      ),
 };

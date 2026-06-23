@@ -1,5 +1,5 @@
 import axiosClient from "@/configs/axios-client";
-import { ShiftTemplate, ShiftTemplateFormData } from "../types/shift";
+import { ShiftTemplate, ShiftTemplateFormData, ShiftTemplateUpdatePayload } from "../types/shift";
 import {
   CloneWeekResult,
   UpdateWorkScheduleResult,
@@ -21,16 +21,14 @@ export const scheduleApi = {
     axiosClient.post<ShiftTemplate>("/shift-templates", data),
 
   // Backend route: PUT /api/shift-templates/{shiftTemplateId}
-  updateShiftTemplate: (id: number, data: ShiftTemplateFormData) =>
+  // Chỉ gửi các field thực sự thay đổi (partial PATCH-style)
+  updateShiftTemplate: (id: number, data: ShiftTemplateUpdatePayload) =>
     axiosClient.put<ShiftTemplate>(`/shift-templates/${id}`, data),
 
   // NOTE: Backend does NOT have a DELETE endpoint for shift-templates.
   // Use updateShiftTemplate with isActive=false to deactivate instead.
-  deactivateShiftTemplate: (id: number, currentData: ShiftTemplateFormData) =>
-    axiosClient.put<ShiftTemplate>(`/shift-templates/${id}`, {
-      ...currentData,
-      isActive: false,
-    }),
+  deactivateShiftTemplate: (id: number) =>
+    axiosClient.put<ShiftTemplate>(`/shift-templates/${id}`, { isActive: false }),
 
   // ─── Work Schedules ──────────────────────────────────────────────────────────
   // Backend route: GET /api/work-schedules?workDate=...&status=...&roleId=...

@@ -120,7 +120,7 @@ const ShiftCard: React.FC<{
 
       {(shift.activeScheduleCount ?? 0) > 0 && (
         <p className="mb-4 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 rounded-lg px-3 py-2">
-          {shift.activeScheduleCount} active work schedule(s) — time changes and deactivation are locked.
+          {shift.activeScheduleCount} active schedule(s) — time changes and deactivation are locked.
         </p>
       )}
 
@@ -139,20 +139,28 @@ const ShiftCard: React.FC<{
               <PencilIcon className="w-4.6 h-4.6" />
               Edit
             </button>
-            {shift.isActive && (
-              <button
-                onClick={() => onDeactivate(shift)}
-                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-500 transition-all hover:border-error-300 hover:bg-error-50 hover:text-error-600 dark:border-gray-700 dark:hover:border-error-500/40 dark:hover:text-error-400"
-                title={
-                  (shift.activeScheduleCount ?? 0) > 0
-                    ? "Cannot deactivate while work schedules are active"
-                    : "Deactivate shift"
-                }
-              >
-                <TrashBinIcon className="w-4.6 h-4.6" />
-                Deactivate
-              </button>
-            )}
+            {shift.isActive && (() => {
+              const isDeactivateLocked = (shift.activeScheduleCount ?? 0) > 0;
+              return (
+                <button
+                  onClick={isDeactivateLocked ? undefined : () => onDeactivate(shift)}
+                  disabled={isDeactivateLocked}
+                  title={
+                    isDeactivateLocked
+                      ? "Cannot deactivate while schedules are Scheduled or On Duty"
+                      : "Deactivate shift"
+                  }
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-all
+                    ${isDeactivateLocked
+                      ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed dark:border-gray-800 dark:bg-gray-800/30 dark:text-gray-600"
+                      : "border-gray-200 text-gray-500 hover:border-error-300 hover:bg-error-50 hover:text-error-600 dark:border-gray-700 dark:hover:border-error-500/40 dark:hover:text-error-400"
+                    }`}
+                >
+                  <TrashBinIcon className="w-4.6 h-4.6" />
+                  Deactivate
+                </button>
+              );
+            })()}
             {!shift.isActive && (
               <button
                 onClick={() => onReactivate(shift)}

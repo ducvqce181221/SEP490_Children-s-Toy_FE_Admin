@@ -44,10 +44,9 @@ const WorkScheduleToolbar: React.FC<WorkScheduleToolbarProps> = ({
             </Button>
             <Button
               variant="primary"
-              startIcon={<PlusIcon className="w-5 h-5" />}
               onClick={onAssignClick}
             >
-              Assign Staff
+              +{" "}Assign Staff
             </Button>
           </div>
         )}

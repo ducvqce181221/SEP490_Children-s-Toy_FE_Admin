@@ -103,6 +103,28 @@ export function getDefaultAdminPath(account: AccountInfo | null): string {
   return "/admin/login";
 }
 
+/**
+ * Validates and returns a safe `returnTo` URL for admin login redirect.
+ * Prevents open redirects by enforcing /admin prefix and checking role access.
+ */
+export function getSafeAdminReturnTo(
+  returnTo: string | null | undefined,
+  account: AccountInfo | null,
+): string {
+  if (!returnTo) return "/admin";
+  try {
+    const decoded = decodeURIComponent(returnTo);
+    if (!decoded.startsWith("/admin")) return "/admin";
+    if (decoded === "/admin/login" || decoded.startsWith("/admin/login?")) return "/admin";
+    if (account && !isAllowedAdminPath(account, decoded.split("?")[0])) {
+      return getDefaultAdminPath(account);
+    }
+    return decoded;
+  } catch {
+    return "/admin";
+  }
+}
+
 export function canAccessAdminDashboardAnalytics(account: AccountInfo | null): boolean {
   if (!account) {
     return false;

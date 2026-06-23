@@ -26,6 +26,30 @@ interface RefundEditViewProps {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtDt = (v: string | null | undefined) => formatDisplayDate(v, "—");
 
+function cleanStatusName(status: string) {
+  switch (status) {
+    case "RefundRequested": return "Requested";
+    case "RefundApproved": return "Approved";
+    case "RefundPickupCreated": return "Pickup Created";
+    case "RefundShipping": return "Shipping";
+    case "RefundReceived": return "Received";
+    case "RefundInspectionPending": return "Inspection Pending";
+    case "RefundCompleted": return "Completed";
+    case "RefundCancelled": return "Cancelled";
+    case "RefundRejected": return "Rejected";
+    case "RefundDamage": return "Damaged";
+    case "RefundReturnShipmentCreated": return "Return Shipment Created";
+    case "RefundReturningToCustomer": return "Returning to Customer";
+    case "RefundReturnedToCustomer": return "Returned to Customer (Rejected)";
+    case "RefundReturnToCustomerFailed": return "Return to Customer Failed";
+    default:
+      if (status && status.startsWith("Refund")) {
+        return status.substring(6);
+      }
+      return status;
+  }
+}
+
 // ─── Inline badge components ───────────────────────────────────────────────────
 function getStatusBadge(status: string) {
   switch (status) {
@@ -37,7 +61,12 @@ function getStatusBadge(status: string) {
     case "RefundPickupCreated": return <Badge size="sm" color="primary">Pickup Created</Badge>;
     case "RefundShipping": return <Badge size="sm" color="primary">Shipping</Badge>;
     case "RefundReceived": return <Badge size="sm" color="primary">Received</Badge>;
-    case "RefundInspectionPending": return <Badge size="sm" color="warning">Inspection Pending</Badge>;
+    case "RefundInspectionPending": return <Badge size="sm" color="warning">Inspecting</Badge>;
+    case "RefundDamage": return <Badge size="sm" color="error">Damaged</Badge>;
+    case "RefundReturnShipmentCreated": return <Badge size="sm" color="primary">Return Created</Badge>;
+    case "RefundReturningToCustomer": return <Badge size="sm" color="primary">Returning</Badge>;
+    case "RefundReturnedToCustomer": return <Badge size="sm" color="success">Returned (Rejected)</Badge>;
+    case "RefundReturnToCustomerFailed": return <Badge size="sm" color="error">Return Failed</Badge>;
     default: return <Badge size="sm" color="light">{status}</Badge>;
   }
 }
@@ -219,10 +248,11 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
   const isStaff = role === "Staff";
   const isMerchandise = role === "Merchandise";
   const isAdmin = role === "Admin";
-  
+
   const isShippingStage = refund.refundStatus === "RefundShipping";
   const isReceivedStage = refund.refundStatus === "RefundReceived";
   const isInspectionStage = refund.refundStatus === "RefundInspectionPending";
+  const isMerchandiseStage = isShippingStage || isReceivedStage;
 
   /** System refund mis-rejected: Admin may Reopen (Rejected → Approved → Complete). */
   const canReopenSystemRejected =
@@ -438,16 +468,17 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
               {/* Right Column: Customer Info & Refund Meta (lg:col-span-1) */}
               <div className="lg:col-span-1 space-y-6">
                 <Section title="Customer Info">
-                  <div className="flex items-center gap-4 dark:bg-gray-700/30 rounded-xl p-3 bg-gray-50">
-                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-[#ff6a00] font-bold text-lg">
+                  <div className="flex items-center gap-4 dark:bg-gray-700/30 rounded-xl p-3 bg-gray-50 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-[#ff6a00] font-bold text-lg shrink-0">
                       {refund.customerName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-gray-800 dark:text-white/90 truncate">{refund.customerName}</div>
-                      <div className="text-xs text-gray-500 truncate">{refund.customerPhone}</div>
                       <div className="text-xs text-gray-500 truncate">{refund.customerEmail}</div>
                     </div>
                   </div>
+                  <InfoRow label="Phone Number" value={refund.customerPhone || "—"} />
+                  <InfoRow label="Address" value={refund.customerAddress || "—"} />
                 </Section>
 
                 <Section title="Refund Details">
@@ -462,20 +493,45 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                 </Section>
 
                 <Section title="Shipping & Quality Check">
-                  <InfoRow label="Tracking Code (Courier)" value={
+                  <InfoRow label="Tracking Code" value={
                     refund.shippingOrderCode ? (
                       <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.shippingOrderCode}</span>
                     ) : (
                       <span className="text-gray-400 italic text-xs">Pickup order not created</span>
                     )
                   } />
-                  <InfoRow label="Inspection Report" value={
+                  <InfoRow label="Return Tracking Code" value={
+                    refund.returnShippingOrderCode ? (
+                      <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.returnShippingOrderCode}</span>
+                    ) : (
+                      <span className="text-gray-400 italic text-xs">—</span>
+                    )
+                  } />
+                  <InfoRow label="Quality Inspection Status" value={
+                    refund.inspectionPassed === true ? (
+                      <Badge size="sm" color="success">Passed</Badge>
+                    ) : refund.inspectionPassed === false ? (
+                      <Badge size="sm" color="error">Failed</Badge>
+                    ) : (
+                      <Badge size="sm" color="warning">Pending</Badge>
+                    )
+                  } />
+                  <InfoRow label="Inspection Note" value={
+                    refund.inspectionNote ? (
+                      <span className="italic text-slate-600 bg-white/60 p-2.5 rounded border border-slate-100 block text-xs whitespace-pre-wrap">
+                        {refund.inspectionNote}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 italic text-xs">—</span>
+                    )
+                  } />
+                  <InfoRow label="Admin General Note" value={
                     refund.adminNote ? (
                       <span className="italic text-slate-600 bg-white/60 p-2.5 rounded border border-slate-100 block text-xs whitespace-pre-wrap">
                         {refund.adminNote}
                       </span>
                     ) : (
-                      <span className="text-gray-400 italic text-xs">No warehouse inspection notes</span>
+                      <span className="text-gray-400 italic text-xs">No shop admin notes</span>
                     )
                   } />
                 </Section>
@@ -508,16 +564,16 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                       <div className={`rounded-xl border p-4 ${isSystem ? "border-dashed border-gray-200 bg-gray-50/50 dark:border-gray-800 dark:bg-transparent" : "border-gray-100 bg-white shadow-xs dark:border-gray-800 dark:bg-gray-900/50"}`}>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="text-base font-semibold text-gray-800 dark:text-white/90">
-                            {h.statusName}
+                            {cleanStatusName(h.statusName)}
                           </span>
                           <span className="text-sm text-gray-400 dark:text-gray-500">{fmtDt(h.createdAt)}</span>
                         </div>
                         <p className={`mt-1 text-sm ${isSystem ? "italic text-gray-400 dark:text-gray-500" : "text-gray-500 dark:text-gray-400"}`}>
-                          Performed by: {isSystem ? "⚙ System (auto)" : h.changedByName}
+                          By: {isSystem ? "⚙ System (auto)" : h.changedByName}
                         </p>
                         {h.note && (
                           <p className="mt-3 border-l-2 border-gray-200 pl-3 text-sm italic text-gray-600 dark:border-gray-700 dark:text-gray-300">
-                            "{h.note}"
+                            &ldquo;{h.note}&rdquo;
                           </p>
                         )}
                       </div>
@@ -598,8 +654,8 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
           {!canChangeStatus && !isLoading && (
             <span className="self-center text-sm text-gray-400 dark:text-gray-500 mr-2">
               {refund.refundStatus === "RefundRejected" &&
-              refund.isSystemReturn &&
-              !isAdmin
+                refund.isSystemReturn &&
+                !isAdmin
                 ? "System refund was rejected — contact Admin to reopen (Approve → Complete)."
                 : "No actions available"}
             </span>
@@ -644,9 +700,9 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
         onClose={() => setIsAssignModalOpen(false)}
         isSubmitting={isReassigning}
         onAssign={handleAssign}
-        currentStatusName={isInspectionStage ? "Confirmed" : "Pending"}
+        targetRoleId={isMerchandiseStage ? 4 : 3}
         title="Reassign Refund"
-        description={`Admin reassigns the ${isInspectionStage ? "Merchandise" : "Staff"} slot for this refund request using an on-duty schedule.`}
+        description={`Admin reassigns the ${isMerchandiseStage ? "Merchandise" : "Staff"} slot for this refund request using an on-duty schedule.`}
       />
     </div>
   );

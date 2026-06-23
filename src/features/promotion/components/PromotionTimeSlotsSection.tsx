@@ -129,110 +129,106 @@ export function PromotionTimeSlotsSection({
             ) : (
               fields.map((field, index) => {
                 const status = field.status || "Scheduled";
-                
+
                 // Filter logic
                 if (activeTab === "Active_Scheduled" && status !== "Active" && status !== "Scheduled") return null;
                 if (activeTab === "Inactive" && status !== "Inactive") return null;
                 if (activeTab === "Expired" && status !== "Expired") return null;
 
-                const isTimeLocked = readonly || 
-                  status === "Active" || 
-                  status === "Expired" || 
+                const isTimeLocked = readonly ||
+                  status === "Active" ||
+                  status === "Expired" ||
                   (status === "Inactive" && hasTransactions);
-                
+
                 return (
-                <TableRow key={field.id}>
-                  <TableCell className="px-4 py-3 text-sm text-gray-500">
-                    {index + 1}
-                  </TableCell>
+                  <TableRow key={field.id}>
+                    <TableCell className="px-4 py-3 text-sm text-gray-500">
+                      {index + 1}
+                    </TableCell>
 
-                  {/* startAt */}
-                  <TableCell className="px-4 py-3">
-                    {isTimeLocked ? (
-                      <>
-                        <input type="hidden" {...form.register(`promotionTimeSlots.${index}.startAt`)} />
-                        <span className="text-sm dark:text-white">
-                          {formatLocalToDisplay(field.startAt)}
-                        </span>
-                      </>
-                    ) : (
-                      <Input
-                        type="datetime-local"
-                        absoluteHint={true}
-                        {...form.register(`promotionTimeSlots.${index}.startAt`)}
-                        error={!!form.formState.errors.promotionTimeSlots?.[index]?.startAt}
-                        hint={form.formState.errors.promotionTimeSlots?.[index]?.startAt?.message}
-                      />
-                    )}
-                  </TableCell>
-
-                  {/* endAt */}
-                  <TableCell className="px-4 py-3">
-                    {isTimeLocked ? (
-                      <>
-                        <input type="hidden" {...form.register(`promotionTimeSlots.${index}.endAt`)} />
-                        <span className="text-sm dark:text-white">
-                          {formatLocalToDisplay(field.endAt)}
-                        </span>
-                      </>
-                    ) : (
-                      <Input
-                        type="datetime-local"
-                        absoluteHint={true}
-                        {...form.register(`promotionTimeSlots.${index}.endAt`)}
-                        error={!!form.formState.errors.promotionTimeSlots?.[index]?.endAt}
-                        hint={form.formState.errors.promotionTimeSlots?.[index]?.endAt?.message}
-                      />
-                    )}
-                  </TableCell>
-
-                  {/* status */}
-                  <TableCell className="px-4 py-3">
-                    <input type="hidden" {...form.register(`promotionTimeSlots.${index}.status`)} />
-                    <span className="text-sm rounded text-gray-900 dark:text-white">
-                      {field.status || "Scheduled"}
-                    </span>
-                  </TableCell>
-
-                  {!readonly && (
-                    <TableCell className="px-4 py-3 text-center">
-                      {!isTimeLocked && status === "Scheduled" && (
-                        <button
-                          type="button"
-                          onClick={() => remove(index)}
-                          className="text-gray-400 hover:text-error-500 transition-colors p-1"
-                          title="Delete slot"
-                        >
-                          <TrashBinIcon className="w-5 h-5" />
-                        </button>
-                      )}
-                      {status === "Active" && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm("Are you sure you want to stop this Active time slot? It will become Inactive and cannot be resumed.")) {
-                              update(index, { ...field, status: "Inactive" });
-                            }
-                          }}
-                          className="text-gray-400 hover:text-error-500 transition-colors p-1"
-                          title="Emergency Stop"
-                        >
-                          <CloseIcon className="w-5 h-5" />
-                        </button>
+                    {/* startAt */}
+                    <TableCell className="px-4 py-3">
+                      {isTimeLocked ? (
+                        <>
+                          <input type="hidden" {...form.register(`promotionTimeSlots.${index}.startAt`)} />
+                          <span className="text-sm dark:text-white">
+                            {formatLocalToDisplay(field.startAt)}
+                          </span>
+                        </>
+                      ) : (
+                        <Input
+                          type="datetime-local"
+                          absoluteHint={true}
+                          {...form.register(`promotionTimeSlots.${index}.startAt`)}
+                          error={!!form.formState.errors.promotionTimeSlots?.[index]?.startAt}
+                          hint={form.formState.errors.promotionTimeSlots?.[index]?.startAt?.message}
+                        />
                       )}
                     </TableCell>
-                  )}
-                </TableRow>
-              )})
+
+                    {/* endAt */}
+                    <TableCell className="px-4 py-3">
+                      {isTimeLocked ? (
+                        <>
+                          <input type="hidden" {...form.register(`promotionTimeSlots.${index}.endAt`)} />
+                          <span className="text-sm dark:text-white">
+                            {formatLocalToDisplay(field.endAt)}
+                          </span>
+                        </>
+                      ) : (
+                        <Input
+                          type="datetime-local"
+                          absoluteHint={true}
+                          {...form.register(`promotionTimeSlots.${index}.endAt`)}
+                          error={!!form.formState.errors.promotionTimeSlots?.[index]?.endAt}
+                          hint={form.formState.errors.promotionTimeSlots?.[index]?.endAt?.message}
+                        />
+                      )}
+                    </TableCell>
+
+                    {/* status */}
+                    <TableCell className="px-4 py-3">
+                      <input type="hidden" {...form.register(`promotionTimeSlots.${index}.status`)} />
+                      <span className="text-sm rounded text-gray-900 dark:text-white">
+                        {field.status || "Scheduled"}
+                      </span>
+                    </TableCell>
+
+                    {!readonly && (
+                      <TableCell className="px-4 py-3 text-center">
+                        {!isTimeLocked && status === "Scheduled" && (
+                          <button
+                            type="button"
+                            onClick={() => remove(index)}
+                            className="text-gray-400 hover:text-error-500 transition-colors p-1"
+                            title="Delete slot"
+                          >
+                            <TrashBinIcon className="w-5 h-5" />
+                          </button>
+                        )}
+                        {status === "Active" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm("Are you sure you want to stop this Active time slot? It will become Inactive and cannot be resumed.")) {
+                                update(index, { ...field, status: "Inactive" });
+                              }
+                            }}
+                            className="text-gray-400 hover:text-error-500 transition-colors p-1"
+                            title="Emergency Stop"
+                          >
+                            <CloseIcon className="w-5 h-5" />
+                          </button>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>
       </div>
-
-      {/* Ghi chú múi giờ */}
-      <p className="text-xs text-gray-400">
-        * Time is displayed in your local timezone. It will be converted to UTC before saving.
-      </p>
     </div>
   );
 }

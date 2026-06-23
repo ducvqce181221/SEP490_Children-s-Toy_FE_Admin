@@ -51,9 +51,6 @@ export interface ProductPromotion {
   originalPrice: number;
   salePrice: number;
   discountPercent: number | null;
-  saleQuantity: number | null;
-  soldQuantity: number;
-  reservedQuantity: number;
   stock: number;
 }
 
@@ -97,13 +94,25 @@ export interface PromotionListDto {
   createdAt: string;
 }
 
+export interface ProductPromotionInfoDto {
+  promotionId: number;
+  promotionName: string;
+  promotionType: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  salePrice: number;
+  discountPercent: number | null;
+  saleQuantity?: number | null;
+  soldQuantity?: number | null;
+}
+
 // ─── Create/Update DTOs (gửi lên API) ─────────────────────────────────────────
 
 export interface CreateProductPromotionDto {
   productId: number;
   salePrice: number;
   discountPercent: number | null;
-  saleQuantity: number | null;
 }
 
 /** Gửi kèm trong CreatePromotionTimeSlotDto */

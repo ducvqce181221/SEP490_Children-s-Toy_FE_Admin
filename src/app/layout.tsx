@@ -27,10 +27,10 @@ export default function RootLayout({
               {children}
               <Toaster
                 position="top-right"
-                containerStyle={{ zIndex: 99999 }}
+                containerStyle={{ zIndex: 9999999 }}
                 toastOptions={{
                   style: {
-                    zIndex: 99999,
+                    zIndex: 9999999,
                   },
                 }}
               />

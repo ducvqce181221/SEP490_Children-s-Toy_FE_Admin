@@ -6,6 +6,9 @@ export interface Profile {
   accountName: string;
   email: string;
   phoneNumber: string | null;
+  dob: string | null;
+  sexId: number | null;
+  sexName: string | null;
   imageUrl: string | null;
   isActive: boolean;
   createdAt: string;
@@ -15,6 +18,8 @@ export interface Profile {
 export interface UpdateProfileRequest {
   imageUrl?: string | null;
   phoneNumber?: string | null;
+  dob?: string | null;
+  sexId?: number | null;
 }
 
 export interface ChangePasswordRequest {
