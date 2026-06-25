@@ -145,7 +145,7 @@ export default function BlogReviewManageTable() {
 
   const canRejectTarget = (target: EditTarget) => {
     if (currentUserIsAdmin) return true;
-    return currentUserIsStaff && target.kind === "review" && isCustomerRole(target.accountRoleName);
+    return currentUserIsStaff && isCustomerRole(target.accountRoleName);
   };
 
   const editTargetCanReject = editTarget ? canRejectTarget(editTarget) : false;
