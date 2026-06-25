@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { useAuthContext } from "@/context/AuthContext";
 import Pagination from "@/components/common/Pagination";
 import { Modal } from "@/components/ui/modal";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
@@ -68,11 +69,27 @@ const getRoleTone = (name: string) => {
       };
 };
 
+const ROLE_ID = {
+  ADMIN: 2,
+  STAFF: 3,
+} as const;
+
+const normalizeRoleName = (roleName?: string | null) => (roleName ?? "").trim().toLowerCase();
+
+const isAdminAccount = (account: { roleId: number; roleName: string } | null) =>
+  account?.roleId === ROLE_ID.ADMIN || normalizeRoleName(account?.roleName) === "admin";
+
+const isStaffAccount = (account: { roleId: number; roleName: string } | null) =>
+  account?.roleId === ROLE_ID.STAFF || normalizeRoleName(account?.roleName) === "staff";
+
+const isCustomerRole = (roleName: string) => normalizeRoleName(roleName) === "customer";
+
 type EditTarget =
-  | { kind: "review"; reviewBlogId: number; comment: string; moderationStatus: BlogReviewModerationStatus; banReasonId: number | null }
-  | { kind: "reply"; replyBlogId: number; comment: string; moderationStatus: BlogReviewModerationStatus; banReasonId: number | null };
+  | { kind: "review"; reviewBlogId: number; comment: string; moderationStatus: BlogReviewModerationStatus; banReasonId: number | null; accountRoleName: string }
+  | { kind: "reply"; replyBlogId: number; comment: string; moderationStatus: BlogReviewModerationStatus; banReasonId: number | null; accountRoleName: string };
 
 export default function BlogReviewManageTable() {
+  const { account } = useAuthContext();
   const [items, setItems] = useState<BlogReview[]>([]);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -122,6 +139,22 @@ export default function BlogReviewManageTable() {
     const end = Math.min(pageNumber * pageSize, totalCount);
     return `Showing ${start} - ${end} / ${totalCount} reviews`;
   }, [pageNumber, pageSize, totalCount]);
+
+  const currentUserIsAdmin = isAdminAccount(account);
+  const currentUserIsStaff = isStaffAccount(account);
+
+  const canRejectTarget = (target: EditTarget) => {
+    if (currentUserIsAdmin) return true;
+    return currentUserIsStaff && target.kind === "review" && isCustomerRole(target.accountRoleName);
+  };
+
+  const editTargetCanReject = editTarget ? canRejectTarget(editTarget) : false;
+  const moderationStatusOptions = [
+    ...(editTarget?.moderationStatus === "Approved" ? [] : [{ value: "ManualReview", label: "Manual" }]),
+    { value: "Approved", label: "Approved" },
+    ...(editTargetCanReject || editTarget?.moderationStatus === "Rejected" ? [{ value: "Rejected", label: "Rejected" }] : []),
+  ];
+  const isRejectUnauthorized = editStatus === "Rejected" && !!editTarget && !editTargetCanReject;
 
   const changeModerationStatus = async (target: EditTarget, next: BlogReviewModerationStatus, banReasonId?: number) => {
     try {
@@ -269,6 +302,7 @@ export default function BlogReviewManageTable() {
                                 comment: review.comment,
                                 moderationStatus: review.moderationStatus,
                                 banReasonId: review.banReasonId,
+                                accountRoleName: review.accountRoleName,
                               });
                               setEditStatus(review.moderationStatus);
                               setSelectedBanReasonId(review.banReasonId ?? "");
@@ -324,6 +358,7 @@ export default function BlogReviewManageTable() {
                                     comment: reply.comment,
                                     moderationStatus: reply.moderationStatus,
                                     banReasonId: reply.banReasonId,
+                                    accountRoleName: reply.accountRoleName,
                                   });
                                   setEditStatus(reply.moderationStatus);
                                   setSelectedBanReasonId(reply.banReasonId ?? "");
@@ -360,11 +395,7 @@ export default function BlogReviewManageTable() {
           <p className="text-xs text-gray-600 dark:text-gray-300">{editTarget?.comment}</p>
           <Label>Moderation status</Label>
           <Select
-            options={[
-              ...(editTarget?.moderationStatus === "Approved" ? [] : [{ value: "ManualReview", label: "Manual" }]),
-              { value: "Approved", label: "Approved" },
-              { value: "Rejected", label: "Rejected" },
-            ]}
+            options={moderationStatusOptions}
             value={editStatus}
             onChange={(e) => setEditStatus(e.target.value as BlogReviewModerationStatus)}
           />
@@ -374,7 +405,7 @@ export default function BlogReviewManageTable() {
           </>}
           <div className="flex justify-end gap-2">
             <button onClick={() => setEditTarget(null)} className="rounded border px-3 py-1 text-xs text-black dark:text-white">Cancel</button>
-            <button onClick={() => editTarget && void changeModerationStatus(editTarget, editStatus, editStatus === "Rejected" ? Number(selectedBanReasonId) : undefined)} disabled={editStatus === "Rejected" && selectedBanReasonId === ""} className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-50">Save</button>
+            <button onClick={() => editTarget && void changeModerationStatus(editTarget, editStatus, editStatus === "Rejected" ? Number(selectedBanReasonId) : undefined)} disabled={(editStatus === "Rejected" && selectedBanReasonId === "") || isRejectUnauthorized} className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-50">Save</button>
           </div>
         </div>
       </Modal>

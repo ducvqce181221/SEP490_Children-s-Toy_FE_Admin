@@ -117,6 +117,7 @@ export interface BlogReviewReply {
   reviewBlogId: number;
   accountId: number;
   accountName: string;
+  accountRoleName: string;
   accountImageUrl: string | null;
   parentReplyId: number | null;
   replyToAccountId: number | null;
@@ -146,6 +147,7 @@ export interface BlogReview {
   blogTitle: string;
   accountId: number;
   accountName: string;
+  accountRoleName: string;
   accountImageUrl: string | null;
   comment: string;
   status: "Visible" | "Hidden";
