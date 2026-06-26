@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import Button from "@/components/ui/button/Button";
@@ -10,6 +10,7 @@ import { ReviewStatusModal } from "./ReviewStatusModal";
 import { ReviewReplyForm } from "./ReviewReplyForm";
 import { ReviewReply } from "../types/review";
 import { PencilIcon, TrashBinIcon, ChevronLeftIcon } from "@/icons/index";
+import { Popover } from "@/components/ui/popover/Popover";
 
 interface ReviewEditViewProps {
   reviewId: number;
@@ -24,6 +25,100 @@ const StarRating = ({ rating }: { rating: number }) => (
     ))}
   </div>
 );
+
+interface ReviewReplyItemProps {
+  reply: ReviewReply;
+  reviewId: number;
+  onEdit: (reply: ReviewReply) => void;
+  onDeleteConfirm: (reviewId: number, replyProductId: number) => Promise<void>;
+  isSubmitting: boolean;
+}
+
+const ReviewReplyItem: React.FC<ReviewReplyItemProps> = ({
+  reply,
+  reviewId,
+  onEdit,
+  onDeleteConfirm,
+  isSubmitting,
+}) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteBtnRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <div className="p-4 rounded-xl border border-brand-100 dark:border-brand-900/20 bg-brand-50/30 dark:bg-brand-900/10 relative">
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-brand-700 dark:text-brand-400 text-sm">{reply.staffName}</span>
+          <span className="text-xs text-gray-400 uppercase tracking-wider">{formatDisplayDate(reply.createdAt)}</span>
+        </div>
+        <div className="flex gap-1">
+          <button 
+            onClick={() => onEdit(reply)} 
+            className="p-1.5 text-gray-400 hover:text-brand-500 transition-colors" 
+            title="Edit"
+            disabled={isSubmitting}
+          >
+            <PencilIcon className="w-5 h-5" />
+          </button>
+          <button 
+            ref={deleteBtnRef}
+            onClick={() => setIsDeleting(true)} 
+            className="p-1.5 text-gray-400 hover:text-error-500 transition-colors" 
+            title="Delete"
+            disabled={isSubmitting}
+          >
+            <TrashBinIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{reply.content}</p>
+      {reply.updatedAt && (
+        <div className="mt-2 text-xs text-gray-400 italic">
+          Edited on {formatDisplayDate(reply.updatedAt)}
+        </div>
+      )}
+
+      {/* Delete Confirmation Popover */}
+      <Popover
+        isOpen={isDeleting}
+        onClose={() => setIsDeleting(false)}
+        triggerRef={deleteBtnRef}
+        position="top-end"
+        className="p-4"
+      >
+        <div className="w-[200px] text-start">
+          <h4 className="text-sm font-semibold text-gray-800 dark:text-white/90 mb-1">Confirm Delete</h4>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            Are you sure you want to delete this reply?
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsDeleting(false)}
+              className="h-8 text-xs px-3"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="primary" 
+              size="sm" 
+              onClick={async () => {
+                await onDeleteConfirm(reviewId, reply.replyProductId);
+                setIsDeleting(false);
+              }}
+              className="h-8 text-xs px-3 bg-error-500 hover:bg-error-600 border-error-500 text-white"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </div>
+      </Popover>
+    </div>
+  );
+};
 
 export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
   const router = useRouter();
@@ -213,28 +308,14 @@ export const ReviewEditView: React.FC<ReviewEditViewProps> = ({ reviewId }) => {
               ) : (
                 <div className="space-y-4">
                   {review.replies.map((reply, index) => (
-                    <div key={`${reply.replyProductId}-${index}`} className="p-4 rounded-xl border border-brand-100 dark:border-brand-900/20 bg-brand-50/30 dark:bg-brand-900/10">
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-brand-700 dark:text-brand-400 text-sm">{reply.staffName}</span>
-                          <span className="text-xs text-gray-400 uppercase tracking-wider">{formatDisplayDate(reply.createdAt)}</span>
-                        </div>
-                        <div className="flex gap-1">
-                          <button onClick={() => handleEditReply(reply)} className="p-1.5 text-gray-400 hover:text-brand-500 transition-colors" title="Edit">
-                            <PencilIcon className="w-5 h-5" />
-                          </button>
-                          <button onClick={() => deleteReply(review.reviewId, reply.replyProductId)} className="p-1.5 text-gray-400 hover:text-error-500 transition-colors" title="Delete">
-                            <TrashBinIcon className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{reply.content}</p>
-                      {reply.updatedAt && (
-                        <div className="mt-2 text-xs text-gray-400 italic">
-                          Edited on {formatDisplayDate(reply.updatedAt)}
-                        </div>
-                      )}
-                    </div>
+                    <ReviewReplyItem
+                      key={`${reply.replyProductId}-${index}`}
+                      reply={reply}
+                      reviewId={review.reviewId}
+                      onEdit={handleEditReply}
+                      onDeleteConfirm={deleteReply}
+                      isSubmitting={isSubmitting}
+                    />
                   ))}
                 </div>
               )}

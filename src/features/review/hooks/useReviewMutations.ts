@@ -52,8 +52,6 @@ export const useReviewMutations = (onSuccess?: () => void) => {
   };
 
   const deleteReply = async (id: number, replyProductId: number) => {
-    if (!confirm("Are you sure you want to delete this reply?")) return;
-    
     setIsSubmitting(true);
     try {
       await reviewApi.deleteReply(id, replyProductId);
