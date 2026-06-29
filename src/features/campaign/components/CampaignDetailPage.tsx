@@ -465,12 +465,13 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
     fetchCampaignDetail();
   }, [fetchCampaignDetail]);
 
-  const { submitCampaign, reviewCampaign, recallCampaign, isSubmitting } = useCampaignMutations(() => {
-    fetchCampaignDetail();
-    setSubmitId(null);
-    setReviewId(null);
-    setReviewAction(null);
-  });
+  const { submitCampaign, reviewCampaign, recallCampaign, cancelCampaign, isSubmitting } =
+    useCampaignMutations(() => {
+      fetchCampaignDetail();
+      setSubmitId(null);
+      setReviewId(null);
+      setReviewAction(null);
+    });
 
   const handleConfirmSubmit = async () => {
     if (submitId) {
@@ -478,16 +479,16 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
     }
   };
 
-  const handleApprove = async () => {
-    if (reviewId) {
-      await reviewCampaign(reviewId, { action: "Approved" });
-    }
+  const handleApprove = async (): Promise<boolean> => {
+    if (!reviewId) return false;
+    const result = await reviewCampaign(reviewId, { action: "Approved" });
+    return result.success;
   };
 
-  const handleReject = async (reason: string) => {
-    if (reviewId) {
-      await reviewCampaign(reviewId, { action: "Rejected", reviewNote: reason });
-    }
+  const handleReject = async (reason: string): Promise<{ ok: boolean; reviewNoteError?: string }> => {
+    if (!reviewId) return { ok: false };
+    const result = await reviewCampaign(reviewId, { action: "Rejected", reviewNote: reason });
+    return { ok: result.success, reviewNoteError: result.reviewNoteError };
   };
 
   const handleCancelClick = () => {
@@ -497,16 +498,12 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
   const handleConfirmCancel = async () => {
     if (!campaign) return;
     setIsCancelling(true);
-    try {
-      await campaignApi.cancelCampaign(campaignId);
-      toast.success("Campaign has been cancelled");
-      setCampaign((prev) => prev ? { ...prev, status: "Cancelled" } : prev);
+    const ok = await cancelCampaign(campaignId);
+    if (ok) {
+      setCampaign((prev) => (prev ? { ...prev, status: "Cancelled" } : prev));
       setIsConfirmModalOpen(false);
-    } catch {
-      toast.error("Cannot cancel campaign. Please try again.");
-    } finally {
-      setIsCancelling(false);
     }
+    setIsCancelling(false);
   };
 
   if (isLoading) {
@@ -536,6 +533,9 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
   };
 
   const isEditable = campaign.status === "Draft" || campaign.status === "Rejected";
+  const isAdmin = account?.roleName?.toLowerCase() === "admin";
+  // Owner = người tạo campaign; Admin luôn được phép thao tác mọi campaign
+  const isOwnerOrAdmin = isAdmin || account?.accountId === campaign.createdByAccountId;
 
   const getTargetValueDisplay = (target: { targetType: string; targetValue: string }) => {
     if (target.targetType === "ROLE_ID") {
@@ -582,7 +582,10 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {(campaign.status === "Draft" || campaign.status === "Rejected") && (
+          {/* Submit for Review — chỉ owner, không phải Admin */}
+          {(campaign.status === "Draft" || campaign.status === "Rejected") &&
+            !isAdmin &&
+            isOwnerOrAdmin && (
             <button
               title={campaign.status === "Rejected" ? "Re-submit for Review" : "Submit for Review"}
               onClick={() => setSubmitId(campaign.campaignId)}
@@ -595,9 +598,11 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
             </button>
           )}
 
+          {/* Recall — chỉ người submit, không phải Admin */}
           {campaign.status === "PendingApproval" &&
             campaign.submittedByAccountId != null &&
-            account?.accountId === campaign.submittedByAccountId && (
+            account?.accountId === campaign.submittedByAccountId &&
+            !isAdmin && (
               <button
                 type="button"
                 title="Recall — move back to Draft"
@@ -612,7 +617,8 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
               </button>
             )}
 
-          {campaign.status === "PendingApproval" && account?.roleName?.toLowerCase() === "admin" && (
+          {/* Approve / Reject — chỉ Admin, khi đang PendingApproval */}
+          {campaign.status === "PendingApproval" && isAdmin && (
             <>
               <button
                 title="Approve Campaign"
@@ -637,7 +643,9 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
             </>
           )}
 
+          {/* Reschedule — owner hoặc Admin */}
           {campaign.status === "Scheduled" &&
+            isOwnerOrAdmin &&
             (campaign.maxRescheduleCount == null ||
               (campaign.rescheduleCount ?? 0) < campaign.maxRescheduleCount) && (
               <Link
@@ -651,7 +659,8 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
               </Link>
             )}
 
-          {campaign.status === "Approved" && (
+          {/* Schedule — owner hoặc Admin */}
+          {campaign.status === "Approved" && isOwnerOrAdmin && (
             <Link
               href={campaignSchedulePath(campaignId, "schedule")}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-medium hover:bg-purple-700 transition-colors"
@@ -663,7 +672,8 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
             </Link>
           )}
 
-          {isEditable && (
+          {/* Edit — owner hoặc Admin */}
+          {isEditable && isOwnerOrAdmin && (
             <>
               <Link
                 href={`/admin/campaigns/${campaignId}/edit`}
@@ -677,7 +687,8 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
             </>
           )}
 
-          {["Draft", "Approved", "Scheduled"].includes(campaign.status) && (
+          {/* Cancel — owner hoặc Admin */}
+          {["Draft", "Approved", "Scheduled"].includes(campaign.status) && isOwnerOrAdmin && (
             <button
               onClick={handleCancelClick}
               disabled={isCancelling}

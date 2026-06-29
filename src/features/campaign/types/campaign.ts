@@ -134,6 +134,10 @@ export interface CampaignScheduleBounds {
   promotionType?: string | null;
   referenceRulesApplied: boolean;
   referenceHintWarning?: string | null;
+  minLeadMinutes?: number;
+  maxFutureDays?: number;
+  voucherEndBufferHours?: number;
+  saleLeadWindowHours?: number;
 }
 
 // ─── List item (GET /campaigns paged list) ────────────────────────────────────

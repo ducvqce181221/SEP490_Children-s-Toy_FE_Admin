@@ -335,16 +335,12 @@ export const CampaignListPage: React.FC = () => {
     if (!campaign) return;
 
     setCancellingId(campaign.campaignId);
-    try {
-      await campaignApi.cancelCampaign(campaign.campaignId);
-      toast.success("Campaign cancelled successfully");
+    const ok = await cancelCampaign(campaign.campaignId);
+    if (ok) {
       fetchData();
       setConfirmCancelState({ isOpen: false, campaign: null });
-    } catch {
-      toast.error("Failed to cancel campaign. Please try again.");
-    } finally {
-      setCancellingId(null);
     }
+    setCancellingId(null);
   };
 
   const handleDeleteClick = (campaign: CampaignListItem) => {
@@ -356,24 +352,20 @@ export const CampaignListPage: React.FC = () => {
     if (!campaign) return;
 
     setDeletingId(campaign.campaignId);
-    try {
-      await campaignApi.deleteCampaign(campaign.campaignId);
-      toast.success("Campaign deleted successfully");
+    const ok = await deleteCampaign(campaign.campaignId);
+    if (ok) {
       fetchData();
       setConfirmDeleteState({ isOpen: false, campaign: null });
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.message || "Failed to delete campaign. Please try again.";
-      toast.error(errorMsg);
-    } finally {
-      setDeletingId(null);
     }
+    setDeletingId(null);
   };
 
-  const { submitCampaign, reviewCampaign, isSubmitting } = useCampaignMutations(() => {
-    fetchData();
-    setSubmitId(null);
-    setReviewId(null);
-  });
+  const { submitCampaign, reviewCampaign, cancelCampaign, deleteCampaign, isSubmitting } =
+    useCampaignMutations(() => {
+      fetchData();
+      setSubmitId(null);
+      setReviewId(null);
+    });
 
   const handleConfirmSubmit = async () => {
     if (submitId) {
@@ -381,16 +373,16 @@ export const CampaignListPage: React.FC = () => {
     }
   };
 
-  const handleApprove = async () => {
-    if (reviewId) {
-      await reviewCampaign(reviewId, { action: "Approved" });
-    }
+  const handleApprove = async (): Promise<boolean> => {
+    if (!reviewId) return false;
+    const result = await reviewCampaign(reviewId, { action: "Approved" });
+    return result.success;
   };
 
-  const handleReject = async (reason: string) => {
-    if (reviewId) {
-      await reviewCampaign(reviewId, { action: "Rejected", reviewNote: reason });
-    }
+  const handleReject = async (reason: string): Promise<{ ok: boolean; reviewNoteError?: string }> => {
+    if (!reviewId) return { ok: false };
+    const result = await reviewCampaign(reviewId, { action: "Rejected", reviewNote: reason });
+    return { ok: result.success, reviewNoteError: result.reviewNoteError };
   };
 
   const items = data?.items ?? [];
