@@ -434,11 +434,113 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                         </table>
                       </div>
 
-                      <div className="mt-6 flex flex-col items-end gap-2 text-sm">
-                        <div className="mt-2 flex w-80 justify-between items-center rounded-xl px-4 py-3">
-                          <span className="font-bold text-[#ff6a00]">Total Refund Amount</span>
-                          <span className="text-lg font-black text-[#ff6a00]">{formatCurrency(refund.approvedAmount)}</span>
-                        </div>
+                      <div className="mt-6 space-y-2 text-sm">
+                        {/* -----------------------------------------------------------
+                         * STATUS-AWARE FINANCIAL SUMMARY
+                         * - Pre-Approve (RefundRequested / Rejected / Cancelled):
+                         *   FinalRefundAmount = 0 (DB default, NOT yet computed).
+                         *   → Always show ApprovedAmount as the expected refund.
+                         * - Post-Approve:
+                         *   FinalRefundAmount has been explicitly set by the service.
+                         *   → Show breakdown + actual final amount.
+                         * ----------------------------------------------------------- */}
+                        {(() => {
+                          const PRE_APPROVE_STATUSES = ["RefundRequested", "RefundRejected", "RefundCancelled"];
+                          const isPreApproval = PRE_APPROVE_STATUSES.includes(refund.refundStatus);
+
+                          // Pre-approval: FinalRefundAmount = 0 is just DB default, show ApprovedAmount
+                          if (isPreApproval) {
+                            return (
+                              <div className="rounded-xl border border-slate-200 bg-slate-50/50 dark:border-gray-700 dark:bg-gray-800/40 overflow-hidden">
+                                <div className="px-4 py-2 border-b border-slate-100 dark:border-gray-700">
+                                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Financial Summary</span>
+                                </div>
+                                <div className="px-4 py-3 space-y-2">
+                                  <div className="flex justify-between border-t border-dashed border-slate-200 pt-2 dark:border-gray-700">
+                                    <span className="font-bold text-[#ff6a00]">Approved Amount</span>
+                                    <span className="text-lg font-black text-[#ff6a00]">
+                                      {formatCurrency(refund.approvedAmount)}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-gray-400 italic">
+                                    Return shipping fee will be determined upon approval.
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // Post-approval: FinalRefundAmount was explicitly set
+                          // If finalRefundAmount is still 0 AND returnShippingFeeBy = "Store" → likely a data issue, fallback safely
+                          const effectiveFinal =
+                            (refund.finalRefundAmount != null && refund.finalRefundAmount > 0)
+                              ? refund.finalRefundAmount
+                              : refund.returnShippingFeeBy === "Customer"
+                                ? refund.finalRefundAmount ?? 0   // genuine 0 (fee ≥ approvedAmount)
+                                : refund.approvedAmount;           // Store pays → always full amount
+
+                          const hasDeduction = (refund.returnShippingFee ?? 0) > 0 && refund.returnShippingFeeBy === "Customer";
+                          const isGenuineZero = refund.returnShippingFeeBy === "Customer" && refund.finalRefundAmount === 0;
+
+                          return (
+                            <>
+                              <div className="rounded-xl border border-slate-200 bg-slate-50/50 dark:border-gray-700 dark:bg-gray-800/40 overflow-hidden">
+                                <div className="px-4 py-2 border-b border-slate-100 dark:border-gray-700">
+                                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Financial Summary</span>
+                                </div>
+                                <div className="px-4 py-3 space-y-2">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">Approved amount</span>
+                                    <span className="font-medium text-gray-800 dark:text-white/90">{formatCurrency(refund.approvedAmount)}</span>
+                                  </div>
+                                  {hasDeduction && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500">
+                                        Return shipping fee
+                                        <span className="ml-2 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                                          Customer pays
+                                        </span>
+                                      </span>
+                                      <span className="font-medium text-amber-600">-{formatCurrency(refund.returnShippingFee ?? 0)}</span>
+                                    </div>
+                                  )}
+                                  {!hasDeduction && refund.returnShippingFeeBy === "Store" && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500">Return shipping fee</span>
+                                      <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                                        Store bears cost
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between border-t border-dashed border-slate-200 pt-2 dark:border-gray-700">
+                                    <span className="font-bold text-[#ff6a00]">Final Refund Amount</span>
+                                    <span className="text-lg font-black text-[#ff6a00]">
+                                      {formatCurrency(effectiveFinal)}
+                                    </span>
+                                  </div>
+                                </div>
+                                {refund.returnShippingFeeNote && (
+                                  <div className="border-t border-slate-100 px-4 py-2 dark:border-gray-700">
+                                    <p className="text-[11px] text-gray-400">
+                                      Override reason: <span className="italic text-gray-500">{refund.returnShippingFeeNote}</span>
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Warning khi FinalRefundAmount = 0đ THỰC SỰ (post-approval) */}
+                              {isGenuineZero && (
+                                <div className="flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+                                  <span className="text-amber-500">⚠</span>
+                                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                                    Return shipping fee equals or exceeds approved amount.
+                                    Customer will receive <strong>0đ</strong>.
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </>
                   ) : (
@@ -534,6 +636,21 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                       <span className="text-gray-400 italic text-xs">No shop admin notes</span>
                     )
                   } />
+                  {/* Damage Responsibility badge */}
+                  {refund.damageResponsibility && (
+                    <InfoRow
+                      label="Damage Responsibility"
+                      value={
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          refund.damageResponsibility === "Carrier"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                        }`}>
+                          {refund.damageResponsibility === "Carrier" ? "🚚 Carrier fault" : "👤 Customer fault"}
+                        </span>
+                      }
+                    />
+                  )}
                 </Section>
               </div>
             </div>
@@ -686,6 +803,9 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
         isSubmitting={isSubmitting}
         onSave={(data) => updateStatus(refund.refundId, data)}
         isSystemReturn={refund.isSystemReturn}
+        suggestedFeeBy={refund.refundReasonResponsibleParty ?? "Store"}
+        approvedAmount={refund.approvedAmount}
+        currentDamageResponsibility={refund.damageResponsibility}
       />
 
       <RefundRejectModal

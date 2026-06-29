@@ -2,7 +2,16 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { campaignApi, CampaignPayload } from "../services/campaign-api";
 import { CampaignFormData, ReviewCampaignDto, RescheduleCampaignDto, ScheduleCampaignDto } from "../types/campaign";
-import { getCampaignMutationErrorMessage, translateScheduleWarningCodes } from "../utils/campaign-errors";
+import {
+  getCampaignMutationErrorMessage,
+  parseCampaignValidationErrors,
+  translateScheduleWarningCodes,
+} from "../utils/campaign-errors";
+
+export type CampaignReviewResult = {
+  success: boolean;
+  reviewNoteError?: string;
+};
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -17,8 +26,7 @@ export const useCampaignMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      const message = getCampaignMutationErrorMessage(error, "Invalid data.");
-      if (message) toast.error(message);
+      toast.error(getCampaignMutationErrorMessage(error, "Unable to create campaign. Please check your input."));
       return false;
     } finally {
       setIsSubmitting(false);
@@ -31,21 +39,18 @@ export const useCampaignMutations = (onSuccess?: () => void) => {
   ): Promise<boolean> => {
     setIsSubmitting(true);
     try {
-      // CampaignFormData and CampaignPayload should be normalized in the service layer
       await campaignApi.updateCampaign(id, data as CampaignPayload);
       toast.success("Campaign updated successfully!");
       onSuccess?.();
       return true;
     } catch (error) {
-      const message = getCampaignMutationErrorMessage(error, "Invalid data.");
-      if (message) toast.error(message);
+      toast.error(getCampaignMutationErrorMessage(error, "Unable to update campaign. Please check your input."));
       return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Use isSubmitting instead of separate state for consistency
   const cancelCampaign = async (id: number): Promise<boolean> => {
     setIsSubmitting(true);
     try {
@@ -54,8 +59,7 @@ export const useCampaignMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      const message = getCampaignMutationErrorMessage(error, "Unable to cancel campaign.");
-      if (message) toast.error(message);
+      toast.error(getCampaignMutationErrorMessage(error, "Unable to cancel campaign."));
       return false;
     } finally {
       setIsSubmitting(false);
@@ -70,26 +74,28 @@ export const useCampaignMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      const message = getCampaignMutationErrorMessage(error, "Unable to submit for approval.");
-      if (message) toast.error(message);
+      toast.error(getCampaignMutationErrorMessage(error, "Unable to submit for approval."));
       return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const reviewCampaign = async (id: number, data: ReviewCampaignDto): Promise<boolean> => {
+  const reviewCampaign = async (id: number, data: ReviewCampaignDto): Promise<CampaignReviewResult> => {
     setIsSubmitting(true);
     try {
       await campaignApi.reviewCampaign(id, data);
       const actionText = data.action === "Approved" ? "approved" : "rejected";
       toast.success(`Campaign has been ${actionText}.`);
       onSuccess?.();
-      return true;
+      return { success: true };
     } catch (error) {
-      const message = getCampaignMutationErrorMessage(error, "Unable to update review status.");
-      if (message) toast.error(message);
-      return false;
+      toast.error(getCampaignMutationErrorMessage(error, "Unable to update review status."));
+      const fieldErrors = parseCampaignValidationErrors(error);
+      return {
+        success: false,
+        reviewNoteError: fieldErrors.reviewNote,
+      };
     } finally {
       setIsSubmitting(false);
     }
@@ -107,8 +113,7 @@ export const useCampaignMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      const message = getCampaignMutationErrorMessage(error, "Unable to schedule campaign.");
-      if (message) toast.error(message);
+      toast.error(getCampaignMutationErrorMessage(error, "Unable to schedule campaign."));
       return false;
     } finally {
       setIsSubmitting(false);
@@ -127,8 +132,7 @@ export const useCampaignMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      const message = getCampaignMutationErrorMessage(error, "Unable to reschedule campaign.");
-      if (message) toast.error(message);
+      toast.error(getCampaignMutationErrorMessage(error, "Unable to reschedule campaign."));
       return false;
     } finally {
       setIsSubmitting(false);
@@ -143,8 +147,7 @@ export const useCampaignMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      const message = getCampaignMutationErrorMessage(error, "Unable to recall campaign.");
-      if (message) toast.error(message);
+      toast.error(getCampaignMutationErrorMessage(error, "Unable to recall campaign."));
       return false;
     } finally {
       setIsSubmitting(false);
@@ -159,8 +162,7 @@ export const useCampaignMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      const message = getCampaignMutationErrorMessage(error, "Unable to delete campaign.");
-      if (message) toast.error(message);
+      toast.error(getCampaignMutationErrorMessage(error, "Unable to delete campaign."));
       return false;
     } finally {
       setIsSubmitting(false);

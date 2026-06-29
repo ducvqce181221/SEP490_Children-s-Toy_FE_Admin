@@ -137,7 +137,7 @@ export const blogApi = {
     return axiosClient.post<
       BlogReviewReply,
       { comment: string; parentReplyId?: number | null; replyToAccountId?: number | null }
-    >(`/admin/blog-reviews/${reviewBlogId}/replies`, payload);
+    >(`/admin/blog-reviews/${reviewBlogId}/staff-replies`, payload);
   },
 
   updateBlogReviewStatus: async (

@@ -18,3 +18,15 @@ export interface CampaignScheduleContext {
 /** Shared form submit ID (wizard footer submits via the `form` attribute) */
 export const CAMPAIGN_SCHEDULE_FORM_ID = "campaign-schedule-form";
 
+/** Exposed to wizard for footer / step navigation. */
+export interface CampaignScheduleFormSubmitState {
+  canSubmit: boolean;
+  isLoadingBounds: boolean;
+  isFeasible: boolean;
+  selectedDate: Date | null;
+  validFrom: Date | null;
+  validTo: Date | null;
+  reason: string;
+  scheduleError: string | null;
+}
+

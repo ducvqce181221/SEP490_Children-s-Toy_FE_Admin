@@ -22,6 +22,10 @@ import {
 } from "../types/campaign";
 import { useAuthContext } from "@/context/AuthContext";
 import { useCampaignImageUpload } from "../hooks/useCampaignImageUpload";
+import {
+  getCampaignMutationErrorMessage,
+  parseCampaignValidationErrors,
+} from "../utils/campaign-errors";
 import { accountApi } from "@/features/account/services/account-api";
 import {
   DocsIcon,
@@ -963,6 +967,15 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
     campaignApi
       .getCampaignById(campaignId)
       .then(async (c: Campaign) => {
+        // Ownership check: chỉ creator hoặc Admin mới được edit
+        const viewerIsAdmin = account?.roleName?.toLowerCase() === "admin";
+        const isOwner = account?.accountId === c.createdByAccountId;
+        if (!viewerIsAdmin && !isOwner) {
+          toast.error("You do not have permission to edit this campaign.");
+          router.push(`/admin/campaigns/${campaignId}`);
+          return;
+        }
+
         const accountTargets = c.targets.filter((t) => t.targetType === "ACCOUNT_ID");
         const individualAccountIds = accountTargets.map((t) => Number(t.targetValue));
         const individualAccountNames = await Promise.all(
@@ -1005,7 +1018,7 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
         router.push("/admin/campaigns");
       })
       .finally(() => setIsLoadingCampaign(false));
-  }, [campaignId, isEditing, router]);
+  }, [campaignId, isEditing, router, account]);
 
   // Once templates are loaded, find the selected template
   useEffect(() => {
@@ -1099,8 +1112,19 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({ campaignId }) =>
         toast.success("Campaign created successfully!");
         router.push(`/admin/campaigns/${created.campaignId}`);
       }
-    } catch {
-      toast.error(isEditing ? "Failed to update campaign. Please try again." : "Failed to create campaign. Please try again.");
+    } catch (error) {
+      const fieldErrors = parseCampaignValidationErrors(error);
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors((prev) => ({ ...prev, ...fieldErrors }));
+      }
+      toast.error(
+        getCampaignMutationErrorMessage(
+          error,
+          isEditing
+            ? "Unable to update campaign. Please check your input."
+            : "Unable to create campaign. Please check your input.",
+        ),
+      );
     } finally {
       setIsSubmitting(false);
     }
