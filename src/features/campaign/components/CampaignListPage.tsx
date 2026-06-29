@@ -507,175 +507,198 @@ export const CampaignListPage: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                items.map((campaign, index) => (
-                  <TableRow
-                    key={campaign.campaignId}
-                    className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
-                  >
-                    {/* STT */}
-                    <TableCell className="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-                      {(currentPage - 1) * pageSize + index + 1}
-                    </TableCell>
+                items.map((campaign, index) => {
+                  const isAdmin = account?.roleName?.toLowerCase() === "admin" || account?.roleId === 2;
+                  const isOwner = account?.accountId != null && campaign.createdByAccountId === account.accountId;
+                  const isOwnerOrAdmin = isAdmin || isOwner;
 
-                    {/* Name */}
-                    <TableCell className="px-5 py-4">
-                      {(() => {
-                        const cid = resolveCampaignListItemId(campaign);
-                        return cid != null ? (
-                          <Link
-                            href={campaignDetailPath(cid)}
-                            className="font-medium text-gray-900 dark:text-white hover:text-brand-500 transition-colors block max-w-[220px] truncate"
-                            title={campaign.campaignName}
-                          >
-                            {campaign.campaignName}
-                          </Link>
-                        ) : (
-                          <span className="font-medium text-gray-900 dark:text-white block max-w-[220px] truncate" title={campaign.campaignName}>
-                            {campaign.campaignName}
-                          </span>
-                        );
-                      })()}
-                      <span className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 block">
-                        {formatDisplayDate(campaign.createdAt)}
-                      </span>
-                    </TableCell>
+                  return (
+                    <TableRow
+                      key={campaign.campaignId}
+                      className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
+                    >
+                      {/* STT */}
+                      <TableCell className="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
+                        {(currentPage - 1) * pageSize + index + 1}
+                      </TableCell>
 
-                    {/* Reference Type */}
-                    <TableCell className="px-5 py-4">
-                      <ReferenceBadge referenceType={campaign.referenceType} />
-                    </TableCell>
+                      {/* Name */}
+                      <TableCell className="px-5 py-4">
+                        {(() => {
+                          const cid = resolveCampaignListItemId(campaign);
+                          return cid != null ? (
+                            <Link
+                              href={campaignDetailPath(cid)}
+                              className="font-medium text-gray-900 dark:text-white hover:text-brand-500 transition-colors block max-w-[220px] truncate"
+                              title={campaign.campaignName}
+                            >
+                              {campaign.campaignName}
+                            </Link>
+                          ) : (
+                            <span className="font-medium text-gray-900 dark:text-white block max-w-[220px] truncate" title={campaign.campaignName}>
+                              {campaign.campaignName}
+                            </span>
+                          );
+                        })()}
+                        <span className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 block">
+                          {formatDisplayDate(campaign.createdAt)}
+                        </span>
+                      </TableCell>
 
-                    {/* Source */}
-                    <TableCell className="px-5 py-4">
-                      <SourceBadge source={campaign.sourceType} />
-                    </TableCell>
+                      {/* Reference Type */}
+                      <TableCell className="px-5 py-4">
+                        <ReferenceBadge referenceType={campaign.referenceType} />
+                      </TableCell>
 
-                    {/* Target */}
-                    <TableCell className="px-5 py-4">
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        {TARGET_TYPE_LABELS[campaign.targetType] ?? campaign.targetType}
-                      </span>
-                    </TableCell>
+                      {/* Source */}
+                      <TableCell className="px-5 py-4">
+                        <SourceBadge source={campaign.sourceType} />
+                      </TableCell>
 
-                    {/* Status */}
-                    <TableCell className="px-5 py-4">
-                      <StatusBadge status={campaign.status} />
-                    </TableCell>
+                      {/* Target */}
+                      <TableCell className="px-5 py-4">
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          {TARGET_TYPE_LABELS[campaign.targetType] ?? campaign.targetType}
+                        </span>
+                      </TableCell>
 
-                    {/* Schedule */}
-                    <TableCell className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">
-                      {formatDisplayDate(campaign.scheduledAt)}
-                    </TableCell>
+                      {/* Status */}
+                      <TableCell className="px-5 py-4">
+                        <StatusBadge status={campaign.status} />
+                      </TableCell>
 
-                    {/* Actions */}
-                    <TableCell className="px-5 py-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {/* Submit button (for Draft) */}
-                        {(campaign.status === "Draft" || campaign.status === "Rejected") && (
-                          <button
-                            title={campaign.status === "Rejected" ? "Nộp lại để duyệt" : "Nộp để duyệt"}
-                            onClick={() => setSubmitId(campaign.campaignId)}
-                            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-green-400 hover:text-green-500 dark:border-gray-700 dark:text-gray-300"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                          </button>
-                        )}
+                      {/* Schedule */}
+                      <TableCell className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">
+                        {formatDisplayDate(campaign.scheduledAt)}
+                      </TableCell>
 
+                      {/* Actions */}
+                      <TableCell className="px-5 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {/* Submit button (for Draft) */}
+                          {(campaign.status === "Draft" || campaign.status === "Rejected") &&
+                            !isAdmin &&
+                            isOwnerOrAdmin && (
+                              <button
+                                title={campaign.status === "Rejected" ? "Nộp lại để duyệt" : "Nộp để duyệt"}
+                                onClick={() => setSubmitId(campaign.campaignId)}
+                                className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-green-400 hover:text-green-500 dark:border-gray-700 dark:text-gray-300"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                              </button>
+                            )}
 
-
-                        {/* Schedule button (for Approved) */}
-                        {campaign.status === "Approved" && (
-                          <button
-                            type="button"
-                            title="Schedule Campaign"
-                            onClick={() => {
-                              const cid = resolveCampaignListItemId(campaign);
-                              if (cid != null) router.push(campaignSchedulePath(cid, "schedule"));
-                            }}
-                            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-purple-400 hover:text-purple-500 dark:border-gray-700 dark:text-gray-300"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </button>
-                        )}
-
-                        {campaign.status === "Scheduled" &&
-                          (campaign.maxRescheduleCount == null ||
-                            (campaign.rescheduleCount ?? 0) < campaign.maxRescheduleCount) && (
+                          {/* Review button (for PendingApproval - Admin only) */}
+                          {campaign.status === "PendingApproval" && isAdmin && (
                             <button
-                              title="Reschedule"
                               type="button"
-                              onClick={() => {
-                                const cid = resolveCampaignListItemId(campaign);
-                                if (cid != null) router.push(campaignSchedulePath(cid, "reschedule"));
-                              }}
-                              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-purple-400 hover:text-purple-500 dark:border-gray-700 dark:text-gray-300"
+                              title="Review campaign"
+                              onClick={() => setReviewId(campaign.campaignId)}
+                              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-amber-400 hover:text-amber-600 dark:border-gray-700 dark:text-gray-300"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                                />
                               </svg>
                             </button>
                           )}
 
-                        {/* View detail — always (router.push avoids edge cases where in-table Link clicks don't navigate) */}
-                        <button
-                          type="button"
-                          title="View details"
-                          disabled={resolveCampaignListItemId(campaign) == null}
-                          onClick={() => {
-                            const cid = resolveCampaignListItemId(campaign);
-                            if (cid != null) router.push(campaignDetailPath(cid));
-                          }}
-                          className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
-                        >
-                          <EyeIcon className="w-5 h-5" />
-                        </button>
+                          {/* Schedule button (for Approved) */}
+                          {campaign.status === "Approved" && isOwnerOrAdmin && (
+                            <button
+                              type="button"
+                              title="Schedule Campaign"
+                              onClick={() => {
+                                const cid = resolveCampaignListItemId(campaign);
+                                if (cid != null) router.push(campaignSchedulePath(cid, "schedule"));
+                              }}
+                              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-purple-400 hover:text-purple-500 dark:border-gray-700 dark:text-gray-300"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                          )}
 
+                          {/* Reschedule button (for Scheduled) */}
+                          {campaign.status === "Scheduled" &&
+                            isOwnerOrAdmin &&
+                            (campaign.maxRescheduleCount == null ||
+                              (campaign.rescheduleCount ?? 0) < campaign.maxRescheduleCount) && (
+                              <button
+                                title="Reschedule"
+                                type="button"
+                                onClick={() => {
+                                  const cid = resolveCampaignListItemId(campaign);
+                                  if (cid != null) router.push(campaignSchedulePath(cid, "reschedule"));
+                                }}
+                                className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-purple-400 hover:text-purple-500 dark:border-gray-700 dark:text-gray-300"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </button>
+                            )}
 
-
-                        {/* Draft/Rejected → edit */}
-                        {(campaign.status === "Draft" || campaign.status === "Rejected") && (
+                          {/* View detail — always */}
                           <button
                             type="button"
-                            title="Edit campaign"
+                            title="View details"
                             disabled={resolveCampaignListItemId(campaign) == null}
                             onClick={() => {
                               const cid = resolveCampaignListItemId(campaign);
-                              if (cid != null) router.push(`${campaignDetailPath(cid)}/edit`);
+                              if (cid != null) router.push(campaignDetailPath(cid));
                             }}
-                            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-500 dark:border-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
+                            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
                           >
-                            <PencilIcon className="w-5 h-5" />
+                            <EyeIcon className="w-5 h-5" />
                           </button>
-                        )}
 
-                        {/* Draft/PendingApproval/Approved/Rejected/Scheduled → cancel */}
-                        {["Draft", "Approved", "Scheduled"].includes(campaign.status) && (
-                          <button
-                            onClick={() => handleCancelClick(campaign)}
-                            disabled={cancellingId === campaign.campaignId}
-                            className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-error-400 hover:text-error-500 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
-                            title="Cancel campaign"
-                          >
-                            {cancellingId === campaign.campaignId ? (
-                              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                              </svg>
-                            ) : (
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                              </svg>
-                            )}
-                          </button>
-                        )}
+                          {/* Draft/Rejected → edit */}
+                          {(campaign.status === "Draft" || campaign.status === "Rejected") && isOwnerOrAdmin && (
+                            <button
+                              type="button"
+                              title="Edit campaign"
+                              disabled={resolveCampaignListItemId(campaign) == null}
+                              onClick={() => {
+                                const cid = resolveCampaignListItemId(campaign);
+                                if (cid != null) router.push(`${campaignDetailPath(cid)}/edit`);
+                              }}
+                              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-500 dark:border-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
+                            >
+                              <PencilIcon className="w-5 h-5" />
+                            </button>
+                          )}
 
-                        {/* Sent/Cancelled/Failed → delete */}
-                        {["Sent", "Cancelled", "Failed"].includes(campaign.status) &&
-                          (account?.roleName === "Admin" || campaign.createdByAccountId === account?.accountId) && (
+                          {/* Draft/Approved/Scheduled → cancel */}
+                          {["Draft", "Approved", "Scheduled"].includes(campaign.status) && isOwnerOrAdmin && (
+                            <button
+                              onClick={() => handleCancelClick(campaign)}
+                              disabled={cancellingId === campaign.campaignId}
+                              className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-error-400 hover:text-error-500 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
+                              title="Cancel campaign"
+                            >
+                              {cancellingId === campaign.campaignId ? (
+                                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                              ) : (
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                </svg>
+                              )}
+                            </button>
+                          )}
+
+                          {/* Sent/Cancelled/Failed → delete */}
+                          {["Sent", "Cancelled", "Failed"].includes(campaign.status) && isOwnerOrAdmin && (
                             <button
                               onClick={() => handleDeleteClick(campaign)}
                               disabled={deletingId === campaign.campaignId}
@@ -692,10 +715,11 @@ export const CampaignListPage: React.FC = () => {
                               )}
                             </button>
                           )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
