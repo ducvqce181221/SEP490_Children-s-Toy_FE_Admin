@@ -21,6 +21,11 @@ export const UpdateRefundStatusSchema = z.object({
   adminNote: z.string().optional(),
   inspectionPassed: z.boolean().optional(),
   inspectionNote: z.string().optional(),
+  // Approve step: bên chịu phí ship hoàn trả
+  returnShippingFeeBy: z.enum(["Store", "Customer"]).optional(),
+  returnShippingFeeNote: z.string().optional(),
+  // InspectionPending (Merchandise đề xuất) / Complete (Staff xác nhận)
+  damageResponsibility: z.enum(["Customer", "Carrier"]).optional(),
 }).superRefine((data, ctx) => {
   if (data.status === "RefundRejected" && (!data.rejectReason || !data.rejectReason.trim())) {
     ctx.addIssue({

@@ -73,6 +73,14 @@ export interface Refund {
   assignedToMerchName?: string | null;
   refundSource?: string;
   isSystemReturn?: boolean;
+  /** ResponsibleParty của RefundReason — dùng để suggest bên chịu phí ship hoàn trả */
+  refundReasonResponsibleParty?: "Store" | "Customer";
+  // --- Return shipping fee fields ---
+  returnShippingFee?: number;
+  returnShippingFeeBy?: "Store" | "Customer";
+  returnShippingFeeNote?: string | null;
+  finalRefundAmount?: number;
+  damageResponsibility?: "Customer" | "Carrier" | null;
 }
 
 export interface RefundFilter {
