@@ -1,8 +1,0 @@
-⨯ Another next dev server is already running.
-
-- Local:        http://localhost:5000
-- PID:          20124
-- Dir:          D:\SEP490_main\SEP490\SEP490_Children-s-Toy_FE_Admin
-- Log:          .next\dev\logs\next-development.log
-
-Run taskkill /PID 20124 /F to stop it.
