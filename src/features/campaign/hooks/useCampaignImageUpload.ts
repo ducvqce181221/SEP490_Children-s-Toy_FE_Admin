@@ -2,6 +2,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import axiosClient from "@/configs/axios-client";
 import { AxiosError } from "axios";
+import { getCampaignMutationErrorMessage } from "../utils/campaign-errors";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -47,11 +48,10 @@ export const useCampaignImageUpload = () => {
       const formData = new FormData();
       formData.append("file", file);
 
-      // Interceptor unwraps response.data → response is UploadImageResponse
       const response = await axiosClient.post<UploadImageResponse, FormData>(
         "/campaigns/upload-image",
         formData,
-        { timeout: 60000 } // Longer timeout for file upload
+        { timeout: 60000 },
       );
 
       if (!response?.url) {
@@ -66,11 +66,9 @@ export const useCampaignImageUpload = () => {
         console.error("[useCampaignImageUpload]", error);
       }
 
-      // Toast only for 400 – interceptor handles 403/404/500
-      const status = (error as AxiosError)?.response?.status;
-      if (status === 400) {
-        toast.error("Invalid file. Please check and try again.");
-      }
+      toast.error(
+        getCampaignMutationErrorMessage(error, "Image upload failed. Please check the file and try again."),
+      );
 
       return null;
     } finally {

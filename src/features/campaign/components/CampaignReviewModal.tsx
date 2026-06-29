@@ -6,8 +6,8 @@ import TextArea from "@/components/form/input/TextArea";
 interface CampaignReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onApprove: () => Promise<void>;
-  onReject: (reason: string) => Promise<void>;
+  onApprove: () => Promise<boolean>;
+  onReject: (reason: string) => Promise<{ ok: boolean; reviewNoteError?: string }>;
   isSubmitting: boolean;
   initialAction?: "approve" | "reject" | null;
 }
@@ -22,17 +22,20 @@ export const CampaignReviewModal: React.FC<CampaignReviewModalProps> = ({
 }) => {
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
+  const [rejectError, setRejectError] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (isOpen) {
       setRejectReason("");
       setShowRejectInput(initialAction === "reject");
+      setRejectError(null);
     }
   }, [isOpen, initialAction]);
 
   const handleClose = () => {
     setRejectReason("");
     setShowRejectInput(false);
+    setRejectError(null);
     onClose();
   };
 
@@ -41,16 +44,21 @@ export const CampaignReviewModal: React.FC<CampaignReviewModalProps> = ({
       setShowRejectInput(true);
       return;
     }
-    
-    if (!rejectReason.trim()) return;
 
-    await onReject(rejectReason);
-    handleClose();
+    if (!rejectReason.trim()) {
+      setRejectError("Please enter a rejection reason.");
+      return;
+    }
+
+    setRejectError(null);
+    const result = await onReject(rejectReason);
+    if (result.ok) handleClose();
+    else if (result.reviewNoteError) setRejectError(result.reviewNoteError);
   };
 
   const handleApproveClick = async () => {
-    await onApprove();
-    handleClose();
+    const ok = await onApprove();
+    if (ok) handleClose();
   };
 
   return (
@@ -65,13 +73,13 @@ export const CampaignReviewModal: React.FC<CampaignReviewModalProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        
+
         <h3 className="mb-2 text-lg font-bold text-gray-800 dark:text-white/90">
           {initialAction === "reject" ? "Reject Campaign" : "Approve Campaign"}
         </h3>
-        
+
         <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-          {initialAction === "reject" 
+          {initialAction === "reject"
             ? "Please provide a reason for rejecting this campaign so the staff can revise it."
             : "Are you sure you want to approve this campaign? Once approved, the campaign will be ready to be scheduled."}
         </p>
@@ -87,11 +95,17 @@ export const CampaignReviewModal: React.FC<CampaignReviewModalProps> = ({
             <TextArea
               value={rejectReason}
               maxLength={500}
-              onChange={(e) => setRejectReason(e.target.value)}
+              onChange={(e) => {
+                setRejectReason(e.target.value);
+                if (rejectError) setRejectError(null);
+              }}
               placeholder="Enter reason for rejection so staff can revise..."
               rows={4}
               className="min-h-[96px]"
             />
+            {rejectError ? (
+              <p className="text-xs text-red-500 mt-1.5 text-left">{rejectError}</p>
+            ) : null}
           </div>
         )}
 
@@ -105,13 +119,13 @@ export const CampaignReviewModal: React.FC<CampaignReviewModalProps> = ({
           >
             Cancel
           </Button>
-          
+
           {initialAction !== "approve" && (
             <Button
               variant="outline"
               size="sm"
               className="w-full justify-center bg-error-50 text-error-600 hover:bg-error-100 hover:text-error-700 border-error-200 dark:bg-error-500/10 dark:text-error-400 dark:hover:bg-error-500/20 dark:border-error-500/20"
-              onClick={handleRejectClick}
+              onClick={() => void handleRejectClick()}
               disabled={isSubmitting || (showRejectInput && !rejectReason.trim())}
             >
               Reject
@@ -122,7 +136,7 @@ export const CampaignReviewModal: React.FC<CampaignReviewModalProps> = ({
             <Button
               size="sm"
               className="w-full justify-center bg-success-500 hover:bg-success-600 text-white"
-              onClick={handleApproveClick}
+              onClick={() => void handleApproveClick()}
               disabled={isSubmitting}
             >
               Approve
