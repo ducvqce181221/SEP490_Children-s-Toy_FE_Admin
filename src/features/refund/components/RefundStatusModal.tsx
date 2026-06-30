@@ -101,8 +101,8 @@ function ReturnShippingFeeSection({
     feeBy === "Customer" && approvedAmount != null
       ? `~${formatCurrency(Math.max(0, approvedAmount - 30000))} (after ~30,000 fee)`
       : approvedAmount != null
-      ? formatCurrency(approvedAmount)
-      : null;
+        ? formatCurrency(approvedAmount)
+        : null;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3 dark:border-gray-700 dark:bg-gray-800/40">
@@ -116,11 +116,10 @@ function ReturnShippingFeeSection({
         {(["Store", "Customer"] as const).map((opt) => (
           <label
             key={opt}
-            className={`flex flex-1 cursor-pointer items-center gap-2.5 rounded-lg border p-3 transition-colors ${
-              feeBy === opt
+            className={`flex flex-1 cursor-pointer items-center gap-2.5 rounded-lg border p-3 transition-colors ${feeBy === opt
                 ? "border-[#ff6a00] bg-orange-50 dark:bg-orange-900/20"
                 : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
-            }`}
+              }`}
           >
             <input type="radio" name="returnShippingFeeBy" value={opt} checked={feeBy === opt} onChange={() => onFeeByChange(opt)} className="accent-[#ff6a00]" />
             <div>
@@ -159,7 +158,9 @@ function ReturnShippingFeeSection({
             rows={2}
             placeholder="Explain why you are overriding the suggested responsible party..."
             className={`mt-1.5 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 dark:bg-gray-900 dark:text-white/90 ${
-              overrideNoteError ? "border-red-400 focus:ring-red-400" : "border-gray-300 focus:ring-[#ff6a00] dark:border-gray-700"
+              overrideNoteError
+                ? "border-red-400 focus:ring-red-400"
+                : "border-gray-300 focus:ring-[#ff6a00] dark:border-gray-700"
             }`}
           />
           {overrideNoteError && <p className="mt-1 text-xs text-red-500">{overrideNoteError}</p>}
@@ -192,7 +193,9 @@ function DamageProposalSection({
           <label
             key={opt.val}
             className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-              value === opt.val ? "border-[#ff6a00] bg-orange-50/60 dark:bg-orange-900/10" : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+              value === opt.val
+                ? "border-[#ff6a00] bg-orange-50/60 dark:bg-orange-900/10"
+                : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
             }`}
           >
             <input type="radio" name="damageProposal" checked={value === opt.val} onChange={() => onChange(opt.val as "Customer" | "Carrier" | "")} className="accent-[#ff6a00]" />
@@ -232,15 +235,39 @@ function DamageConfirmSection({
         </div>
       </div>
       <div className="space-y-2">
-        <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${value === "Carrier" ? "border-green-400 bg-green-50 dark:bg-green-900/20" : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"}`}>
-          <input type="radio" name="damageConfirm" checked={value === "Carrier"} onChange={() => onChange("Carrier")} className="accent-green-500" />
+        <label
+          className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+            value === "Carrier"
+              ? "border-green-400 bg-green-50 dark:bg-green-900/20"
+              : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+          }`}
+        >
+          <input
+            type="radio"
+            name="damageConfirm"
+            checked={value === "Carrier"}
+            onChange={() => onChange("Carrier")}
+            className="accent-green-500"
+          />
           <div>
             <div className="text-sm font-semibold text-gray-800 dark:text-white/90">Carrier fault — confirm</div>
             <div className="text-[11px] text-gray-400">Customer gets full refund. No stock restoration. File GHN carrier claim.</div>
           </div>
         </label>
-        <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${value === "Customer" ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"}`}>
-          <input type="radio" name="damageConfirm" checked={value === "Customer"} onChange={() => onChange("Customer")} className="accent-red-500" />
+        <label
+          className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+            value === "Customer"
+              ? "border-red-400 bg-red-50 dark:bg-red-900/20"
+              : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+          }`}
+        >
+          <input
+            type="radio"
+            name="damageConfirm"
+            checked={value === "Customer"}
+            onChange={() => onChange("Customer")}
+            className="accent-red-500"
+          />
           <div>
             <div className="text-sm font-semibold text-gray-800 dark:text-white/90">Customer fault — override</div>
             <div className="text-[11px] text-gray-400">Goods returned to customer. No refund issued.</div>
