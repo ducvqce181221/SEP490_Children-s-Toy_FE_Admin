@@ -254,6 +254,12 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
   const isInspectionStage = refund.refundStatus === "RefundInspectionPending";
   const isMerchandiseStage = isShippingStage || isReceivedStage;
 
+  // System Return — per-stage role gates
+  const isSystemApprovedStage  = !!refund.isSystemReturn && refund.refundStatus === "RefundApproved";
+  const isSystemReceivedStage  = !!refund.isSystemReturn && refund.refundStatus === "RefundReceived";
+  const isSystemInspectionStage = !!refund.isSystemReturn && refund.refundStatus === "RefundInspectionPending";
+  const isSystemRequestedStage = !!refund.isSystemReturn && refund.refundStatus === "RefundRequested";
+
   /** System refund mis-rejected: Admin may Reopen (Rejected → Approved → Complete). */
   const canReopenSystemRejected =
     refund.refundStatus === "RefundRejected" &&
@@ -267,9 +273,15 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
     (canReopenSystemRejected ||
       (refund.refundStatus !== "RefundRejected" &&
         (isAdmin ||
-          ((isShippingStage || isReceivedStage) && isMerchandise) ||
-          (isInspectionStage && isStaff) ||
-          (!isShippingStage && !isReceivedStage && !isInspectionStage && isStaff))));
+          // Customer return: Merch handles shipping → received stages
+          (!refund.isSystemReturn && (isShippingStage || isReceivedStage) && isMerchandise) ||
+          (!refund.isSystemReturn && isInspectionStage && isStaff) ||
+          (!refund.isSystemReturn && !isShippingStage && !isReceivedStage && !isInspectionStage && isStaff) ||
+          // System return: Merch inspects at Received (or legacy Requested/Approved)
+          ((isSystemReceivedStage || isSystemApprovedStage || isSystemRequestedStage) && isMerchandise) ||
+          // System return: Staff completes wallet refund after inspection
+          (isSystemInspectionStage && isStaff) ||
+          (refund.refundStatus === "RefundDamage" && isStaff))));
 
   const canReject =
     !isViewOnly &&
@@ -289,6 +301,17 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
 
   const getChangeStatusButtonLabel = (status: string | null) => {
     if (!status) return "Change Status";
+    if (refund.isSystemReturn) {
+      switch (status) {
+        case "RefundApproved":
+        case "RefundReceived":
+        case "RefundInspectionPending":
+          return "Submit Inspection Results";
+        case "RefundCompleted":
+          return "Confirm Wallet Refund";
+        default: return "Change Status";
+      }
+    }
     switch (status) {
       case "RefundApproved": return refund.refundStatus === "RefundRejected" ? "Reopen & Approve" : "Approve Refund";
       case "RefundPickupCreated": return "Create Waybill (GHN)";
@@ -403,7 +426,10 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                               <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Product</th>
                               <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Unit Price</th>
                               <th className="px-5 py-3.5 text-center text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Qty</th>
-                              <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Refund Total</th>
+                              {refund.isSystemReturn && (
+                                <th className="px-5 py-3.5 text-center text-xs font-medium uppercase tracking-wide text-blue-500 dark:text-blue-400">Restock Qty</th>
+                              )}
+                              <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Refund Amount</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100 bg-white dark:divide-gray-800/50 dark:bg-transparent">
@@ -427,6 +453,23 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                                 </td>
                                 <td className="px-5 py-4 text-right text-sm text-gray-600 dark:text-gray-300">{formatCurrency(item.unitPrice)}</td>
                                 <td className="px-5 py-4 text-center text-sm font-medium text-gray-600 dark:text-gray-300">{item.quantity}</td>
+                                {refund.isSystemReturn && (
+                                  <td className="px-5 py-4 text-center">
+                                    {item.restorableQuantity != null ? (
+                                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                        item.restorableQuantity === 0
+                                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                                          : item.restorableQuantity < item.quantity
+                                          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                                          : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                                      }`}>
+                                        {item.restorableQuantity}/{item.quantity}
+                                      </span>
+                                    ) : (
+                                      <span className="text-xs text-gray-400 italic">Not inspected</span>
+                                    )}
+                                  </td>
+                                )}
                                 <td className="px-5 py-4 text-right text-sm font-semibold text-brand-500">{formatCurrency(item.refundAmount)}</td>
                               </tr>
                             ))}
@@ -470,14 +513,60 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                             );
                           }
 
-                          // Post-approval: FinalRefundAmount was explicitly set
-                          // If finalRefundAmount is still 0 AND returnShippingFeeBy = "Store" → likely a data issue, fallback safely
+                          // System Return: show breakdown with shipping choice
+                          if (refund.isSystemReturn) {
+                            const productAmount = (refund.totalAmount ?? refund.approvedAmount) - (refund.customerShippingPaid ?? 0);
+                            const isCompleted = refund.refundStatus === "RefundCompleted";
+                            return (
+                              <div className="rounded-xl border border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-900/10 overflow-hidden">
+                                <div className="px-4 py-2 border-b border-green-100 dark:border-green-800">
+                                  <span className="text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-green-400">GHN Refund Summary</span>
+                                </div>
+                                <div className="px-4 py-3 space-y-2">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">Product amount (after voucher)</span>
+                                    <span className="font-medium text-gray-800 dark:text-white/90">{formatCurrency(productAmount)}</span>
+                                  </div>
+                                  {(refund.customerShippingPaid ?? 0) > 0 && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500">Shipping fee paid by customer</span>
+                                      <span className="font-medium text-gray-800 dark:text-white/90">{formatCurrency(refund.customerShippingPaid ?? 0)}</span>
+                                    </div>
+                                  )}
+                                  {(refund.voucherDiscountAmount ?? 0) > 0 && (
+                                    <div className="flex justify-between text-gray-400">
+                                      <span>Voucher discount (not refunded)</span>
+                                      <span className="line-through">{formatCurrency(refund.voucherDiscountAmount ?? 0)}</span>
+                                    </div>
+                                  )}
+                                  {isCompleted && refund.includeShippingInRefund != null && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500">Refund shipping fee</span>
+                                      <span className={`text-xs font-semibold rounded-full px-2 py-0.5 ${refund.includeShippingInRefund ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                                        {refund.includeShippingInRefund ? "Yes" : "No"}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between border-t border-dashed border-green-200 pt-2 dark:border-green-800">
+                                    <span className="font-bold text-[#ff6a00]">Wallet refund</span>
+                                    <span className="text-lg font-black text-[#ff6a00]">
+                                      {formatCurrency(refund.finalRefundAmount && refund.finalRefundAmount > 0
+                                        ? refund.finalRefundAmount
+                                        : refund.approvedAmount)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // Customer return: existing breakdown
                           const effectiveFinal =
                             (refund.finalRefundAmount != null && refund.finalRefundAmount > 0)
                               ? refund.finalRefundAmount
                               : refund.returnShippingFeeBy === "Customer"
-                                ? refund.finalRefundAmount ?? 0   // genuine 0 (fee ≥ approvedAmount)
-                                : refund.approvedAmount;           // Store pays → always full amount
+                                ? refund.finalRefundAmount ?? 0
+                                : refund.approvedAmount;
 
                           const hasDeduction = (refund.returnShippingFee ?? 0) > 0 && refund.returnShippingFeeBy === "Customer";
                           const isGenuineZero = refund.returnShippingFeeBy === "Customer" && refund.finalRefundAmount === 0;
@@ -528,13 +617,12 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                                 )}
                               </div>
 
-                              {/* Warning khi FinalRefundAmount = 0đ THỰC SỰ (post-approval) */}
                               {isGenuineZero && (
                                 <div className="flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
                                   <span className="text-amber-500">⚠</span>
                                   <p className="text-xs text-amber-700 dark:text-amber-300">
                                     Return shipping fee equals or exceeds approved amount.
-                                    Customer will receive <strong>0đ</strong>.
+                                    Customer will receive <strong>0</strong>.
                                   </p>
                                 </div>
                               )}
@@ -806,6 +894,16 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
         suggestedFeeBy={refund.refundReasonResponsibleParty ?? "Store"}
         approvedAmount={refund.approvedAmount}
         currentDamageResponsibility={refund.damageResponsibility}
+        refundDetails={refund.details?.map((d) => ({
+          productId: d.productId,
+          productName: d.productName,
+          quantity: d.quantity,
+          unitPrice: d.unitPrice,
+          refundAmount: d.refundAmount,
+          restorableQuantity: d.restorableQuantity,
+        }))}
+        customerShippingPaid={refund.customerShippingPaid ?? 0}
+        totalAmount={refund.totalAmount ?? refund.approvedAmount}
       />
 
       <RefundRejectModal
