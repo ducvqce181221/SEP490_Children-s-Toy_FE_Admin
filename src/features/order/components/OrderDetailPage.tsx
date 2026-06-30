@@ -327,12 +327,6 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             )}
             <PaymentBadge status={order.paymentStatus} />
           </div>
-          {isPaidCancelledAnomaly(order.paymentStatus, order.statusId) && (
-            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
-              Order is cancelled but payment still shows PAID. Check for an open system refund
-              (Approve → Complete) or wallet credit from order cancellation.
-            </div>
-          )}
           <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-2">
             <span>Assigned:</span>
             {order.assignedToStaffName ? (
@@ -379,8 +373,8 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             type="button"
             onClick={() => setActiveTab(t.key)}
             className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === t.key
-                ? "border-brand-500 text-brand-600 dark:border-brand-400 dark:text-brand-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              ? "border-brand-500 text-brand-600 dark:border-brand-400 dark:text-brand-400"
+              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               }`}
           >
             {t.label}
@@ -467,8 +461,8 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                       label="GHN status"
                       value={
                         <span className={`rounded-full px-2.5 py-1 text-xs ${isGhnReturnFlowStatus(ghnStatus)
-                            ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
-                            : "bg-gray-100 dark:bg-gray-800"
+                          ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+                          : "bg-gray-100 dark:bg-gray-800"
                           }`}>
                           {formatGhnShippingLabel(ghnStatus) || "—"}
                         </span>
@@ -594,8 +588,8 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                       )}
                       <span
                         className={`absolute left-[-21px] top-1.5 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 ${isSystem
-                            ? "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900"
-                            : "border-brand-500 bg-brand-500"
+                          ? "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900"
+                          : "border-brand-500 bg-brand-500"
                           }`}
                       />
                       <div className={`rounded-xl border p-4 ${isSystem ? "border-dashed border-gray-200 bg-gray-50/50 dark:border-gray-800 dark:bg-transparent" : "border-gray-100 bg-white shadow-xs dark:border-gray-800 dark:bg-gray-900/50"}`}>

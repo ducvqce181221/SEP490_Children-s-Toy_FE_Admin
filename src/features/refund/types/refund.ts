@@ -1,12 +1,12 @@
-export type RefundStatusType = 
-  | "RefundRequested" 
-  | "RefundApproved" 
-  | "RefundPickupCreated" 
-  | "RefundShipping" 
-  | "RefundReceived" 
-  | "RefundInspectionPending" 
-  | "RefundCompleted" 
-  | "RefundCancelled" 
+export type RefundStatusType =
+  | "RefundRequested"
+  | "RefundApproved"
+  | "RefundPickupCreated"
+  | "RefundShipping"
+  | "RefundReceived"
+  | "RefundInspectionPending"
+  | "RefundCompleted"
+  | "RefundCancelled"
   | "RefundRejected"
   | "RefundDamage"
   | "RefundReturnShipmentCreated"
@@ -21,6 +21,8 @@ export interface RefundDetailItem {
   quantity: number;
   unitPrice: number;
   refundAmount: number;
+  /** [System Return] Số lượng Merchandise xác nhận nhập kho lại. null = chưa kiểm tra. */
+  restorableQuantity?: number | null;
 }
 
 export interface RefundStatusHistoryItem {
@@ -81,6 +83,13 @@ export interface Refund {
   returnShippingFeeNote?: string | null;
   finalRefundAmount?: number;
   damageResponsibility?: "Customer" | "Carrier" | null;
+  // --- System Return fields ---
+  /** [System Return] Tiền ship khách đã thực trả (snapshot lúc tạo refund). */
+  customerShippingPaid?: number;
+  /** [System Return] Staff đã chọn có hoàn phí ship chưa. null = chưa Complete. */
+  includeShippingInRefund?: boolean | null;
+  /** Voucher discount từ đơn gốc (display only). */
+  voucherDiscountAmount?: number;
 }
 
 export interface RefundFilter {

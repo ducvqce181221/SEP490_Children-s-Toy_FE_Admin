@@ -560,14 +560,14 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
               <PromotionProductSlotsSection form={form} readonly={isPricingProductsLocked} />
             ) : (
               <>
-                <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
-                  {!isPricingProductsLocked && (
+                {!isPricingProductsLocked && (
+                  <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
                     <ProductCatalogSection
                       onConfirm={handleSyncProducts}
                       selectedProductIds={fields.map((f) => f.productId)}
                     />
-                  )}
-                </div>
+                  </div>
+                )}
 
                 <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6">
                   <ProductPromotionTable

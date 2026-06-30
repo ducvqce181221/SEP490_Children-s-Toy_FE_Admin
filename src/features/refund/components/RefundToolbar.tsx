@@ -41,6 +41,10 @@ const REFUND_STATUS_OPTIONS = [
   { value: "RefundCancelled", label: "Cancelled" },
   { value: "RefundRejected", label: "Rejected" },
   { value: "RefundDamage", label: "Damaged" },
+  { value: "RefundReturnShipmentCreated", label: "Return Shipment Created" },
+  { value: "RefundReturningToCustomer", label: "Returning to Customer" },
+  { value: "RefundReturnedToCustomer", label: "Returned to Customer" },
+  { value: "RefundReturnToCustomerFailed", label: "Return to Customer Failed" },
 ];
 
 function getRoleBadge(roleName: string) {
