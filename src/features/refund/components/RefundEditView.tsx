@@ -641,11 +641,10 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                     <InfoRow
                       label="Damage Responsibility"
                       value={
-                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          refund.damageResponsibility === "Carrier"
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${refund.damageResponsibility === "Carrier"
                             ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                             : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                        }`}>
+                          }`}>
                           {refund.damageResponsibility === "Carrier" ? "🚚 Carrier fault" : "👤 Customer fault"}
                         </span>
                       }
