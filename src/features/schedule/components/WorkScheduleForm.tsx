@@ -457,7 +457,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
                   {/* Merch picker — always visible in create mode, only for role=4 in edit */}
                   {(!isEdit || editData?.roleId === 4) && (
                     <StaffPicker
-                      label={isEdit ? "Change Merchandiser" : "Warehouse Merchandiser (Role 4)"}
+                      label={isEdit ? "Change Merchandiser" : "Shop Merchandiser (Role 4)"}
                       accounts={isEdit ? merchList : availableMerch}
                       selectedId={selectedMerchId}
                       onSelect={setSelectedMerchId}

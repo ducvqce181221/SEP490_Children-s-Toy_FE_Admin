@@ -387,28 +387,6 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
         {/* ── TAB: Tổng quan ─────────────────────────────────────────── */}
         {activeTab === "overview" && (
           <div className="space-y-6">
-            {isReturnFlow && (
-              <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-800/50 dark:bg-orange-900/20">
-                <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
-                  Package return to shop (GHN)
-                </p>
-                <p className="mt-1 text-sm text-orange-700 dark:text-orange-300">
-                  {order.statusId === ORDER_STATUS_ID.RETURNING &&
-                    "Goods are being returned. Monitor GHN shipping history for carrier updates."}
-                  {order.statusId === ORDER_STATUS_ID.RETURN_COMPLETED &&
-                    (order.paymentMethod === "SHIP_COD"
-                      ? "Goods returned. COD order may already be cancelled — verify payment and stock."
-                      : "Goods returned. Prepaid order may need refund approval — check Refunds.")}
-                  {order.statusName === ORDER_STATUS.CANCELLED &&
-                    order.cancelReason &&
-                    `Order cancelled: ${order.cancelReason}. Use Order History and Shipping History for the full timeline.`}
-                  {order.statusId === ORDER_STATUS_ID.DELIVERING &&
-                    isGhnReturnFlowStatus(ghnStatus) &&
-                    `GHN status: ${formatGhnShippingLabel(ghnStatus)}. Order may still show Delivering until the webhook updates internal status.`}
-                </p>
-              </div>
-            )}
-
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Section title="Shipping Info">
                 <InfoRow label="Recipient" value={order.shippingName} />

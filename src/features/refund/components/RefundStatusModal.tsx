@@ -71,7 +71,7 @@ const getRefundStatusLabel = (status: string, isSystemReturn = false) => {
     case "RefundApproved":         return isSystemReturn ? "Approve Refund Request" : "Approve Refund Request";
     case "RefundPickupCreated":    return "Create Return Shipping Order";
     case "RefundShipping":         return "Ship Return Package";
-    case "RefundReceived":         return isSystemReturn ? "Confirm Package Received at Warehouse" : "Receive Return Package";
+    case "RefundReceived":         return isSystemReturn ? "Confirm Package Received at Shop" : "Receive Return Package";
     case "RefundInspectionPending":return isSystemReturn ? "Submit Inspection Results" : "Send to Quality Inspection";
     case "RefundCompleted":        return isSystemReturn ? "Confirm Wallet Refund" : "Complete Refund & Disburse";
     default: return status;
@@ -676,7 +676,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
               <div>
                 <Label htmlFor="inspectionNote">Inspection Note</Label>
                 <TextArea id="inspectionNote" className="mt-2" {...register("inspectionNote")} rows={3}
-                  placeholder="Enter quality check or warehouse inspection notes..." error={!!errors.inspectionNote} hint={errors.inspectionNote?.message} />
+                  placeholder="Enter quality check or shop inspection notes..." error={!!errors.inspectionNote} hint={errors.inspectionNote?.message} />
               </div>
               <DamageProposalSection value={damageProposal} onChange={setDamageProposal} />
             </>
@@ -707,7 +707,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
                 <div>
                   <Label htmlFor="adminNote">Note (Optional)</Label>
                   <TextArea id="adminNote" className="mt-2" {...register("adminNote")} rows={3}
-                    placeholder={nextStatus === "RefundCompleted" ? "Enter quality check or warehouse inspection notes..." : "Enter details or comments about this transition..."}
+                    placeholder={nextStatus === "RefundCompleted" ? "Enter quality check or shop inspection notes..." : "Enter details or comments about this transition..."}
                     error={!!errors.adminNote} hint={errors.adminNote?.message} />
                 </div>
               )}
