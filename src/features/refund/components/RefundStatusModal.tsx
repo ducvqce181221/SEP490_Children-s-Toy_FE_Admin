@@ -16,6 +16,8 @@ interface RefundDetailItem {
   unitPrice: number;
   refundAmount: number;
   restorableQuantity?: number | null;
+  failedCustomerQty?: number;
+  failedCarrierQty?: number;
 }
 
 interface RefundStatusModalProps {
@@ -25,6 +27,7 @@ interface RefundStatusModalProps {
   isSubmitting: boolean;
   onSave: (data: UpdateRefundStatusData) => void;
   isSystemReturn?: boolean;
+  refundType?: string;
   /** suggestion từ RefundReason.responsibleParty */
   suggestedFeeBy?: "Store" | "Customer";
   /** ApprovedAmount — để estimate FinalRefundAmount trong UI */
@@ -68,12 +71,12 @@ export const getNextStatus = (currentStatus: string, isSystemReturn: boolean = f
 
 const getRefundStatusLabel = (status: string, isSystemReturn = false) => {
   switch (status) {
-    case "RefundApproved":         return isSystemReturn ? "Approve Refund Request" : "Approve Refund Request";
-    case "RefundPickupCreated":    return "Create Return Shipping Order";
-    case "RefundShipping":         return "Ship Return Package";
-    case "RefundReceived":         return isSystemReturn ? "Confirm Package Received at Shop" : "Receive Return Package";
-    case "RefundInspectionPending":return isSystemReturn ? "Submit Inspection Results" : "Send to Quality Inspection";
-    case "RefundCompleted":        return isSystemReturn ? "Confirm Wallet Refund" : "Complete Refund & Disburse";
+    case "RefundApproved": return isSystemReturn ? "Approve Refund Request" : "Approve Refund Request";
+    case "RefundPickupCreated": return "Create Return Shipping Order";
+    case "RefundShipping": return "Ship Return Package";
+    case "RefundReceived": return isSystemReturn ? "Confirm Package Received at Shop" : "Receive Return Package";
+    case "RefundInspectionPending": return isSystemReturn ? "Submit Inspection Results" : "Send to Quality Inspection";
+    case "RefundCompleted": return isSystemReturn ? "Confirm Wallet Refund" : "Complete Refund & Disburse";
     default: return status;
   }
 };
@@ -117,8 +120,8 @@ function ReturnShippingFeeSection({
           <label
             key={opt}
             className={`flex flex-1 cursor-pointer items-center gap-2.5 rounded-lg border p-3 transition-colors ${feeBy === opt
-                ? "border-[#ff6a00] bg-orange-50 dark:bg-orange-900/20"
-                : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+              ? "border-[#ff6a00] bg-orange-50 dark:bg-orange-900/20"
+              : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
               }`}
           >
             <input type="radio" name="returnShippingFeeBy" value={opt} checked={feeBy === opt} onChange={() => onFeeByChange(opt)} className="accent-[#ff6a00]" />
@@ -141,7 +144,7 @@ function ReturnShippingFeeSection({
         </div>
       )}
       {feeBy === "Customer" && approvedAmount != null && approvedAmount <= 30000 && (
-        <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+        <div className="flex gap-2 items-center rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
           <span className="text-amber-500">⚠</span>
           <p className="text-xs text-amber-700 dark:text-amber-300">
             Return shipping fee may equal or exceed the approved amount. Customer could receive <strong>0</strong>.
@@ -157,11 +160,10 @@ function ReturnShippingFeeSection({
             onChange={(e) => onOverrideNoteChange(e.target.value)}
             rows={2}
             placeholder="Explain why you are overriding the suggested responsible party..."
-            className={`mt-1.5 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 dark:bg-gray-900 dark:text-white/90 ${
-              overrideNoteError
-                ? "border-red-400 focus:ring-red-400"
-                : "border-gray-300 focus:ring-[#ff6a00] dark:border-gray-700"
-            }`}
+            className={`mt-1.5 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 dark:bg-gray-900 dark:text-white/90 ${overrideNoteError
+              ? "border-red-400 focus:ring-red-400"
+              : "border-gray-300 focus:ring-[#ff6a00] dark:border-gray-700"
+              }`}
           />
           {overrideNoteError && <p className="mt-1 text-xs text-red-500">{overrideNoteError}</p>}
         </div>
@@ -170,141 +172,34 @@ function ReturnShippingFeeSection({
   );
 }
 
-// ─── Subcomponent: Damage Responsibility Proposal (Merchandise at InspectionPending) ─
-function DamageProposalSection({
-  value,
-  onChange,
-}: {
-  value: "Customer" | "Carrier" | "";
-  onChange: (v: "Customer" | "Carrier" | "") => void;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3 dark:border-gray-700 dark:bg-gray-800/40">
-      <div>
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Damage Assessment <span className="font-normal text-gray-400">(Optional)</span></p>
-        <p className="mt-0.5 text-xs text-gray-400">If goods appear damaged, propose the cause. Staff will confirm.</p>
-      </div>
-      <div className="space-y-2">
-        {[
-          { val: "", label: "No visible damage", sub: "Goods appear normal" },
-          { val: "Customer", label: "Damage — Customer fault", sub: "Goods sent in damaged condition" },
-          { val: "Carrier", label: "Damage — Carrier fault (GHN)", sub: "Likely damaged in transit (GHN)" },
-        ].map((opt) => (
-          <label
-            key={opt.val}
-            className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-              value === opt.val
-                ? "border-[#ff6a00] bg-orange-50/60 dark:bg-orange-900/10"
-                : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
-            }`}
-          >
-            <input type="radio" name="damageProposal" checked={value === opt.val} onChange={() => onChange(opt.val as "Customer" | "Carrier" | "")} className="accent-[#ff6a00]" />
-            <div>
-              <div className="text-sm font-medium text-gray-800 dark:text-white/90">{opt.label}</div>
-              <div className="text-[11px] text-gray-400">{opt.sub}</div>
-            </div>
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
 
-// ─── Subcomponent: Damage Confirmation (Staff at Complete — customer return only) ─
-function DamageConfirmSection({
-  inspectionPassed,
-  merchandiseProposal,
-  value,
-  onChange,
-}: {
-  inspectionPassed: boolean;
-  merchandiseProposal?: "Customer" | "Carrier" | null;
-  value: "Customer" | "Carrier" | "";
-  onChange: (v: "Customer" | "Carrier") => void;
-}) {
-  if (inspectionPassed) return null;
-  return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 space-y-3 dark:border-amber-800 dark:bg-amber-900/20">
-      <div className="flex items-start gap-2">
-        <span className="text-amber-500 mt-0.5">⚠</span>
-        <div>
-          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Inspection Failed — Confirm Damage Source</p>
-          {merchandiseProposal && (
-            <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">Merchandise assessment: <strong>{merchandiseProposal === "Carrier" ? "Carrier fault" : "Customer fault"}</strong></p>
-          )}
-        </div>
-      </div>
-      <div className="space-y-2">
-        <label
-          className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-            value === "Carrier"
-              ? "border-green-400 bg-green-50 dark:bg-green-900/20"
-              : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
-          }`}
-        >
-          <input
-            type="radio"
-            name="damageConfirm"
-            checked={value === "Carrier"}
-            onChange={() => onChange("Carrier")}
-            className="accent-green-500"
-          />
-          <div>
-            <div className="text-sm font-semibold text-gray-800 dark:text-white/90">Carrier fault — confirm</div>
-            <div className="text-[11px] text-gray-400">Customer gets full refund. No stock restoration. File GHN carrier claim.</div>
-          </div>
-        </label>
-        <label
-          className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-            value === "Customer"
-              ? "border-red-400 bg-red-50 dark:bg-red-900/20"
-              : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
-          }`}
-        >
-          <input
-            type="radio"
-            name="damageConfirm"
-            checked={value === "Customer"}
-            onChange={() => onChange("Customer")}
-            className="accent-red-500"
-          />
-          <div>
-            <div className="text-sm font-semibold text-gray-800 dark:text-white/90">Customer fault — override</div>
-            <div className="text-[11px] text-gray-400">Goods returned to customer. No refund issued.</div>
-          </div>
-        </label>
-      </div>
-    </div>
-  );
-}
-
-// ─── Subcomponent: Restock Quantity (System Return — Merchandise at InspectionPending) ─
+// ─── Subcomponent: Restock Quantity (Merchandise at InspectionPending) ─
 function RestockQuantitySection({
   details,
-  restockQtys,
-  onQtyChange,
+  quantities,
+  onQuantityChange,
   damageProposal,
 }: {
   details: RefundDetailItem[];
-  restockQtys: Record<number, number>;
-  onQtyChange: (productId: number, qty: number) => void;
+  quantities: Record<number, { passed: number; failedCustomer: number; failedCarrier: number }>;
+  onQuantityChange: (productId: number, field: "passed" | "failedCustomer" | "failedCarrier", val: number) => void;
   damageProposal: "Customer" | "Carrier" | "";
 }) {
-  const isCarrierFault = damageProposal === "Carrier";
+  const isCarrierFaultGlobal = damageProposal === "Carrier";
 
   return (
     <div className="rounded-xl border border-blue-200 bg-blue-50/40 p-4 space-y-3 dark:border-blue-800 dark:bg-blue-900/10">
       <div>
-        <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Restock Quantity</p>
+        <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Quality Inspection per Item</p>
         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-          Enter the number of items still sellable. Customer still receives a full refund — this only affects inventory.
+          Allocate returned quantities by inspection result. Total allocated quantity must equal the requested quantity for each product.
         </p>
       </div>
-      {isCarrierFault && (
-        <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+      {isCarrierFaultGlobal && (
+        <div className="flex gap-2 items-center rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
           <span className="text-amber-500">⚠</span>
           <p className="text-xs text-amber-700 dark:text-amber-300">
-            Selecting <strong>Carrier fault (GHN)</strong> sets restock quantity to 0 for all items. File a GHN claim.
+            Selecting <strong>Carrier fault (GHN)</strong> will automatically set Carrier-damaged quantity to 100% of the product quantity.
           </p>
         </div>
       )}
@@ -313,29 +208,84 @@ function RestockQuantitySection({
           <thead>
             <tr className="text-xs text-gray-500 border-b border-blue-100 dark:border-blue-800">
               <th className="py-2 pr-3 text-left font-medium">Product</th>
-              <th className="py-2 px-3 text-center font-medium">Order Qty</th>
-              <th className="py-2 pl-3 text-center font-medium">Restock Qty</th>
+              <th className="py-2 px-2 text-center font-medium">Requested</th>
+              <th className="py-2 px-2 text-center font-medium text-green-600">Passed</th>
+              <th className="py-2 px-2 text-center font-medium text-red-600">Failed (Cust)</th>
+              <th className="py-2 px-2 text-center font-medium text-amber-600">Failed (Carrier)</th>
+              <th className="py-2 pl-3 text-center font-medium">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-blue-50 dark:divide-blue-900">
             {details.map((item) => {
-              const currentQty = isCarrierFault ? 0 : (restockQtys[item.productId] ?? item.quantity);
+              const q = quantities[item.productId] || { passed: item.quantity, failedCustomer: 0, failedCarrier: 0 };
+              const currentPassed = isCarrierFaultGlobal ? 0 : q.passed;
+              const currentCustomer = isCarrierFaultGlobal ? 0 : q.failedCustomer;
+              const currentCarrier = isCarrierFaultGlobal ? item.quantity : q.failedCarrier;
+
+              const sum = currentPassed + currentCustomer + currentCarrier;
+              const isValid = sum === item.quantity;
+
               return (
                 <tr key={item.productId}>
-                  <td className="py-2.5 pr-3 text-gray-800 dark:text-white/80 max-w-[180px] truncate">{item.productName}</td>
-                  <td className="py-2.5 px-3 text-center text-gray-600 dark:text-gray-400">{item.quantity}</td>
-                  <td className="py-2.5 pl-3 text-center">
+                  <td className="py-2.5 pr-3 text-gray-800 dark:text-white/80 max-w-[150px] truncate" title={item.productName}>
+                    {item.productName}
+                  </td>
+                  <td className="py-2.5 px-2 text-center text-gray-600 dark:text-gray-400 font-semibold">{item.quantity}</td>
+
+                  {/* Passed Qty */}
+                  <td className="py-2.5 px-2 text-center">
                     <input
                       type="number"
                       min={0}
                       max={item.quantity}
-                      value={currentQty}
-                      disabled={isCarrierFault}
-                      onChange={(e) => onQtyChange(item.productId, Math.min(item.quantity, Math.max(0, parseInt(e.target.value) || 0)))}
-                      className={`w-16 rounded-md border text-center text-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400
-                        ${isCarrierFault ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700" : "bg-white dark:bg-gray-900 dark:text-white/90"}
+                      value={currentPassed}
+                      disabled={isCarrierFaultGlobal}
+                      onChange={(e) => onQuantityChange(item.productId, "passed", Math.min(item.quantity, Math.max(0, parseInt(e.target.value) || 0)))}
+                      className={`w-14 rounded-md border text-center text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400
+                        ${isCarrierFaultGlobal ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700" : "bg-white dark:bg-gray-900 dark:text-white/90"}
                         border-gray-300 dark:border-gray-600`}
                     />
+                  </td>
+
+                  {/* Failed Customer Qty */}
+                  <td className="py-2.5 px-2 text-center">
+                    <input
+                      type="number"
+                      min={0}
+                      max={item.quantity}
+                      value={currentCustomer}
+                      disabled={isCarrierFaultGlobal}
+                      onChange={(e) => onQuantityChange(item.productId, "failedCustomer", Math.min(item.quantity, Math.max(0, parseInt(e.target.value) || 0)))}
+                      className={`w-14 rounded-md border text-center text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400
+                        ${isCarrierFaultGlobal ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700" : "bg-white dark:bg-gray-900 dark:text-white/90"}
+                        border-gray-300 dark:border-gray-600`}
+                    />
+                  </td>
+
+                  {/* Failed Carrier Qty */}
+                  <td className="py-2.5 px-2 text-center">
+                    <input
+                      type="number"
+                      min={0}
+                      max={item.quantity}
+                      value={currentCarrier}
+                      disabled={isCarrierFaultGlobal}
+                      onChange={(e) => onQuantityChange(item.productId, "failedCarrier", Math.min(item.quantity, Math.max(0, parseInt(e.target.value) || 0)))}
+                      className={`w-14 rounded-md border text-center text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400
+                        ${isCarrierFaultGlobal ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700" : "bg-white dark:bg-gray-900 dark:text-white/90"}
+                        border-gray-300 dark:border-gray-600`}
+                    />
+                  </td>
+
+                  {/* Status / Validation */}
+                  <td className="py-2.5 pl-3 text-center">
+                    {isValid ? (
+                      <span className="text-xs text-green-600 font-semibold">✓ Matched</span>
+                    ) : (
+                      <span className="text-xs text-red-500 font-semibold" title={`Total allocation (${sum}) must equal the requested quantity (${item.quantity})`}>
+                        Mismatched ({sum}/{item.quantity})
+                      </span>
+                    )}
                   </td>
                 </tr>
               );
@@ -418,11 +368,10 @@ function SystemReturnCompleteSection({
           ].map((opt) => (
             <label
               key={String(opt.val)}
-              className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-                includeShipping === opt.val
-                  ? "border-[#ff6a00] bg-orange-50 dark:bg-orange-900/20"
-                  : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
-              }`}
+              className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${includeShipping === opt.val
+                ? "border-[#ff6a00] bg-orange-50 dark:bg-orange-900/20"
+                : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+                }`}
             >
               <input
                 type="radio"
@@ -454,19 +403,21 @@ function SystemReturnCompleteSection({
 }
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
-export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
+export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspectionPassed?: boolean | null }> = ({
   isOpen,
   onClose,
   currentStatus,
   isSubmitting,
   onSave,
   isSystemReturn = false,
+  refundType,
   suggestedFeeBy = "Store",
   approvedAmount,
   currentDamageResponsibility,
   refundDetails = [],
   customerShippingPaid = 0,
   totalAmount,
+  currentInspectionPassed = true,
 }) => {
   const nextStatus = getNextStatus(currentStatus, isSystemReturn);
 
@@ -483,7 +434,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
       status: (nextStatus || "RefundApproved") as UpdateRefundStatusData["status"],
       rejectReason: "",
       adminNote: "",
-      inspectionPassed: true,
+      inspectionPassed: currentInspectionPassed ?? true,
       inspectionNote: "",
       returnShippingFeeBy: suggestedFeeBy,
       returnShippingFeeNote: "",
@@ -494,16 +445,25 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
   const [feeBy, setFeeBy] = React.useState<"Store" | "Customer">(suggestedFeeBy);
   const [overrideNote, setOverrideNote] = React.useState("");
   const [overrideNoteError, setOverrideNoteError] = React.useState("");
-  const [damageProposal, setDamageProposal] = React.useState<"Customer" | "Carrier" | "">("");
-  const [damageConfirm, setDamageConfirm] = React.useState<"Customer" | "Carrier" | "">("");
   const [includeShipping, setIncludeShipping] = React.useState(true);
 
-  // Restock quantities: productId → qty (default = order quantity)
-  const defaultRestockQtys = React.useMemo(
-    () => Object.fromEntries(refundDetails.map((d) => [d.productId, d.quantity])),
-    [refundDetails]
-  );
-  const [restockQtys, setRestockQtys] = React.useState<Record<number, number>>(defaultRestockQtys);
+  // Quantity Breakdown state: productId → { passed, failedCustomer, failedCarrier }
+  const defaultQuantities = React.useMemo(() => {
+    return Object.fromEntries(
+      refundDetails.map((d) => [
+        d.productId,
+        {
+          passed: d.restorableQuantity ?? d.quantity,
+          failedCustomer: d.failedCustomerQty ?? 0,
+          failedCarrier: d.failedCarrierQty ?? 0,
+        },
+      ])
+    );
+  }, [refundDetails]);
+
+  const [quantities, setQuantities] = React.useState<
+    Record<number, { passed: number; failedCustomer: number; failedCarrier: number }>
+  >(defaultQuantities);
 
   const inspectionPassedWatch = watch("inspectionPassed");
 
@@ -513,7 +473,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
         status: nextStatus,
         rejectReason: "",
         adminNote: "",
-        inspectionPassed: true,
+        inspectionPassed: currentInspectionPassed ?? true,
         inspectionNote: "",
         returnShippingFeeBy: suggestedFeeBy,
         returnShippingFeeNote: "",
@@ -522,12 +482,20 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
       setFeeBy(suggestedFeeBy);
       setOverrideNote("");
       setOverrideNoteError("");
-      setDamageProposal("");
-      setDamageConfirm(currentDamageResponsibility || "");
       setIncludeShipping(true);
-      setRestockQtys(defaultRestockQtys);
+      setQuantities(defaultQuantities);
     }
-  }, [isOpen, nextStatus, reset, currentStatus, suggestedFeeBy, currentDamageResponsibility, defaultRestockQtys]);
+  }, [isOpen, nextStatus, reset, currentStatus, suggestedFeeBy, currentDamageResponsibility, defaultQuantities, currentInspectionPassed, refundDetails]);
+
+  // Compute if all lines are validly balanced: passed + failedCustomer + failedCarrier === quantity
+  const isInspectionFormValid = React.useMemo(() => {
+    if (nextStatus !== "RefundInspectionPending") return true;
+    return refundDetails.every((item) => {
+      const q = quantities[item.productId];
+      if (!q) return false;
+      return q.passed + q.failedCustomer + q.failedCarrier === item.quantity;
+    });
+  }, [nextStatus, refundDetails, quantities]);
 
   if (!nextStatus) {
     return (
@@ -578,25 +546,17 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
       payload.returnShippingFeeNote = overrideNote || undefined;
     }
 
-    // DamageResponsibility
-    if (nextStatus === "RefundInspectionPending" && damageProposal) {
-      payload.damageResponsibility = damageProposal as "Customer" | "Carrier";
-    }
-    if (nextStatus === "RefundCompleted" && !isSystemReturn && !inspectionPassedWatch && damageConfirm) {
-      payload.damageResponsibility = damageConfirm as "Customer" | "Carrier";
-    }
-
-    // System return InspectionPending: gửi RestockItems
-    if (isSystemReturn && nextStatus === "RefundInspectionPending") {
-      const effectiveDamage = damageProposal;
-      if (effectiveDamage === "Carrier") {
-        payload.restockItems = refundDetails.map((d) => ({ productId: d.productId, restorableQuantity: 0 }));
-      } else {
-        payload.restockItems = refundDetails.map((d) => ({
+    // Gửi RestockItems cho cả System & Customer return
+    if (nextStatus === "RefundInspectionPending") {
+      payload.restockItems = refundDetails.map((d) => {
+        const q = quantities[d.productId] || { passed: d.quantity, failedCustomer: 0, failedCarrier: 0 };
+        return {
           productId: d.productId,
-          restorableQuantity: restockQtys[d.productId] ?? d.quantity,
-        }));
-      }
+          restorableQuantity: q.passed,
+          failedCustomerQty: q.failedCustomer,
+          failedCarrierQty: q.failedCarrier,
+        };
+      });
     }
 
     // System return Complete: bắt buộc includeShippingInRefund
@@ -608,7 +568,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[560px] p-5 lg:p-8">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-3xl p-5 lg:p-8">
       <div>
         <div className="mb-5">
           <h3 className="text-xl font-bold text-gray-800 dark:text-white/90">{title}</h3>
@@ -641,82 +601,67 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps> = ({
             />
           )}
 
-          {/* ── System Return InspectionPending: Restock + Damage Proposal ── */}
-          {isSystemReturn && nextStatus === "RefundInspectionPending" ? (
+          {/* ── InspectionPending: Restock (Cả System & Customer return) ── */}
+          {nextStatus === "RefundInspectionPending" ? (
             <>
               <RestockQuantitySection
                 details={refundDetails}
-                restockQtys={restockQtys}
-                onQtyChange={(pid, qty) => setRestockQtys((prev) => ({ ...prev, [pid]: qty }))}
-                damageProposal={damageProposal}
+                quantities={quantities}
+                onQuantityChange={(pid, field, val) => {
+                  setQuantities((prev) => ({
+                    ...prev,
+                    [pid]: {
+                      ...prev[pid],
+                      [field]: val,
+                    },
+                  }));
+                }}
+                damageProposal=""
               />
-              <DamageProposalSection value={damageProposal} onChange={setDamageProposal} />
               <div>
                 <Label htmlFor="inspectionNote">Inspection Note (Optional)</Label>
                 <TextArea id="inspectionNote" className="mt-2" {...register("inspectionNote")} rows={2} placeholder="Enter item condition notes..." />
               </div>
             </>
-          ) : /* ── Customer return InspectionPending ── */
-          !isSystemReturn && nextStatus === "RefundInspectionPending" ? (
-            <>
-              <div>
-                <Label htmlFor="inspectionPassed">Quality Inspection Result</Label>
-                <Controller
-                  name="inspectionPassed"
-                  control={control}
-                  render={({ field }) => (
-                    <select id="inspectionPassed" className="mt-2 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                      value={field.value ? "true" : "false"} onChange={(e) => field.onChange(e.target.value === "true")}>
-                      <option value="true">Passed</option>
-                      <option value="false">Failed</option>
-                    </select>
-                  )}
-                />
-              </div>
-              <div>
-                <Label htmlFor="inspectionNote">Inspection Note</Label>
-                <TextArea id="inspectionNote" className="mt-2" {...register("inspectionNote")} rows={3}
-                  placeholder="Enter quality check or shop inspection notes..." error={!!errors.inspectionNote} hint={errors.inspectionNote?.message} />
-              </div>
-              <DamageProposalSection value={damageProposal} onChange={setDamageProposal} />
-            </>
-          ) : /* ── System Return Complete: shipping toggle ── */
-          isSystemReturn && nextStatus === "RefundCompleted" ? (
-            <SystemReturnCompleteSection
-              totalAmount={totalAmount ?? approvedAmount ?? 0}
-              customerShippingPaid={customerShippingPaid}
-              includeShipping={includeShipping}
-              onIncludeShippingChange={setIncludeShipping}
-              damageResponsibility={currentDamageResponsibility}
-              refundDetails={refundDetails}
-            />
-          ) : (
-            <>
-              {/* Customer return Complete: Damage confirmation if inspection failed */}
-              {nextStatus === "RefundCompleted" && !isSystemReturn && inspectionPassedWatch === false && (
-                <DamageConfirmSection
-                  inspectionPassed={false}
-                  merchandiseProposal={currentDamageResponsibility}
-                  value={damageConfirm}
-                  onChange={setDamageConfirm}
-                />
-              )}
-
-              {/* Generic admin note for other steps */}
-              {nextStatus !== "RefundApproved" && nextStatus !== "RefundReceived" && (
-                <div>
+          ) : /* ── ReturnOnly Complete: simple info ── */
+            refundType === "ReturnOnly" && nextStatus === "RefundCompleted" ? (
+              <div className="rounded-xl border border-blue-200 bg-blue-50/40 p-4 space-y-2 dark:border-blue-800 dark:bg-blue-900/10 text-sm">
+                <p className="font-semibold text-blue-800 dark:text-blue-300">Confirm Return Receipt (No Refund)</p>
+                <p className="text-gray-600 dark:text-gray-400">
+                  This is an unpaid COD order return. Confirming will complete the return flow, restore the stock of items verified in the quality check, and close the request.
+                </p>
+                <div className="mt-2">
                   <Label htmlFor="adminNote">Note (Optional)</Label>
-                  <TextArea id="adminNote" className="mt-2" {...register("adminNote")} rows={3}
-                    placeholder={nextStatus === "RefundCompleted" ? "Enter quality check or shop inspection notes..." : "Enter details or comments about this transition..."}
-                    error={!!errors.adminNote} hint={errors.adminNote?.message} />
+                  <TextArea id="adminNote" className="mt-2" {...register("adminNote")} rows={2} placeholder="Enter any extra notes..." />
                 </div>
-              )}
-            </>
-          )}
+              </div>
+            ) : /* ── System Return Complete: shipping toggle ── */
+            isSystemReturn && nextStatus === "RefundCompleted" ? (
+              <SystemReturnCompleteSection
+                totalAmount={totalAmount ?? approvedAmount ?? 0}
+                customerShippingPaid={customerShippingPaid}
+                includeShipping={includeShipping}
+                onIncludeShippingChange={setIncludeShipping}
+                damageResponsibility={currentDamageResponsibility}
+                refundDetails={refundDetails}
+              />
+            ) : (
+              <>
+                {/* Generic admin note for other steps */}
+                {nextStatus !== "RefundApproved" && nextStatus !== "RefundReceived" && (
+                  <div>
+                    <Label htmlFor="adminNote">Note (Optional)</Label>
+                    <TextArea id="adminNote" className="mt-2" {...register("adminNote")} rows={3}
+                      placeholder={nextStatus === "RefundCompleted" ? "Enter quality check or shop inspection notes..." : "Enter details or comments about this transition..."}
+                      error={!!errors.adminNote} hint={errors.adminNote?.message} />
+                  </div>
+                )}
+              </>
+            )}
 
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="outline" onClick={onClose} type="button" disabled={isSubmitting}>Cancel</Button>
-            <Button variant="primary" type="submit" disabled={isSubmitting}>
+            <Button variant="primary" type="submit" disabled={isSubmitting || !isInspectionFormValid}>
               {isSubmitting ? "Processing..." : title}
             </Button>
           </div>
