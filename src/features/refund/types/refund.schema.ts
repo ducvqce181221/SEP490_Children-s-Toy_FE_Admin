@@ -26,10 +26,12 @@ export const UpdateRefundStatusSchema = z.object({
   returnShippingFeeNote: z.string().optional(),
   // InspectionPending (Merchandise đề xuất) / Complete (Staff xác nhận)
   damageResponsibility: z.enum(["Customer", "Carrier"]).optional(),
-  // [System Return] Merchandise nhập SL nhập kho theo từng sản phẩm
+  // [System/Customer Return] Merchandise nhập số lượng phân rã theo từng sản phẩm
   restockItems: z.array(z.object({
     productId: z.number(),
     restorableQuantity: z.number().min(0),
+    failedCustomerQty: z.number().min(0),
+    failedCarrierQty: z.number().min(0),
   })).optional(),
   // [System Return] Staff chọn có hoàn phí ship khi Complete
   includeShippingInRefund: z.boolean().optional(),

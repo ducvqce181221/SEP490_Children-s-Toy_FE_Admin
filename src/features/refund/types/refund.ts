@@ -23,6 +23,8 @@ export interface RefundDetailItem {
   refundAmount: number;
   /** [System Return] Số lượng Merchandise xác nhận nhập kho lại. null = chưa kiểm tra. */
   restorableQuantity?: number | null;
+  failedCustomerQty?: number;
+  failedCarrierQty?: number;
 }
 
 export interface RefundStatusHistoryItem {
@@ -74,6 +76,7 @@ export interface Refund {
   assignedToStaffName?: string | null;
   assignedToMerchName?: string | null;
   refundSource?: string;
+  refundType?: string;
   isSystemReturn?: boolean;
   /** ResponsibleParty của RefundReason — dùng để suggest bên chịu phí ship hoàn trả */
   refundReasonResponsibleParty?: "Store" | "Customer";
@@ -83,6 +86,12 @@ export interface Refund {
   returnShippingFeeNote?: string | null;
   finalRefundAmount?: number;
   damageResponsibility?: "Customer" | "Carrier" | null;
+  itemApprovedSubTotal?: number;
+  itemRejectedSubTotal?: number;
+  returnToCustomerFee?: number;
+  customerResponseDeadline?: string | null;
+  customerResponse?: string | null;
+  returnToCustomerFeePaid?: boolean;
   // --- System Return fields ---
   /** [System Return] Tiền ship khách đã thực trả (snapshot lúc tạo refund). */
   customerShippingPaid?: number;
