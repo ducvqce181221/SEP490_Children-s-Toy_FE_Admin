@@ -12,8 +12,9 @@ export const useRefundMutations = (onSuccess?: () => void) => {
       await refundApi.updateStatus(id, data);
       toast.success("Status updated successfully");
       onSuccess?.();
-    } catch (error) {
-      // Error is handled globally by axios interceptor, but we catch to stop execution
+    } catch (error: any) {
+      const apiMessage = error?.response?.data?.message || error?.message || "Failed to update status";
+      toast.error(apiMessage);
     } finally {
       setIsSubmitting(false);
     }
