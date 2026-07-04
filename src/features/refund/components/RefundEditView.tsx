@@ -256,8 +256,8 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
   const isMerchandiseStage = isShippingStage || isReceivedStage || (!refund.isSystemReturn && isInspectionStage);
 
   // System Return — per-stage role gates
-  const isSystemApprovedStage  = !!refund.isSystemReturn && refund.refundStatus === "RefundApproved";
-  const isSystemReceivedStage  = !!refund.isSystemReturn && refund.refundStatus === "RefundReceived";
+  const isSystemApprovedStage = !!refund.isSystemReturn && refund.refundStatus === "RefundApproved";
+  const isSystemReceivedStage = !!refund.isSystemReturn && refund.refundStatus === "RefundReceived";
   const isSystemInspectionStage = !!refund.isSystemReturn && refund.refundStatus === "RefundInspectionPending";
   const isSystemRequestedStage = !!refund.isSystemReturn && refund.refundStatus === "RefundRequested";
 
@@ -639,9 +639,8 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                                 <div className="px-4 py-2 border-b border-slate-100 dark:border-gray-700 flex justify-between items-center">
                                   <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Financial Summary</span>
                                   {hasCustomerFault && (
-                                    <span className={`text-[10px] font-bold uppercase rounded-full px-2 py-0.5 ${
-                                      refund.returnToCustomerFeePaid ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700 animate-pulse"
-                                    }`}>
+                                    <span className={`text-[10px] font-bold uppercase rounded-full px-2 py-0.5 ${refund.returnToCustomerFeePaid ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700 animate-pulse"
+                                      }`}>
                                       {refund.returnToCustomerFeePaid ? "Fee Settled" : "Fee Unpaid"}
                                     </span>
                                   )}
@@ -662,7 +661,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                                   <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Original Shipping Fee Refund</span>
                                     <span className="font-semibold text-gray-800 dark:text-white/80">
-                                      {(refund.itemRejectedSubTotal ?? 0) > 0 ? "0 (forfeited due to customer fault)" : formatCurrency(refund.shippingFee ?? 0)}
+                                      {(refund.itemRejectedSubTotal ?? 0) > 0 ? "0 (customer fault)" : formatCurrency(refund.shippingFee ?? 0)}
                                     </span>
                                   </div>
 
@@ -691,7 +690,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                                       <span className="text-gray-500">Customer Choice:</span>
                                       <span className="font-bold text-gray-700 dark:text-gray-300">
                                         {refund.customerResponse === "AcceptReturn" ? "Accept Return & Paid" :
-                                         refund.customerResponse === "Disposed" ? "Dispose Items" : "Awaiting payment/response..."}
+                                          refund.customerResponse === "Disposed" ? "Dispose Items" : "Awaiting payment/response..."}
                                       </span>
                                     </div>
                                     {refund.customerResponseDeadline && !refund.returnToCustomerFeePaid && (
@@ -807,8 +806,8 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                       label="Damage Responsibility"
                       value={
                         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${refund.damageResponsibility === "Carrier"
-                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                           }`}>
                           {refund.damageResponsibility === "Carrier" ? "🚚 Carrier fault" : "👤 Customer fault"}
                         </span>
