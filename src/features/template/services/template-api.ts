@@ -31,6 +31,9 @@ export const templateApi = {
   createTemplate: (data: TemplateFormData) =>
     axiosClient.post<Template, TemplateFormData>("/templates", data),
 
+  getTemplateById: (id: number) =>
+    axiosClient.get<Template>(`/templates/${id}`),
+
   saveTemplate: (id: number, data: UpdateTemplatePayload) =>
     axiosClient.put<Template | void, UpdateTemplatePayload>(`/templates/${id}`, data),
 };

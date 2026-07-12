@@ -64,9 +64,6 @@ const ShiftCard: React.FC<{
             <h3 className="font-bold text-gray-900 dark:text-white text-base leading-tight">
               {shift.shiftName}
             </h3>
-            <span className={`text-xs font-semibold uppercase tracking-wide ${period.color}`}>
-              {period.label} Shift
-            </span>
           </div>
         </div>
 
