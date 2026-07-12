@@ -50,10 +50,6 @@ export const CampaignToolbar: React.FC<CampaignToolbarProps> = ({
     setLocalFilters({ ...localFilters, status: e.target.value });
   };
 
-  const handleSourceTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setLocalFilters({ ...localFilters, sourceType: e.target.value });
-  };
-
   const clearFilters = () => {
     const emptyFilters = { status: "", sourceType: "" };
     setLocalFilters(emptyFilters);
@@ -102,7 +98,7 @@ export const CampaignToolbar: React.FC<CampaignToolbarProps> = ({
             className="dropdown-toggle"
           >
             Filter
-            {(filters.status || filters.sourceType) && (
+            {filters.status && (
               <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-brand-500 rounded-full">
                 !
               </span>
@@ -127,19 +123,6 @@ export const CampaignToolbar: React.FC<CampaignToolbarProps> = ({
                   ]}
                   onChange={handleStatusChange}
                   value={localFilters.status}
-                />
-              </div>
-
-              <div>
-                <Label>Source Type</Label>
-                <Select
-                  options={[
-                    { value: "", label: "All Sources" },
-                    { value: "ADMIN", label: "Admin" },
-                    { value: "SYSTEM", label: "System" },
-                  ]}
-                  onChange={handleSourceTypeChange}
-                  value={localFilters.sourceType}
                 />
               </div>
 

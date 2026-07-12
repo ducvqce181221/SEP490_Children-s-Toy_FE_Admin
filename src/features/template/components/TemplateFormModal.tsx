@@ -11,6 +11,7 @@ import { TemplateFormData } from "../types/template";
 import { TemplateFormSchema } from "../types/template.schema";
 import { Template } from "../types/template";
 import toast from "react-hot-toast";
+import { templateApi } from "../services/template-api";
 
 export type TemplateModalMode = "create" | "edit" | "detail";
 
@@ -104,6 +105,7 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
 
   // State để quản lý việc mở/đóng danh sách drop list của từng nhóm
   const [expandedGroup, setExpandedGroup] = useState<string | null>(PLACEHOLDER_GROUPS[0].title);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   const isEditMode = mode === "edit";
   const isDetailMode = mode === "detail";
@@ -112,7 +114,7 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
   const quillRef = useRef<Quill | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const [lastFocusedField, setLastFocusedField] = useState<"title" | "message">("message");
-  
+
   const pendingMessageRef = useRef("");
   const isApplyingMessageRef = useRef(false);
   const toolbarId = `template-message-toolbar`;
@@ -177,7 +179,7 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
       }
 
       isApplyingMessageRef.current = true;
-      
+
       // Sử dụng innerHTML trực tiếp cho Quill 2.x cực kỳ an toàn và ổn định
       quillRef.current.root.innerHTML = normalizedContent;
 
@@ -192,21 +194,47 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
     setIsMounted(true);
   }, []);
 
-  // Reset form 1 lần duy nhất khi mở modal
+  // Load data from backend when editing/viewing, fallback to list data first
   useEffect(() => {
     if (!isOpen) return;
 
     if ((isEditMode || isDetailMode) && templateData) {
+      // 1. Set values immediately using list data
       reset({
         templateCode: templateData.templateCode,
         titleTemplate: templateData.titleTemplate,
         messageTemplate: templateData.messageTemplate,
         isActive: templateData.isActive,
       });
+      setMessageEditorContent(templateData.messageTemplate);
+
+      // 2. Fetch the latest detail from backend
+      const fetchDetail = async () => {
+        setIsLoadingDetail(true);
+        try {
+          const detail = await templateApi.getTemplateById(templateData.templateId);
+          reset({
+            templateCode: detail.templateCode,
+            titleTemplate: detail.titleTemplate,
+            messageTemplate: detail.messageTemplate,
+            isActive: detail.isActive,
+          });
+          setMessageEditorContent(detail.messageTemplate);
+        } catch (err) {
+          console.error("Failed to fetch template detail:", err);
+          toast.error("Could not sync with server. Showing cached template data.");
+        } finally {
+          setIsLoadingDetail(false);
+        }
+      };
+
+      fetchDetail();
     } else {
+      // Create mode
       reset(defaultValues);
+      setMessageEditorContent("");
     }
-  }, [isOpen, templateData, isEditMode, isDetailMode, reset]);
+  }, [isOpen, templateData, isEditMode, isDetailMode, reset, setMessageEditorContent]);
 
   // Callback Ref để khởi tạo Quill cực kỳ an toàn và đồng bộ với DOM React
   const editorRefCallback = useCallback((node: HTMLDivElement | null) => {
@@ -257,8 +285,8 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
       quillRef.current = quill;
 
       // Nạp dữ liệu ban đầu ĐÚNG 1 LẦN DUY NHẤT khi khởi tạo thành công
-      if ((isEditMode || isDetailMode) && templateData) {
-        const initialContent = normalizeMessageHtml(templateData.messageTemplate);
+      if (isEditMode || isDetailMode) {
+        const initialContent = normalizeMessageHtml(getValues("messageTemplate") || "");
         quill.root.innerHTML = initialContent;
         pendingMessageRef.current = initialContent;
       } else {
@@ -266,11 +294,18 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
         pendingMessageRef.current = "";
       }
 
-      quill.enable(!isReadOnly && !isSubmitting);
+      quill.enable(!isReadOnly && !isSubmitting && !isLoadingDetail);
     };
 
     void initQuill();
-  }, [isOpen, isReadOnly, isEditMode, isDetailMode, templateData, isSubmitting, normalizeMessageHtml, setValue, toMessageFormValue]);
+  }, [isOpen, isReadOnly, isEditMode, isDetailMode, isSubmitting, isLoadingDetail, normalizeMessageHtml, setValue, toMessageFormValue, getValues]);
+
+  // Reactively enable/disable Quill editor based on submitting/loading detail state
+  useEffect(() => {
+    if (quillRef.current) {
+      quillRef.current.enable(!isReadOnly && !isSubmitting && !isLoadingDetail);
+    }
+  }, [isReadOnly, isSubmitting, isLoadingDetail]);
 
   // Handlers
   const onFormSubmit = (data: TemplateFormData) => {
@@ -292,7 +327,7 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
       const end = input.selectionEnd ?? 0;
       const currentValue = getValues("titleTemplate") || "";
       const next = currentValue.substring(0, start) + placeholder + currentValue.substring(end);
-      
+
       setValue("titleTemplate", next, { shouldValidate: true, shouldDirty: true });
       setTimeout(() => {
         input.focus();
@@ -342,244 +377,239 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
       <Modal isOpen={isOpen} onClose={onClose} className="max-w-[1000px] p-0 overflow-hidden rounded-xl">
         <div className="grid grid-cols-12 h-[620px] overflow-hidden">
 
-        {/* ── Left: Form ── */}
-        <div className="col-span-12 lg:col-span-7 p-8 flex flex-col border-r border-gray-100 dark:border-gray-800 overflow-y-auto max-h-full">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white/90 mb-1">
-              {title}
-            </h2>
-          </div>
-
-          <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col gap-5 flex-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <Label className="flex justify-between items-center w-full">
-                  <span>Template Code <span className="text-error-500">*</span></span>
-                  <span className="text-[10px] text-gray-400 font-normal">
-                    {(watchForm("templateCode") || "").length}/50
-                  </span>
-                </Label>
-                <Input
-                  type="text"
-                  placeholder="e.g. WELCOME_MAIL"
-                  maxLength={50}
-                  error={!!errors.templateCode}
-                  hint={errors.templateCode?.message}
-                  disabled={isReadOnly}
-                  {...register("templateCode", {
-                    onChange: (e) => {
-                      e.target.value = e.target.value.toUpperCase();
-                    },
-                  })}
-                />
+          {/* ── Left: Form ── */}
+          <div className="relative col-span-12 lg:col-span-7 p-8 flex flex-col border-r border-gray-100 dark:border-gray-800 overflow-y-auto max-h-full">
+            {isLoadingDetail && (
+              <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 z-50 flex flex-col items-center justify-center backdrop-blur-[2px] transition-opacity duration-300">
+                <svg className="animate-spin h-10 w-10 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="mt-3 text-sm font-semibold text-gray-500 dark:text-gray-400">Loading latest template content...</p>
               </div>
-              <div>
-                <Label className="flex justify-between items-center w-full">
-                  <span>Title Template <span className="text-error-500">*</span></span>
-                  <span className="text-[10px] text-gray-400 font-normal">
-                    {(watchedTitle || "").length}/255
-                  </span>
-                </Label>
-                <Input
-                  type="text"
-                  placeholder="e.g. Welcome to ToyStore!"
-                  maxLength={255}
-                  error={!!errors.titleTemplate}
-                  hint={errors.titleTemplate?.message}
-                  disabled={isReadOnly}
-                  {...titleRegister}
-                  ref={(e) => {
-                    titleRegisterRef(e);
-                    titleInputRef.current = e;
-                  }}
-                  onFocus={() => {
-                    setLastFocusedField("title");
-                  }}
-                />
-              </div>
+            )}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white/90 mb-1">
+                {title}
+              </h2>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <Label className="mb-0 flex items-center gap-2">
-                  <span>Message Content <span className="text-error-500">*</span></span>
-                  <span className="text-[10px] text-gray-400 font-normal mt-0.5">
-                    {(watchedMessage || "").length}/4000
-                  </span>
-                </Label>
+            <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col gap-5 flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <Label className="flex justify-between items-center w-full">
+                    <span>Template Code <span className="text-error-500">*</span></span>
+                    <span className="text-[10px] text-gray-400 font-normal">
+                      {(watchForm("templateCode") || "").length}/50
+                    </span>
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. WELCOME_MAIL"
+                    maxLength={50}
+                    error={!!errors.templateCode}
+                    hint={errors.templateCode?.message}
+                    disabled={isReadOnly || isLoadingDetail}
+                    {...register("templateCode", {
+                      onChange: (e) => {
+                        e.target.value = e.target.value.toUpperCase();
+                      },
+                    })}
+                  />
+                </div>
+                <div>
+                  <Label className="flex justify-between items-center w-full">
+                    <span>Title Template <span className="text-error-500">*</span></span>
+                    <span className="text-[10px] text-gray-400 font-normal">
+                      {(watchedTitle || "").length}/255
+                    </span>
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. Welcome to ToyStore!"
+                    maxLength={255}
+                    error={!!errors.titleTemplate}
+                    hint={errors.titleTemplate?.message}
+                    disabled={isReadOnly || isLoadingDetail}
+                    {...titleRegister}
+                    ref={(e) => {
+                      titleRegisterRef(e);
+                      titleInputRef.current = e;
+                    }}
+                    onFocus={() => {
+                      setLastFocusedField("title");
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <Label className="mb-0 flex items-center gap-2">
+                    <span>Message Content <span className="text-error-500">*</span></span>
+                    <span className="text-[10px] text-gray-400 font-normal mt-0.5">
+                      {(watchedMessage || "").length}/4000
+                    </span>
+                  </Label>
+                  {!isReadOnly && (
+                    <span className="text-[10px] text-gray-400 uppercase font-semibold tracking-widest">
+                      Click a tag to insert
+                    </span>
+                  )}
+                </div>
+
+                {/* ── Accordion Drop List cho Tags ── */}
                 {!isReadOnly && (
-                  <span className="text-[10px] text-gray-400 uppercase font-semibold tracking-widest">
-                    Click a tag to insert
-                  </span>
+                  <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/60 max-h-40 overflow-y-auto">
+                    {PLACEHOLDER_GROUPS.map((group) => {
+                      const isOpen = expandedGroup === group.title;
+                      return (
+                        <div
+                          key={group.title}
+                          className={`flex flex-col bg-white dark:bg-gray-800 rounded-lg border transition-colors ${isOpen ? "border-brand-200 dark:border-brand-500/30 shadow-sm" : "border-gray-100 dark:border-gray-700"
+                            }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setExpandedGroup(isOpen ? null : group.title)}
+                            className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                          >
+                            <span>{group.title}</span>
+                            <svg
+                              className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? "rotate-180 text-brand-500" : ""}`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+
+                          {isOpen && (
+                            <div className="px-3 pb-3 pt-1 flex flex-wrap gap-2 border-t border-gray-50 dark:border-gray-700/50">
+                              {group.items.map((p) => (
+                                <button
+                                  key={p}
+                                  type="button"
+                                  disabled={isReadOnly || isLoadingDetail}
+                                  onClick={() => insertPlaceholder(p)}
+                                  className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-brand-50 dark:bg-gray-700 border border-brand-100 dark:border-gray-600 text-brand-600 dark:text-brand-400 hover:bg-brand-100 hover:border-brand-200 hover:text-brand-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  {p}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {isReadOnly ? (
+                  <div
+                    className="min-h-[180px] p-4 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-800 dark:text-white/90 overflow-y-auto ql-editor prose dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: highlightPlaceholdersHtml(watchedMessage || "") }}
+                  />
+                ) : (
+                  <div className={`rounded-xl border transition-all overflow-hidden bg-white dark:bg-gray-900 ${errors.messageTemplate ? "border-error-500 ring-1 ring-error-500" : "border-gray-200 dark:border-gray-700"
+                    }`}>
+                    <div
+                      ref={editorRefCallback}
+                      className="min-h-[180px] text-sm text-gray-800 dark:text-white/90"
+                    />
+                  </div>
+                )}
+                <input type="hidden" {...register("messageTemplate")} />
+                {errors.messageTemplate && (
+                  <p className="mt-1.5 text-sm text-error-500">
+                    {errors.messageTemplate.message}
+                  </p>
                 )}
               </div>
 
-              {/* ── Accordion Drop List cho Tags ── */}
-              {!isReadOnly && (
-                <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/60 max-h-40 overflow-y-auto">
-                  {PLACEHOLDER_GROUPS.map((group) => {
-                    const isOpen = expandedGroup === group.title;
-                    return (
-                      <div
-                        key={group.title}
-                        className={`flex flex-col bg-white dark:bg-gray-800 rounded-lg border transition-colors ${isOpen ? "border-brand-200 dark:border-brand-500/30 shadow-sm" : "border-gray-100 dark:border-gray-700"
-                          }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setExpandedGroup(isOpen ? null : group.title)}
-                          className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                        >
-                          <span>{group.title}</span>
-                          <svg
-                            className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? "rotate-180 text-brand-500" : ""}`}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-
-                        {isOpen && (
-                          <div className="px-3 pb-3 pt-1 flex flex-wrap gap-2 border-t border-gray-50 dark:border-gray-700/50">
-                            {group.items.map((p) => (
-                              <button
-                                key={p}
-                                type="button"
-                                disabled={isReadOnly}
-                                onClick={() => insertPlaceholder(p)}
-                                className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-brand-50 dark:bg-gray-700 border border-brand-100 dark:border-gray-600 text-brand-600 dark:text-brand-400 hover:bg-brand-100 hover:border-brand-200 hover:text-brand-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {p}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {isReadOnly ? (
-                <div
-                  className="min-h-[180px] p-4 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-800 dark:text-white/90 overflow-y-auto ql-editor prose dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: highlightPlaceholdersHtml(watchedMessage || "") }}
+              <div className="flex items-center gap-2.5 mt-1">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  disabled={isReadOnly || isLoadingDetail}
+                  {...register("isActive")}
+                  className="w-4 h-4 text-brand-500 rounded border-gray-300 focus:ring-brand-500 cursor-pointer"
                 />
-              ) : (
-                <div className={`rounded-xl border transition-all overflow-hidden bg-white dark:bg-gray-900 ${
-                  errors.messageTemplate ? "border-error-500 ring-1 ring-error-500" : "border-gray-200 dark:border-gray-700"
-                }`}>
-                  <div
-                    ref={editorRefCallback}
-                    className="min-h-[180px] text-sm text-gray-800 dark:text-white/90"
-                  />
-                </div>
-              )}
-              <input type="hidden" {...register("messageTemplate")} />
-              {errors.messageTemplate && (
-                <p className="mt-1.5 text-sm text-error-500">
-                  {errors.messageTemplate.message}
-                </p>
-              )}
-            </div>
+                <Label htmlFor="isActive" className="mb-0 cursor-pointer text-sm text-gray-600 dark:text-gray-400">
+                  Enable this template for use
+                </Label>
+              </div>
 
-            <div className="flex items-center gap-2.5 mt-1">
-              <input
-                type="checkbox"
-                id="isActive"
-                disabled={isReadOnly}
-                {...register("isActive")}
-                className="w-4 h-4 text-brand-500 rounded border-gray-300 focus:ring-brand-500 cursor-pointer"
-              />
-              <Label htmlFor="isActive" className="mb-0 cursor-pointer text-sm text-gray-600 dark:text-gray-400">
-                Enable this template for use
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-3 justify-end mt-auto pt-5 border-t border-gray-100 dark:border-gray-800">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                {isReadOnly ? "Close" : "Cancel"}
-              </Button>
-              {!isReadOnly && (
-                <Button variant="primary" type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : isEditMode ? "Update Template" : "Create Template"}
+              <div className="flex items-center gap-3 justify-end mt-auto pt-5 border-t border-gray-100 dark:border-gray-800">
+                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting || isLoadingDetail}>
+                  {isReadOnly ? "Close" : "Cancel"}
                 </Button>
-              )}
-            </div>
-          </form>
-        </div>
-
-        {/* ── Right: Preview ── */}
-        <div className="col-span-12 lg:col-span-5 bg-gray-50 dark:bg-gray-900/40 p-6 lg:p-8 flex flex-col overflow-y-auto max-h-full">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                Live Preview
-              </p>
-              <p className="text-[10px] text-gray-400 mt-0.5">Updates as you type</p>
-            </div>
-            <button
-              type="button"
-              onClick={copyToClipboard}
-              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-500 transition-colors"
-              title="Copy message content"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                  d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-              </svg>
-              Copy
-            </button>
+                {!isReadOnly && (
+                  <Button variant="primary" type="submit" disabled={isSubmitting || isLoadingDetail}>
+                    {isSubmitting ? "Saving..." : isEditMode ? "Update Template" : "Create Template"}
+                  </Button>
+                )}
+              </div>
+            </form>
           </div>
 
-          <div className="relative flex-1">
-            <div className="absolute -inset-0.5 bg-gradient-to-br from-brand-400/30 to-purple-400/20 rounded-2xl blur-md opacity-30" />
-            <div className="relative h-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col">
-              <div className="h-1 bg-gradient-to-r from-brand-500 to-brand-400" />
-              <div className="p-6 flex flex-col flex-1 overflow-y-auto">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white font-black text-sm shadow-md">
-                    TS
+          {/* ── Right: Preview ── */}
+          <div className="col-span-12 lg:col-span-5 bg-gray-50 dark:bg-gray-900/40 p-6 lg:p-8 flex flex-col overflow-y-auto max-h-full">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                  Live Preview
+                </p>
+              </div>
+            </div>
+
+            <div className="relative flex-1">
+              <div className="absolute -inset-0.5 bg-gradient-to-br from-brand-400/30 to-purple-400/20 rounded-2xl blur-md opacity-30" />
+              <div className="relative h-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col">
+                <div className="h-1 bg-gradient-to-r from-brand-500 to-brand-400" />
+                <div className="p-6 flex flex-col flex-1 overflow-y-auto">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white font-black text-sm shadow-md">
+                      TS
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-gray-900 dark:text-white leading-none">ToyStore</p>
+                      <p className="text-[10px] text-brand-500 font-semibold mt-0.5 uppercase tracking-wide">Official Message</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-black text-gray-900 dark:text-white leading-none">ToyStore</p>
-                    <p className="text-[10px] text-brand-500 font-semibold mt-0.5 uppercase tracking-wide">Official Message</p>
+
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white mb-4 leading-tight break-words">
+                    {watchedTitle ? (
+                      highlightPlaceholders(watchedTitle)
+                    ) : (
+                      <span className="text-gray-300 dark:text-gray-600 font-medium italic">
+                        Title will appear here…
+                      </span>
+                    )}
+                  </h3>
+
+                  <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed break-words flex-1 ql-editor p-0 prose dark:prose-invert max-w-none">
+                    {watchedMessage ? (
+                      <div dangerouslySetInnerHTML={{ __html: highlightPlaceholdersHtml(watchedMessage) }} />
+                    ) : (
+                      <span className="text-gray-300 dark:text-gray-600 italic">
+                        Your message will appear here as you type…
+                      </span>
+                    )}
                   </div>
-                </div>
 
-                <h3 className="text-lg font-black text-gray-900 dark:text-white mb-4 leading-tight break-words">
-                  {watchedTitle ? (
-                    highlightPlaceholders(watchedTitle)
-                  ) : (
-                    <span className="text-gray-300 dark:text-gray-600 font-medium italic">
-                      Title will appear here…
-                    </span>
-                  )}
-                </h3>
-
-                <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed break-words flex-1 ql-editor p-0 prose dark:prose-invert max-w-none">
-                  {watchedMessage ? (
-                    <div dangerouslySetInnerHTML={{ __html: highlightPlaceholdersHtml(watchedMessage) }} />
-                  ) : (
-                    <span className="text-gray-300 dark:text-gray-600 italic">
-                      Your message will appear here as you type…
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-gray-50 dark:border-gray-800/60 flex items-center justify-between text-[10px] text-gray-400 uppercase tracking-widest font-semibold">
-                  <span>© 2026 ToyStore</span>
-                  <span className="text-brand-300">#MSG-V1</span>
+                  <div className="mt-6 pt-4 border-t border-gray-50 dark:border-gray-800/60 flex items-center justify-between text-[10px] text-gray-400 uppercase tracking-widest font-semibold">
+                    <span>© 2026 ToyStore</span>
+                    <span className="text-brand-300">#MSG-V1</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-      </div>
-    </Modal>
+        </div>
+      </Modal>
     </>
   );
 };

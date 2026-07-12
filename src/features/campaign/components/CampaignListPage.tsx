@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import Pagination from "@/components/common/Pagination";
 import Button from "@/components/ui/button/Button";
-import { PlusIcon, EyeIcon, PencilIcon, TrashBinIcon, PieChartIcon, DocsIcon, BoxCubeIcon, PageIcon, BoltIcon, BellIcon } from "@/icons";
+import { PlusIcon, EyeIcon, PencilIcon, TrashBinIcon, DocsIcon, BoxCubeIcon, PageIcon, BoltIcon, BellIcon } from "@/icons";
 import SearchInput from "@/components/common/SearchInput";
 import { campaignApi, PaginatedCampaigns } from "../services/campaign-api";
 import { CampaignListItem } from "../types/campaign";
@@ -194,12 +194,6 @@ const STATUS_TABS = [
   { id: "Failed", label: "Failed" },
 ];
 
-const SOURCE_TABS = [
-  { id: "", label: "All Sources" },
-  { id: "ADMIN", label: "Admin" },
-  { id: "SYSTEM", label: "System" },
-];
-
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
@@ -273,7 +267,11 @@ const EmptyState: React.FC<{ hasFilter: boolean; onClear: () => void }> = ({
         ? "Try changing your filters or search term."
         : "Start by creating your first notification campaign to reach your customers."}
     </p>
-
+    {hasFilter && (
+      <Button variant="outline" onClick={onClear}>
+        Clear Filters
+      </Button>
+    )}
   </div>
 );
 
@@ -318,11 +316,13 @@ export const CampaignListPage: React.FC = () => {
   }, [currentPage, pageSize, searchQuery, activeStatus]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, [fetchData]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [activeStatus, searchQuery]);
 
@@ -466,9 +466,6 @@ export const CampaignListPage: React.FC = () => {
                   Reference Type
                 </TableCell>
                 <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                  Source
-                </TableCell>
-                <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                   Target Audience
                 </TableCell>
                 <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
@@ -495,7 +492,7 @@ export const CampaignListPage: React.FC = () => {
                 ))
               ) : items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={7}>
                     <EmptyState
                       hasFilter={hasFilter}
                       onClear={() => {
@@ -524,22 +521,9 @@ export const CampaignListPage: React.FC = () => {
 
                       {/* Name */}
                       <TableCell className="px-5 py-4">
-                        {(() => {
-                          const cid = resolveCampaignListItemId(campaign);
-                          return cid != null ? (
-                            <Link
-                              href={campaignDetailPath(cid)}
-                              className="font-medium text-gray-900 dark:text-white hover:text-brand-500 transition-colors block max-w-[220px] truncate"
-                              title={campaign.campaignName}
-                            >
-                              {campaign.campaignName}
-                            </Link>
-                          ) : (
-                            <span className="font-medium text-gray-900 dark:text-white block max-w-[220px] truncate" title={campaign.campaignName}>
-                              {campaign.campaignName}
-                            </span>
-                          );
-                        })()}
+                        <span className="font-medium text-gray-900 dark:text-white block max-w-[220px] truncate" title={campaign.campaignName}>
+                          {campaign.campaignName}
+                        </span>
                         <span className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 block">
                           {formatDisplayDate(campaign.createdAt)}
                         </span>
@@ -548,11 +532,6 @@ export const CampaignListPage: React.FC = () => {
                       {/* Reference Type */}
                       <TableCell className="px-5 py-4">
                         <ReferenceBadge referenceType={campaign.referenceType} />
-                      </TableCell>
-
-                      {/* Source */}
-                      <TableCell className="px-5 py-4">
-                        <SourceBadge source={campaign.sourceType} />
                       </TableCell>
 
                       {/* Target */}
