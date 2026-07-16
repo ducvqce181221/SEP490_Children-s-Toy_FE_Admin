@@ -409,7 +409,7 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
                     maxLength={50}
                     error={!!errors.templateCode}
                     hint={errors.templateCode?.message}
-                    disabled={isReadOnly || isLoadingDetail}
+                    disabled={isReadOnly || isEditMode || isLoadingDetail}
                     {...register("templateCode", {
                       onChange: (e) => {
                         e.target.value = e.target.value.toUpperCase();
