@@ -64,9 +64,6 @@ const ShiftCard: React.FC<{
             <h3 className="font-bold text-gray-900 dark:text-white text-base leading-tight">
               {shift.shiftName}
             </h3>
-            <span className={`text-xs font-semibold uppercase tracking-wide ${period.color}`}>
-              {period.label} Shift
-            </span>
           </div>
         </div>
 
@@ -212,22 +209,10 @@ const ShiftTable: React.FC<ShiftTableProps> = ({
           </div>
         ) : shifts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gray-50 dark:bg-gray-800 mb-5 shadow-sm">
-              <TimeIcon className="h-10 w-10 text-gray-300 dark:text-gray-600" />
-            </div>
             <p className="text-lg font-bold text-gray-900 dark:text-white">No Shift Templates</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
               {isAdmin ? "You haven't created any operational shifts yet. Click below to get started." : "No operational shifts have been created yet."}
             </p>
-            {isAdmin && (
-              <button
-                onClick={onAddClick}
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-brand-500/25 hover:bg-brand-600 transition-colors"
-              >
-                <PlusIcon className="w-4 h-4" />
-                Create First Shift
-              </button>
-            )}
           </div>
         ) : (
           <div className="space-y-6">

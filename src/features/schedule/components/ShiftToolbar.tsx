@@ -24,9 +24,10 @@ const ShiftToolbar: React.FC<ShiftToolbarProps> = ({ onAddClick, isAdmin = false
             <Button
               variant="primary"
               onClick={onAddClick}
+              startIcon={<PlusIcon />}
               className="shadow-sm hover:shadow-md transition-shadow"
             >
-              +Add New Shift
+              Add New Shift
             </Button>
           </div>
         )}

@@ -9,6 +9,7 @@ import { scheduleApi } from "../services/schedule-api";
 import toast from "react-hot-toast";
 import StaffPicker from "./StaffPicker";
 import Select from "@/components/form/Select";
+import DatePicker from "@/components/form/date-picker";
 import { CalenderIcon, TimeIcon, ChevronLeftIcon, UserCircleIcon } from "@/icons";
 
 function getApiErrorMessage(err: unknown): string {
@@ -363,15 +364,21 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
                   <label className="mb-2 block text-xs font-black text-gray-400 uppercase tracking-widest">
                     Assignment Date <span className="text-error-500">*</span>
                   </label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={selectedDate}
-                      min={new Date().toLocaleDateString("en-CA")}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      className={inputClassName}
-                    />
-                  </div>
+                  <DatePicker
+                    id="assignment-date"
+                    defaultDate={selectedDate}
+                    minDate={new Date().toISOString().split("T")[0]}
+                    dateFormat="d/m/Y"
+                    placeholder="Select Date"
+                    onChange={([date]) => {
+                      if (date) {
+                        const y = date.getFullYear();
+                        const m = String(date.getMonth() + 1).padStart(2, "0");
+                        const d = String(date.getDate()).padStart(2, "0");
+                        setSelectedDate(`${y}-${m}-${d}`);
+                      }
+                    }}
+                  />
                   {errors.date && <p className="mt-2 text-xs text-error-500 font-bold">{errors.date}</p>}
                 </div>
               </div>
@@ -380,7 +387,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
               <div className="rounded-xl border border-brand-100 bg-brand-50 p-5 dark:border-brand-900/30 dark:bg-brand-500/5">
                 <div className="flex gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400">
-                    <CalenderIcon className="h-5 w-5 fill-current" />
+                    <CalenderIcon className="h-6 w-6 fill-current" />
                   </div>
                   <div>
                     <p className="font-bold text-sm text-brand-800 dark:text-brand-300">Assignment Policy</p>

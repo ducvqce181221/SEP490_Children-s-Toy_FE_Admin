@@ -224,7 +224,7 @@ const WorkScheduleTable: React.FC<WorkScheduleTableProps> = ({
   }, {});
 
   const displayDate = dateFilter
-    ? new Date(dateFilter + "T00:00:00").toLocaleDateString("en-US", {
+    ? new Date(dateFilter + "T00:00:00").toLocaleDateString("en-GB", {
       weekday: "long",
       year: "numeric",
       month: "long",

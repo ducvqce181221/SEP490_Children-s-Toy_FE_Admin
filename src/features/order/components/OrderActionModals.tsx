@@ -165,18 +165,11 @@ export const OrderShipModal: React.FC<ShipModalProps> = ({
 
       <form onSubmit={handleSubmit((data) => onShip(data))} className="space-y-4">
         <div>
-          <Label htmlFor="provider">Carrier</Label>
-          <select
-            id="provider"
-            {...register("provider")}
-            className="mt-2 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-          >
-            <option value="GHN">GHN (Giao Hang Nhanh)</option>
-            {/* Add more carriers if needed */}
-          </select>
-          {errors.provider && (
-            <p className="mt-1 text-sm text-error-500">{errors.provider.message}</p>
-          )}
+          <Label>Carrier</Label>
+          <div className="mt-2 flex h-11 w-full items-center rounded-lg border border-gray-300 bg-gray-50 px-4 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/50 dark:text-gray-400">
+            GHN (Giao Hang Nhanh)
+          </div>
+          <input type="hidden" {...register("provider")} />
         </div>
 
         <div>
