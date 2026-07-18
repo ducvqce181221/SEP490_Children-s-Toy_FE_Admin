@@ -41,7 +41,7 @@ export const CampaignFormSchema = z
 
     messageOverride: z
       .string()
-      .max(500, "Message must not exceed 500 characters.")
+      .max(2000, "Message must not exceed 2000 characters.")
       .optional()
       .nullable(),
 

@@ -27,6 +27,8 @@ import {
   AssignOrderFormData,
   CancelOrderFormData,
   ShipOrderFormData,
+  ConfirmOrderFormData,
+  ProcessOrderFormData,
 } from "../types/order.schema";
 import {
   OrderAssignModal,
@@ -97,7 +99,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-col border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <span className="text-sm text-gray-500 dark:text-gray-400 sm:shrink-0">{label}</span>
-      <span className="text-sm font-medium text-gray-800 dark:text-white/90 sm:text-right">{value}</span>
+      <span className="text-sm font-medium text-gray-800 dark:text-white/90 sm:text-right break-words max-w-full sm:max-w-[70%]">{value}</span>
     </div>
   );
 }
@@ -172,8 +174,8 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   });
 
   // ── Actions handlers
-  const handleConfirm = async (note?: string) => {
-    const result = await confirmOrder(orderId, { note });
+  const handleConfirm = async (data: ConfirmOrderFormData) => {
+    const result = await confirmOrder(orderId, { note: data.note });
     if (result.success) {
       toast.success(result.message);
       setIsConfirmModalOpen(false);
@@ -182,8 +184,8 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     }
   };
 
-  const handleProcess = async (note?: string) => {
-    const result = await processOrder(orderId, { note });
+  const handleProcess = async (data: ProcessOrderFormData) => {
+    const result = await processOrder(orderId, { note: data.note });
     if (result.success) {
       toast.success(result.message);
       setIsProcessModalOpen(false);
@@ -320,7 +322,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
               #{order.orderCode}
             </h2>
             <OrderStatusBadge statusId={order.statusId} statusName={order.statusName} />
-            {order.fulfillmentLabel && order.fulfillmentLabel !== (ORDER_STATUS_LABEL[order.statusId] ?? order.statusName) && (
+            {order.statusName !== ORDER_STATUS.CANCELLED && order.fulfillmentLabel && order.fulfillmentLabel !== (ORDER_STATUS_LABEL[order.statusId] ?? order.statusName) && (
               <span className="text-sm text-gray-500 dark:text-gray-400" title="Fulfillment">
                 {order.fulfillmentLabel}
               </span>
@@ -357,7 +359,10 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
               Cancelled by: {order.cancelledByName ?? "System"} at {fmtDt(order.cancelledAt)}
             </p>
             {order.cancelReason && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p 
+                className="mt-1 text-sm text-red-600 dark:text-red-400 break-all line-clamp-3"
+                title={order.cancelReason}
+              >
                 Reason: {order.cancelReason}
               </p>
             )}
@@ -446,9 +451,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                         </span>
                       }
                     />
-                    {order.statusName === ORDER_STATUS.CANCELLED && order.cancelReason && (
-                      <InfoRow label="Cancel reason" value={order.cancelReason} />
-                    )}
+
                     <InfoRow
                       label="Status"
                       value={
@@ -479,7 +482,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             )}
 
             <Section title="Order Items">
-              <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
+              <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
                 <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
                   <thead className="bg-gray-50 dark:bg-gray-900">
                     <tr>
@@ -502,7 +505,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                                 <div className="flex h-full items-center justify-center text-xs text-gray-400">?</div>
                               )}
                             </div>
-                            <span className="text-sm font-medium text-gray-800 dark:text-white/90">{item.productName}</span>
+                            <span className="text-sm font-medium text-gray-800 dark:text-white/90 line-clamp-2" title={item.productName}>{item.productName}</span>
                           </div>
                         </td>
                         <td className="px-5 py-4 text-right text-sm text-gray-600 dark:text-gray-300">{fmtCurrency(item.unitPrice)}</td>
@@ -581,7 +584,10 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                           By: {isSystem ? "⚙ System (auto)" : h.changedByName}
                         </p>
                         {h.note && (
-                          <p className="mt-3 border-l-2 border-gray-200 pl-3 text-sm italic text-gray-600 dark:border-gray-700 dark:text-gray-300">
+                          <p 
+                            className="mt-3 border-l-2 border-gray-200 pl-3 text-sm italic text-gray-600 dark:border-gray-700 dark:text-gray-300 break-all line-clamp-3"
+                            title={h.note}
+                          >
                             &ldquo;{h.note}&rdquo;
                           </p>
                         )}
@@ -600,7 +606,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             {!order.shippingHistory || order.shippingHistory.length === 0 ? (
               <p className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">No updates from carrier yet.</p>
             ) : (
-              <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
+              <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
                 <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
                   <thead className="bg-gray-50 dark:bg-gray-900">
                     <tr>
