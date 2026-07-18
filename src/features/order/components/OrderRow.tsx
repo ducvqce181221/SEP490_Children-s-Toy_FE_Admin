@@ -100,14 +100,19 @@ const OrderRowComponent: React.FC<OrderRowProps> = ({ order, rowNumber, onOpenDe
         </p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <span
-            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusStyle(order.statusId)}`}
-            title={order.fulfillmentLabel}
+            className={`inline-flex max-w-[150px] items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusStyle(order.statusId)}`}
+            title={order.fulfillmentLabel ?? ORDER_STATUS_LABEL[order.statusId] ?? order.statusName}
           >
-            {order.fulfillmentLabel ?? ORDER_STATUS_LABEL[order.statusId] ?? order.statusName}
+            <span className="truncate">
+              {order.fulfillmentLabel ?? ORDER_STATUS_LABEL[order.statusId] ?? order.statusName}
+            </span>
           </span>
           {order.ghnShippingStatus && isGhnReturnFlowStatus(order.ghnShippingStatus) && (
-            <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
-              GHN: {formatGhnShippingLabel(order.ghnShippingStatus)}
+            <span 
+              className="inline-flex max-w-[150px] items-center rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+              title={formatGhnShippingLabel(order.ghnShippingStatus)}
+            >
+              <span className="truncate">GHN: {formatGhnShippingLabel(order.ghnShippingStatus)}</span>
             </span>
           )}
           <span
@@ -120,7 +125,7 @@ const OrderRowComponent: React.FC<OrderRowProps> = ({ order, rowNumber, onOpenDe
 
       {/* Khách hàng */}
       <TableCell className="px-5 py-4 text-start">
-        <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+        <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90 truncate max-w-[150px]" title={order.customerName}>
           {order.customerName}
         </p>
         <p className="text-theme-xs text-gray-500 dark:text-gray-400">{order.customerPhone}</p>
@@ -131,7 +136,7 @@ const OrderRowComponent: React.FC<OrderRowProps> = ({ order, rowNumber, onOpenDe
         <p className="text-theme-sm font-semibold text-gray-800 dark:text-white/90">
           {formatCurrency(order.totalAmount)}
         </p>
-        <p className="text-theme-xs uppercase text-gray-500 dark:text-gray-400">
+        <p className="text-theme-xs uppercase text-gray-500 dark:text-gray-400 truncate max-w-[120px]" title={order.paymentMethod}>
           {order.paymentMethod}
         </p>
       </TableCell>
@@ -140,8 +145,12 @@ const OrderRowComponent: React.FC<OrderRowProps> = ({ order, rowNumber, onOpenDe
       <TableCell className="px-5 py-4 text-start">
         <div className="flex flex-col gap-1.5">
           {order.assignedToStaffName ? (
-            <span className="inline-flex w-max items-center gap-1.5 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-              <span className="font-semibold text-blue-500">S:</span> {order.assignedToStaffName}
+            <span 
+              className="inline-flex w-max max-w-[160px] items-center gap-1.5 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+              title={order.assignedToStaffName}
+            >
+              <span className="font-semibold text-blue-500">S:</span> 
+              <span className="truncate">{order.assignedToStaffName}</span>
             </span>
           ) : (
             <span className="inline-flex w-max items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">
@@ -150,8 +159,12 @@ const OrderRowComponent: React.FC<OrderRowProps> = ({ order, rowNumber, onOpenDe
           )}
 
           {order.assignedToMerchName ? (
-            <span className="inline-flex w-max items-center gap-1.5 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-              <span className="font-semibold text-purple-500">M:</span> {order.assignedToMerchName}
+            <span 
+              className="inline-flex w-max max-w-[160px] items-center gap-1.5 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+              title={order.assignedToMerchName}
+            >
+              <span className="font-semibold text-purple-500">M:</span> 
+              <span className="truncate">{order.assignedToMerchName}</span>
             </span>
           ) : (
             <span className="inline-flex w-max items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs italic text-gray-400 border border-dashed border-gray-200 dark:bg-transparent dark:border-gray-700">

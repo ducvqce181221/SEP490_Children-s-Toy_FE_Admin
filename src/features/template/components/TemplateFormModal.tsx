@@ -252,6 +252,12 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
       if (!node || quillRef.current) return;
 
       const Quill = QuillModule.default;
+      const existingQuill = Quill.find(node);
+      if (existingQuill) {
+        quillRef.current = existingQuill as any;
+        return;
+      }
+
       const quill = new Quill(node, {
         theme: "snow",
         modules: {
@@ -448,7 +454,7 @@ export const TemplateFormModal: React.FC<TemplateFormModalProps> = ({
                   <Label className="mb-0 flex items-center gap-2">
                     <span>Message Content <span className="text-error-500">*</span></span>
                     <span className="text-[10px] text-gray-400 font-normal mt-0.5">
-                      {(watchedMessage || "").length}/4000
+                      {(watchedMessage || "").length}/2000
                     </span>
                   </Label>
                   {!isReadOnly && (

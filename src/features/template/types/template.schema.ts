@@ -6,17 +6,17 @@ export const TemplateFormSchema = z.object({
     .min(3, "Template code must be at least 3 characters.")
     .max(50, "Template code must not exceed 50 characters.")
     .regex(/^[A-Za-z0-9_]+$/, "Template code can only contain letters, numbers, and underscores."),
-  
+
   titleTemplate: z
     .string()
     .min(3, "Title must be at least 3 characters.")
     .max(255, "Title must not exceed 255 characters."),
-  
+
   messageTemplate: z
     .string()
     .min(5, "Message must be at least 5 characters.")
-    .max(4000, "Message must not exceed 4000 characters."),
-    
+    .max(2000, "Message must not exceed 2000 characters."),
+
   isActive: z.boolean(),
 });
 

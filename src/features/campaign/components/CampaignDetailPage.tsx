@@ -568,7 +568,7 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
           </Link>
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">
+              <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90 break-all">
                 {campaign.campaignName}
               </h1>
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${statusCfg.bg} ${statusCfg.text}`}>
@@ -877,11 +877,12 @@ export const CampaignDetailPage: React.FC<CampaignDetailPageProps> = ({ campaign
                         </InfoRow>
                       )}
                       {campaign.reviewNote && (
-                        <InfoRow label="Review Note">
-                          <span className="text-sm text-red-600 dark:text-red-400 italic bg-red-50 dark:bg-red-900/10 p-2 rounded block">
+                        <li className="flex flex-col gap-1.5 pt-1.5 w-full">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Review Note</span>
+                          <span className="text-sm text-red-600 dark:text-red-400 italic bg-red-50 dark:bg-red-900/10 p-2.5 rounded-lg block break-all w-full text-left">
                             {campaign.reviewNote}
                           </span>
-                        </InfoRow>
+                        </li>
                       )}
                     </ul>
                   </details>

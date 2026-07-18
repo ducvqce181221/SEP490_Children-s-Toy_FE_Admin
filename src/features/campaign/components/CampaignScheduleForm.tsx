@@ -296,7 +296,7 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
           </p>
           {context?.campaignName ? (
             <p className="mb-4 text-xs text-gray-500 dark:text-gray-400 text-center">
-              Campaign: <span className="font-medium text-gray-700 dark:text-gray-300">{context.campaignName}</span>
+              Campaign: <span className="font-medium text-gray-700 dark:text-gray-300 break-all">{context.campaignName}</span>
             </p>
           ) : (
             <div className="mb-4" />
@@ -468,9 +468,14 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
 
             {mode === "reschedule" && (
               <div className="mt-4">
-                <label htmlFor="campaign-reschedule-reason" className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
-                  Reschedule reason (optional, max 200 characters)
-                </label>
+                <div className="flex justify-between items-center mb-2">
+                  <label htmlFor="campaign-reschedule-reason" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Reschedule reason (optional)
+                  </label>
+                  <span className={`text-xs font-medium ${(reason || "").length > 200 ? "text-error-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+                    {(reason || "").length}/200
+                  </span>
+                </div>
                 <TextArea
                   id="campaign-reschedule-reason"
                   value={reason}
@@ -479,7 +484,7 @@ export const CampaignScheduleForm: React.FC<CampaignScheduleFormProps> = ({
                   rows={3}
                   placeholder="e.g., requested by marketing team..."
                 />
-                {reason.trim().length > 200 ? (
+                {(reason || "").trim().length > 200 ? (
                   <p className="mt-1 text-sm text-error-600 dark:text-error-400" role="alert">
                     Reschedule reason cannot exceed 200 characters.
                   </p>

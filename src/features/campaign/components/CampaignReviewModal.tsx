@@ -86,15 +86,17 @@ export const CampaignReviewModal: React.FC<CampaignReviewModalProps> = ({
 
         {showRejectInput && (
           <div className="w-full mb-6">
-            <label className="block text-sm font-medium text-gray-700 text-left mb-2 dark:text-gray-300">
-              Reject Reason <span className="text-error-500">*</span>
-              <span className="block text-xs font-normal text-gray-400 mt-0.5">
-                Up to 500 characters ({rejectReason.length}/500)
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Reject Reason <span className="text-error-500">*</span>
+              </label>
+              <span className={`text-xs font-medium ${(rejectReason || "").length > 400 ? "text-error-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+                {(rejectReason || "").length}/400
               </span>
-            </label>
+            </div>
             <TextArea
               value={rejectReason}
-              maxLength={500}
+              maxLength={400}
               onChange={(e) => {
                 setRejectReason(e.target.value);
                 if (rejectError) setRejectError(null);

@@ -30,7 +30,7 @@ export const CampaignScheduleSummary: React.FC<CampaignScheduleSummaryProps> = (
         <dl className="space-y-3">
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Campaign</dt>
-            <dd className="font-medium text-gray-800 dark:text-white/90">{campaign.campaignName}</dd>
+            <dd className="font-medium text-gray-800 dark:text-white/90 break-all">{campaign.campaignName}</dd>
           </div>
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Send time (Vietnam Time)</dt>
@@ -50,7 +50,7 @@ export const CampaignScheduleSummary: React.FC<CampaignScheduleSummaryProps> = (
           {mode === "reschedule" && reason.trim() ? (
             <div>
               <dt className="text-gray-500 dark:text-gray-400">Reschedule reason</dt>
-              <dd className="text-gray-800 dark:text-white/90 whitespace-pre-wrap">{reason.trim()}</dd>
+              <dd className="text-gray-800 dark:text-white/90 whitespace-pre-wrap break-all">{reason.trim()}</dd>
             </div>
           ) : null}
           {mode === "reschedule" && campaign.scheduledAt ? (
