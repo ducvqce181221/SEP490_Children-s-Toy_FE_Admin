@@ -15,6 +15,7 @@ interface BlogApprovalModalProps {
 }
 
 const MAX_REJECTION_REASON_LENGTH = 500;
+const MAX_REJECTION_REASON_MESSAGE = `Reason must not exceed ${MAX_REJECTION_REASON_LENGTH} characters.`;
 
 const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
   isOpen,
@@ -44,12 +45,26 @@ const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
       return;
     }
     if (trimmedReason.length > MAX_REJECTION_REASON_LENGTH) {
-      setLocalError(`Reason must not exceed ${MAX_REJECTION_REASON_LENGTH} characters.`);
+      setLocalError(MAX_REJECTION_REASON_MESSAGE);
       return;
     }
 
     setLocalError(null);
     await onReject(trimmedReason);
+  };
+
+  const handleReasonChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const nextReason = event.target.value;
+    if (nextReason.length > MAX_REJECTION_REASON_LENGTH) {
+      setReason(nextReason.slice(0, MAX_REJECTION_REASON_LENGTH));
+      setLocalError(MAX_REJECTION_REASON_MESSAGE);
+      return;
+    }
+
+    setReason(nextReason);
+    if (localError) {
+      setLocalError(null);
+    }
   };
 
   const handleClose = () => {
@@ -79,23 +94,19 @@ const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
             </label>
             <span
               className={`text-xs font-medium ${
-                reason.trim().length > MAX_REJECTION_REASON_LENGTH
+                localError === MAX_REJECTION_REASON_MESSAGE
                   ? "text-error-500"
                   : "text-gray-400 dark:text-gray-500"
               }`}
             >
-              {reason.trim().length}/{MAX_REJECTION_REASON_LENGTH}
+              {reason.length}/{MAX_REJECTION_REASON_LENGTH}
             </span>
           </div>
           <TextArea
             rows={4}
             value={reason}
-            maxLength={MAX_REJECTION_REASON_LENGTH}
-            error={reason.trim().length > MAX_REJECTION_REASON_LENGTH}
-            onChange={(event) => {
-              setReason(event.target.value);
-              if (localError) setLocalError(null);
-            }}
+            error={localError === MAX_REJECTION_REASON_MESSAGE}
+            onChange={handleReasonChange}
             placeholder="Provide reason when rejecting"
           />
         </div>
