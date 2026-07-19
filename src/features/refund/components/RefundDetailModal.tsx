@@ -173,7 +173,7 @@ export const RefundDetailModal: React.FC<RefundDetailModalProps> = ({
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 mb-1.5">Customer Note</div>
-                    <div className="text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg italic min-h-[100px] whitespace-pre-wrap">
+                    <div className="text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg italic min-h-[100px] whitespace-pre-wrap break-words break-all">
                       {refund.reasonDetails || "No additional details provided."}
                     </div>
                   </div>
