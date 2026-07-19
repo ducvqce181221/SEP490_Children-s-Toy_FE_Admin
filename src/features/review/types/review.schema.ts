@@ -1,10 +1,32 @@
 import { z } from "zod";
 
 export const UpdateReviewStatusSchema = z.object({
-  moderationStatus: z.enum(["Approved", "Pending", "Rejected", "ManualReview"]).optional().nullable(),
-  reason: z.string().optional().nullable(),
+  moderationStatus: z.enum(["Approved", "Pending", "Rejected", "ManualReview"]).nullable().optional(),
+  reason: z.string().nullable().optional(),
   isDeleted: z.boolean().optional(),
-});
+}).refine(
+  (data) => {
+    if (data.moderationStatus === "Rejected" && (!data.reason || data.reason.trim() === "")) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Reason is required when status is Rejected.",
+    path: ["reason"],
+  }
+).refine(
+  (data) => {
+    if (data.reason && data.reason.length > 500) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Reason must not exceed 500 characters.",
+    path: ["reason"],
+  }
+);
 
 export type UpdateReviewStatusData = z.infer<typeof UpdateReviewStatusSchema>;
 
