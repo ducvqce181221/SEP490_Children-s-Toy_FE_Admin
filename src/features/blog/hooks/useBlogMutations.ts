@@ -160,12 +160,20 @@ export const useBlogMutations = (onSuccess?: () => void) => {
         data: updatedBlog,
       };
     } catch (error) {
-      const axiosError = error as AxiosError<ApiErrorResponse>;
+      const axiosError = error as AxiosError<
+        ValidationErrorResponse | ApiErrorResponse
+      >;
+      const responseData = axiosError.response?.data;
+      const validationMessage =
+        responseData &&
+        "errors" in responseData &&
+        Object.values(responseData.errors).flat()[0];
 
       return {
         success: false,
         message:
-          axiosError.response?.data?.message ??
+          validationMessage ??
+          responseData?.message ??
           "Unable to process approval. Please try again.",
       };
     } finally {
