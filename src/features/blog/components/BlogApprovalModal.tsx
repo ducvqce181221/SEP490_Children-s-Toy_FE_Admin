@@ -14,6 +14,8 @@ interface BlogApprovalModalProps {
   onReject: (reason: string) => Promise<void>;
 }
 
+const MAX_REJECTION_REASON_LENGTH = 500;
+
 const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
   isOpen,
   isSubmitting,
@@ -36,13 +38,18 @@ const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
   };
 
   const handleReject = async () => {
-    if (!reason.trim()) {
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
       setLocalError("Reason is required when rejecting a blog.");
+      return;
+    }
+    if (trimmedReason.length > MAX_REJECTION_REASON_LENGTH) {
+      setLocalError(`Reason must not exceed ${MAX_REJECTION_REASON_LENGTH} characters.`);
       return;
     }
 
     setLocalError(null);
-    await onReject(reason.trim());
+    await onReject(trimmedReason);
   };
 
   const handleClose = () => {
@@ -66,13 +73,29 @@ const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Rejection Reason
-          </label>
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Rejection Reason
+            </label>
+            <span
+              className={`text-xs font-medium ${
+                reason.trim().length > MAX_REJECTION_REASON_LENGTH
+                  ? "text-error-500"
+                  : "text-gray-400 dark:text-gray-500"
+              }`}
+            >
+              {reason.trim().length}/{MAX_REJECTION_REASON_LENGTH}
+            </span>
+          </div>
           <TextArea
             rows={4}
             value={reason}
-            onChange={(event) => setReason(event.target.value)}
+            maxLength={MAX_REJECTION_REASON_LENGTH}
+            error={reason.trim().length > MAX_REJECTION_REASON_LENGTH}
+            onChange={(event) => {
+              setReason(event.target.value);
+              if (localError) setLocalError(null);
+            }}
             placeholder="Provide reason when rejecting"
           />
         </div>
