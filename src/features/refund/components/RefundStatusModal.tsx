@@ -153,16 +153,16 @@ function ReturnShippingFeeSection({
       )}
       {isOverriding && (
         <div>
-          <div className="flex justify-between items-center">
-            <Label htmlFor="returnShippingFeeNote">Override Reason <span className="text-red-500">*</span></Label>
-            <span className={`text-xs font-medium ${overrideNote.length > 350 ? "text-red-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
-              {overrideNote.length}/400
+          <div className="flex justify-between items-center mb-1">
+            <Label htmlFor="returnShippingFeeNote" className="mb-0">Override Reason <span className="text-red-500">*</span></Label>
+            <span className={`text-xs font-medium ${(overrideNote || "").length > 350 ? "text-red-500 font-bold" : "text-gray-500 dark:text-gray-400"}`}>
+              {(overrideNote || "").length}/400
             </span>
           </div>
           <textarea
             id="returnShippingFeeNote"
             value={overrideNote}
-            onChange={(e) => onOverrideNoteChange(e.target.value)}
+            onChange={(e) => onOverrideNoteChange(e.target.value.slice(0, 400))}
             maxLength={400}
             rows={2}
             placeholder="Explain why you are overriding the suggested responsible party..."

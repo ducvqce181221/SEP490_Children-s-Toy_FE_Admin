@@ -14,6 +14,9 @@ interface BlogApprovalModalProps {
   onReject: (reason: string) => Promise<void>;
 }
 
+const MAX_REJECTION_REASON_LENGTH = 500;
+const MAX_REJECTION_REASON_MESSAGE = `Reason must not exceed ${MAX_REJECTION_REASON_LENGTH} characters.`;
+
 const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
   isOpen,
   isSubmitting,
@@ -36,13 +39,32 @@ const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
   };
 
   const handleReject = async () => {
-    if (!reason.trim()) {
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
       setLocalError("Reason is required when rejecting a blog.");
+      return;
+    }
+    if (trimmedReason.length > MAX_REJECTION_REASON_LENGTH) {
+      setLocalError(MAX_REJECTION_REASON_MESSAGE);
       return;
     }
 
     setLocalError(null);
-    await onReject(reason.trim());
+    await onReject(trimmedReason);
+  };
+
+  const handleReasonChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const nextReason = event.target.value;
+    if (nextReason.length > MAX_REJECTION_REASON_LENGTH) {
+      setReason(nextReason.slice(0, MAX_REJECTION_REASON_LENGTH));
+      setLocalError(MAX_REJECTION_REASON_MESSAGE);
+      return;
+    }
+
+    setReason(nextReason);
+    if (localError) {
+      setLocalError(null);
+    }
   };
 
   const handleClose = () => {
@@ -66,13 +88,25 @@ const BlogApprovalModal: React.FC<BlogApprovalModalProps> = ({
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Rejection Reason
-          </label>
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Rejection Reason
+            </label>
+            <span
+              className={`text-xs font-medium ${
+                localError === MAX_REJECTION_REASON_MESSAGE
+                  ? "text-error-500"
+                  : "text-gray-400 dark:text-gray-500"
+              }`}
+            >
+              {reason.length}/{MAX_REJECTION_REASON_LENGTH}
+            </span>
+          </div>
           <TextArea
             rows={4}
             value={reason}
-            onChange={(event) => setReason(event.target.value)}
+            error={localError === MAX_REJECTION_REASON_MESSAGE}
+            onChange={handleReasonChange}
             placeholder="Provide reason when rejecting"
           />
         </div>
