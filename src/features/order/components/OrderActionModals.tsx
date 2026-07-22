@@ -79,6 +79,7 @@ export const OrderConfirmModal: React.FC<ConfirmModalProps> = ({
           <TextArea
             id="confirm-note"
             className="mt-2"
+            maxLength={400}
             {...register("note")}
             rows={3}
             placeholder="Enter note (if any)..."
@@ -148,6 +149,7 @@ export const OrderProcessModal: React.FC<ProcessModalProps> = ({
           <TextArea
             id="process-note"
             className="mt-2"
+            maxLength={400}
             {...register("note")}
             rows={3}
             placeholder="Enter note (if any)..."
@@ -227,6 +229,7 @@ export const OrderShipModal: React.FC<ShipModalProps> = ({
           <TextArea
             id="ship-note"
             className="mt-2"
+            maxLength={400}
             {...register("note")}
             rows={3}
             placeholder="Example: Inspectable, no try-on..."
@@ -298,6 +301,7 @@ export const OrderCancelModal: React.FC<CancelModalProps> = ({
           <TextArea
             id="cancel-reason"
             className="mt-2"
+            maxLength={400}
             {...register("reason")}
             rows={3}
             placeholder="Enter reason for cancellation..."
@@ -426,9 +430,8 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
           <select
             id="targetScheduleId"
             {...register("targetScheduleId")}
-            className={`mt-2 h-11 w-full rounded-lg border ${
-              errors.targetScheduleId ? "border-error-500" : "border-gray-300 dark:border-gray-700"
-            } bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`}
+            className={`mt-2 h-11 w-full rounded-lg border ${errors.targetScheduleId ? "border-error-500" : "border-gray-300 dark:border-gray-700"
+              } bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`}
           >
             {schedules.length === 0 ? (
               <option value="0" disabled>-- No on-duty schedules --</option>
@@ -437,7 +440,7 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
                 <option value="0" disabled>-- Select schedule --</option>
                 {schedules.map((schedule) => (
                   <option key={schedule.scheduleId} value={schedule.scheduleId}>
-                     {schedule.accountName} (Shift: {schedule.shiftName}, Load: {schedule.currentLoad}/{schedule.maxLoad})
+                    {schedule.accountName} (Shift: {schedule.shiftName}, Load: {schedule.currentLoad}/{schedule.maxLoad})
                   </option>
                 ))}
               </>
@@ -458,6 +461,7 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
           <TextArea
             id="assign-note"
             className="mt-2"
+            maxLength={400}
             {...register("note")}
             rows={3}
             placeholder="Example: High priority..."
