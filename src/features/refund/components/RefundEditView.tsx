@@ -110,7 +110,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 type TabKey = "overview" | "history" | "shipping-history";
 
 const rejectRefundSchema = z.object({
-  rejectReason: z.string().min(1, "Please enter rejection reason").max(500, "Reason must not exceed 500 characters"),
+  rejectReason: z.string().min(1, "Please enter rejection reason").max(400, "Reason must not exceed 400 characters"),
 });
 
 type RejectRefundFormData = z.infer<typeof rejectRefundSchema>;
@@ -163,8 +163,8 @@ export const RefundRejectModal: React.FC<RejectModalProps> = ({
             <Label htmlFor="reject-reason" className="mb-0">
               Reason for Rejection <span className="text-error-500">*</span>
             </Label>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {(rejectReasonWatch || "").length}/500
+            <span className={`text-xs font-medium ${(rejectReasonWatch || "").length > 350 ? "text-error-500 font-bold" : "text-gray-500 dark:text-gray-400"}`}>
+              {(rejectReasonWatch || "").length}/400
             </span>
           </div>
           <TextArea
@@ -172,7 +172,7 @@ export const RefundRejectModal: React.FC<RejectModalProps> = ({
             className="mt-1.5"
             {...register("rejectReason")}
             rows={3}
-            maxLength={500}
+            maxLength={400}
             placeholder="Enter reason for rejection..."
             error={!!errors.rejectReason}
             hint={errors.rejectReason?.message}

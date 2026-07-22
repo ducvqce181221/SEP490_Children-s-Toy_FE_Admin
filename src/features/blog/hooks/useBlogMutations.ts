@@ -165,9 +165,9 @@ export const useBlogMutations = (onSuccess?: () => void) => {
       >;
       const responseData = axiosError.response?.data;
       const validationMessage =
-        responseData &&
+        (responseData &&
         "errors" in responseData &&
-        Object.values(responseData.errors).flat()[0];
+        Object.values(responseData.errors).flat()[0]) || undefined;
 
       return {
         success: false,
