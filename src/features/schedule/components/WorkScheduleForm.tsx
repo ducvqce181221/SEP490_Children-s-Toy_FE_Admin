@@ -34,6 +34,7 @@ function buildEditFormState(edit: WorkSchedule) {
     date: edit.workDate.split("T")[0],
     staffId: edit.roleId === 3 ? edit.accountId : 0,
     merchId: edit.roleId === 4 ? edit.accountId : 0,
+    maxLoadOverride: edit.maxLoad,
   };
 }
 
@@ -43,7 +44,7 @@ interface WorkScheduleFormProps {
   shifts: ShiftTemplate[];
   initialDate: string;
   editData?: WorkSchedule | null;
-  /** Schedules for the current list date — used to skip already-assigned staff. */
+  /** Schedules for the current list date ?" used to skip already-assigned staff. */
   existingSchedules?: WorkSchedule[];
 }
 
@@ -70,6 +71,9 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
   const [selectedMerchId, setSelectedMerchId] = useState(editInitial?.merchId ?? 0);
   const [selectedShiftId, setSelectedShiftId] = useState(editInitial?.shiftId ?? 0);
   const [selectedDate, setSelectedDate] = useState(editInitial?.date ?? initialDate);
+  const [maxLoadOverride, setMaxLoadOverride] = useState<number | string>(
+    editInitial?.maxLoadOverride ?? ""
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transferResult, setTransferResult] = useState<UpdateWorkScheduleResult | null>(null);
   const [showTransferredList, setShowTransferredList] = useState(false);
@@ -84,6 +88,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
     setSelectedDate(next.date);
     setSelectedStaffId(next.staffId);
     setSelectedMerchId(next.merchId);
+    setMaxLoadOverride(next.maxLoadOverride ?? "");
     setTransferResult(null);
     setShowTransferredList(false);
   }
@@ -194,6 +199,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
           accountId,
           shiftTemplateId: selectedShiftId,
           workDate: selectedDate,
+          maxLoadOverride: maxLoadOverride ? Number(maxLoadOverride) : undefined,
         });
 
         const oldName =
@@ -220,6 +226,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
         const payload = {
           shiftTemplateId: selectedShiftId,
           workDate: selectedDate,
+          maxLoadOverride: maxLoadOverride ? Number(maxLoadOverride) : undefined,
         };
 
         const creates: { label: "Staff" | "Merchandiser"; accountId: number }[] = [];
@@ -380,6 +387,27 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
                     }}
                   />
                   {errors.date && <p className="mt-2 text-xs text-error-500 font-bold">{errors.date}</p>}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black text-gray-400 uppercase tracking-widest">
+                    Max Orders Limit (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="200"
+                    placeholder="e.g. 10 (Leave blank for default)"
+                    value={maxLoadOverride}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setMaxLoadOverride(val === "" ? "" : parseInt(val) || 0);
+                    }}
+                    className={inputClassName}
+                  />
+                  <p className="mt-1.5 text-[10px] text-gray-400 font-medium">
+                    Overrides the default orders limit from the shift template.
+                  </p>
                 </div>
               </div>
 

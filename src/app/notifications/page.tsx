@@ -110,22 +110,6 @@ export default function CustomerNotificationsPage() {
     }
   }
 
-  async function markAllRead() {
-    try {
-      await notificationApi.markAllRead();
-      await refreshUnread();
-      const res = await notificationApi.getNotifications({
-        status: tab === "unread" ? "Unread" : undefined,
-        type: type || undefined,
-        page,
-        pageSize,
-      });
-      setItems(res.items);
-      setTotal(res.total);
-    } catch {
-      /* ignore */
-    }
-  }
 
   return (
     <div>
@@ -200,13 +184,6 @@ export default function CustomerNotificationsPage() {
             })}
           </select>
 
-          <button
-            type="button"
-            onClick={() => void markAllRead()}
-            className="text-sm font-medium text-amber-800 underline-offset-2 hover:underline dark:text-amber-300"
-          >
-            Mark all as read
-          </button>
           <Link
             href="/admin"
             className="ml-auto text-sm text-gray-500 hover:text-amber-800 dark:text-gray-400 dark:hover:text-amber-200"
