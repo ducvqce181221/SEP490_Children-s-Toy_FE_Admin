@@ -652,33 +652,33 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
                 </div>
               </div>
             ) : /* ── System Return Complete: shipping toggle ── */
-            isSystemReturn && nextStatus === "RefundCompleted" ? (
-              <SystemReturnCompleteSection
-                totalAmount={totalAmount ?? approvedAmount ?? 0}
-                customerShippingPaid={customerShippingPaid}
-                includeShipping={includeShipping}
-                onIncludeShippingChange={setIncludeShipping}
-                damageResponsibility={currentDamageResponsibility}
-                refundDetails={refundDetails}
-              />
-            ) : (
-              <>
-                {/* Generic admin note for other steps */}
-                {nextStatus !== "RefundApproved" && nextStatus !== "RefundReceived" && (
-                  <div>
-                    <div className="flex justify-between items-center">
-                      <Label htmlFor="adminNote">Note (Optional)</Label>
-                      <span className={`text-xs font-medium ${(watch("adminNote")?.length || 0) > 350 ? "text-red-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
-                        {watch("adminNote")?.length || 0}/400
-                      </span>
+              isSystemReturn && nextStatus === "RefundCompleted" ? (
+                <SystemReturnCompleteSection
+                  totalAmount={totalAmount ?? approvedAmount ?? 0}
+                  customerShippingPaid={customerShippingPaid}
+                  includeShipping={includeShipping}
+                  onIncludeShippingChange={setIncludeShipping}
+                  damageResponsibility={currentDamageResponsibility}
+                  refundDetails={refundDetails}
+                />
+              ) : (
+                <>
+                  {/* Generic admin note for other steps */}
+                  {nextStatus !== "RefundApproved" && nextStatus !== "RefundReceived" && (
+                    <div>
+                      <div className="flex justify-between items-center">
+                        <Label htmlFor="adminNote">Note (Optional)</Label>
+                        <span className={`text-xs font-medium ${(watch("adminNote")?.length || 0) > 350 ? "text-red-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+                          {watch("adminNote")?.length || 0}/400
+                        </span>
+                      </div>
+                      <TextArea id="adminNote" className="mt-2" maxLength={400} {...register("adminNote")} rows={3}
+                        placeholder={nextStatus === "RefundCompleted" ? "Enter quality check or shop inspection notes..." : "Enter details or comments about this transition..."}
+                        error={!!errors.adminNote} hint={errors.adminNote?.message} />
                     </div>
-                    <TextArea id="adminNote" className="mt-2" maxLength={400} {...register("adminNote")} rows={3}
-                      placeholder={nextStatus === "RefundCompleted" ? "Enter quality check or shop inspection notes..." : "Enter details or comments about this transition..."}
-                      error={!!errors.adminNote} hint={errors.adminNote?.message} />
-                  </div>
-                )}
-              </>
-            )}
+                  )}
+                </>
+              )}
 
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="outline" onClick={onClose} type="button" disabled={isSubmitting}>Cancel</Button>

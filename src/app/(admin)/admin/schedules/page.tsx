@@ -192,6 +192,7 @@ export default function SchedulesPage() {
               onCloneWeekClick={() => setShowCloneWeekConfirm(true)}
               isCloningWeek={isCloningWeek}
               isAdmin={isAdmin}
+              onMaxLoadUpdated={refetch}
             />
           )}
 

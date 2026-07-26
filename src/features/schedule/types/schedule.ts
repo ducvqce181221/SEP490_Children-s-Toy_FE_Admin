@@ -18,6 +18,7 @@ export const WorkScheduleSchema = z.object({
   accountId: z.number().min(1, "Staff selection is required"),
   shiftTemplateId: z.number().min(1, "Shift selection is required"),
   workDate: z.string().min(1, "Work date is required"),
+  maxLoadOverride: z.number().min(1, "Max load must be at least 1").max(200, "Max load must not exceed 200").optional(),
 });
 
 export type WorkScheduleFormData = z.infer<typeof WorkScheduleSchema>;

@@ -65,4 +65,8 @@ export const scheduleApi = {
   // ─── Capacity / Monitoring ───────────────────────────────────────────────────
   getStaffCapacity: (date: string) =>
     axiosClient.get(`/work-schedules?workDate=${date}`),
+
+  // Backend route: PUT /api/staff-shift-capacity/{scheduleId}/max-load
+  updateMaxLoad: (scheduleId: number, maxLoad: number) =>
+    axiosClient.put(`/staff-shift-capacity/${scheduleId}/max-load`, { maxLoad }),
 };
