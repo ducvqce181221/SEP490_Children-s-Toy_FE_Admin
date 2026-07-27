@@ -9,6 +9,7 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
+import { resolveAdminNotificationTarget } from "@/features/notifications/utils/resolve-admin-notification-target";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -97,10 +98,13 @@ export default function NotificationDropdown({
       } catch {
         /* ignore */
       }
-      if (item.actionTarget.startsWith("http")) {
-        window.open(item.actionTarget, "_blank", "noopener,noreferrer");
-      } else {
-        router.push(item.actionTarget);
+      const target = resolveAdminNotificationTarget(item.actionTarget, item.notificationType);
+      if (target) {
+        if (target.startsWith("http")) {
+          window.open(target, "_blank", "noopener,noreferrer");
+        } else {
+          router.push(target);
+        }
       }
     }
     closeDropdown();
