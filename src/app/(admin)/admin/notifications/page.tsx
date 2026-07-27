@@ -16,6 +16,7 @@ import {
 } from "@/icons";
 import EmptyState from "@/components/common/EmptyState";
 import Pagination from "@/components/common/Pagination";
+import { resolveAdminNotificationTarget } from "@/features/notifications/utils/resolve-admin-notification-target";
 
 // ─── Role → allowed notification types ───────────────────────────────────────
 const ROLE_ID = { ADMIN: 2, STAFF: 3, MERCHANDISE: 4 } as const;
@@ -73,10 +74,7 @@ export default function AdminNotificationsPage() {
   const isMerch = account?.roleId === ROLE_ID.MERCHANDISE;
 
   const [tab, setTab] = useState<Tab>("unread");
-  // Merchandise defaults to STOCK filter; others default to "all types"
-  const [type, setType] = useState<string>(() =>
-    account?.roleId === ROLE_ID.MERCHANDISE ? "STOCK" : ""
-  );
+  const [type, setType] = useState<string>("");
   const [items, setItems] = useState<NotificationListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -129,10 +127,13 @@ export default function AdminNotificationsPage() {
       } catch {
         /* ignore */
       }
-      if (item.actionTarget.startsWith("http")) {
-        window.open(item.actionTarget, "_blank", "noopener,noreferrer");
-      } else {
-        router.push(item.actionTarget);
+      const target = resolveAdminNotificationTarget(item.actionTarget, item.notificationType);
+      if (target) {
+        if (target.startsWith("http")) {
+          window.open(target, "_blank", "noopener,noreferrer");
+        } else {
+          router.push(target);
+        }
       }
     }
   }
