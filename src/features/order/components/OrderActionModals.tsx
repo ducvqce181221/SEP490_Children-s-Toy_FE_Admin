@@ -13,6 +13,10 @@ import {
   shipOrderSchema,
   AssignOrderFormData,
   assignOrderSchema,
+  ConfirmOrderFormData,
+  confirmOrderSchema,
+  ProcessOrderFormData,
+  processOrderSchema,
 } from "../types/order.schema";
 import { scheduleApi } from "@/features/schedule/services/schedule-api";
 import { WorkSchedule } from "@/features/schedule/types/schedule";
@@ -29,7 +33,7 @@ interface ActionModalProps {
 
 // ── Confirm Modal ───────────────────────────────────────────────────────────
 interface ConfirmModalProps extends ActionModalProps {
-  onConfirm: (note?: string) => void;
+  onConfirm: (data: ConfirmOrderFormData) => void;
 }
 
 export const OrderConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -38,11 +42,22 @@ export const OrderConfirmModal: React.FC<ConfirmModalProps> = ({
   isSubmitting,
   onConfirm,
 }) => {
-  const [note, setNote] = useState("");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<ConfirmOrderFormData>({
+    resolver: zodResolver(confirmOrderSchema),
+    defaultValues: { note: "" },
+  });
+
+  const noteValue = watch("note") || "";
 
   useEffect(() => {
-    if (isOpen) setNote("");
-  }, [isOpen]);
+    if (isOpen) reset({ note: "" });
+  }, [isOpen, reset]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
@@ -53,33 +68,42 @@ export const OrderConfirmModal: React.FC<ConfirmModalProps> = ({
         </p>
       </div>
 
-      <div className="mb-6">
-        <Label htmlFor="confirm-note">Note (Optional)</Label>
-        <TextArea
-          id="confirm-note"
-          className="mt-2"
-          rows={3}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Enter note (if any)..."
-        />
-      </div>
+      <form onSubmit={handleSubmit((data) => onConfirm(data))}>
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="confirm-note">Note (Optional)</Label>
+            <span className={`text-xs font-medium ${noteValue.length > 400 ? "text-error-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+              {noteValue.length}/400
+            </span>
+          </div>
+          <TextArea
+            id="confirm-note"
+            className="mt-2"
+            maxLength={400}
+            {...register("note")}
+            rows={3}
+            placeholder="Enter note (if any)..."
+            error={!!errors.note}
+            hint={errors.note?.message}
+          />
+        </div>
 
-      <div className="flex items-center justify-end gap-3">
-        <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-          Close
-        </Button>
-        <Button variant="primary" onClick={() => onConfirm(note)} disabled={isSubmitting}>
-          {isSubmitting ? "Processing..." : "Confirm Order"}
-        </Button>
-      </div>
+        <div className="flex items-center justify-end gap-3">
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Close
+          </Button>
+          <Button type="submit" variant="primary" disabled={isSubmitting}>
+            {isSubmitting ? "Processing..." : "Confirm Order"}
+          </Button>
+        </div>
+      </form>
     </Modal>
   );
 };
 
 // ── Process Modal ───────────────────────────────────────────────────────────
 interface ProcessModalProps extends ActionModalProps {
-  onProcess: (note?: string) => void;
+  onProcess: (data: ProcessOrderFormData) => void;
 }
 
 export const OrderProcessModal: React.FC<ProcessModalProps> = ({
@@ -88,11 +112,22 @@ export const OrderProcessModal: React.FC<ProcessModalProps> = ({
   isSubmitting,
   onProcess,
 }) => {
-  const [note, setNote] = useState("");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<ProcessOrderFormData>({
+    resolver: zodResolver(processOrderSchema),
+    defaultValues: { note: "" },
+  });
+
+  const noteValue = watch("note") || "";
 
   useEffect(() => {
-    if (isOpen) setNote("");
-  }, [isOpen]);
+    if (isOpen) reset({ note: "" });
+  }, [isOpen, reset]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[500px] p-5 lg:p-8">
@@ -103,26 +138,35 @@ export const OrderProcessModal: React.FC<ProcessModalProps> = ({
         </p>
       </div>
 
-      <div className="mb-6">
-        <Label htmlFor="process-note">Note (Optional)</Label>
-        <TextArea
-          id="process-note"
-          className="mt-2"
-          rows={3}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Enter note (if any)..."
-        />
-      </div>
+      <form onSubmit={handleSubmit((data) => onProcess(data))}>
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="process-note">Note (Optional)</Label>
+            <span className={`text-xs font-medium ${noteValue.length > 400 ? "text-error-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+              {noteValue.length}/400
+            </span>
+          </div>
+          <TextArea
+            id="process-note"
+            className="mt-2"
+            maxLength={400}
+            {...register("note")}
+            rows={3}
+            placeholder="Enter note (if any)..."
+            error={!!errors.note}
+            hint={errors.note?.message}
+          />
+        </div>
 
-      <div className="flex items-center justify-end gap-3">
-        <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-          Close
-        </Button>
-        <Button variant="primary" onClick={() => onProcess(note)} disabled={isSubmitting}>
-          {isSubmitting ? "Processing..." : "Start Preparation"}
-        </Button>
-      </div>
+        <div className="flex items-center justify-end gap-3">
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Close
+          </Button>
+          <Button type="submit" variant="primary" disabled={isSubmitting}>
+            {isSubmitting ? "Processing..." : "Start Preparation"}
+          </Button>
+        </div>
+      </form>
     </Modal>
   );
 };
@@ -142,6 +186,7 @@ export const OrderShipModal: React.FC<ShipModalProps> = ({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<ShipOrderFormData>({
     resolver: zodResolver(shipOrderSchema),
@@ -149,6 +194,8 @@ export const OrderShipModal: React.FC<ShipModalProps> = ({
       provider: "GHN", // mặc định Giao Hàng Nhanh
     },
   });
+
+  const noteValue = watch("note") || "";
 
   useEffect(() => {
     if (isOpen) reset({ provider: "GHN", serviceType: "", note: "" });
@@ -173,13 +220,21 @@ export const OrderShipModal: React.FC<ShipModalProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="ship-note">Note (Optional)</Label>
+          <div className="flex justify-between items-center">
+            <Label htmlFor="ship-note">Note (Optional)</Label>
+            <span className={`text-xs font-medium ${noteValue.length > 400 ? "text-error-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+              {noteValue.length}/400
+            </span>
+          </div>
           <TextArea
             id="ship-note"
             className="mt-2"
+            maxLength={400}
             {...register("note")}
             rows={3}
             placeholder="Example: Inspectable, no try-on..."
+            error={!!errors.note}
+            hint={errors.note?.message}
           />
         </div>
 
@@ -239,13 +294,14 @@ export const OrderCancelModal: React.FC<CancelModalProps> = ({
         <div className="mb-6">
           <div className="flex justify-between items-center">
             <Label htmlFor="cancel-reason">Reason for Cancellation (Required)</Label>
-            <span className={`text-xs font-medium ${reasonValue.length > 500 ? "text-error-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
-              {reasonValue.length}/500
+            <span className={`text-xs font-medium ${reasonValue.length > 400 ? "text-error-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+              {reasonValue.length}/400
             </span>
           </div>
           <TextArea
             id="cancel-reason"
             className="mt-2"
+            maxLength={400}
             {...register("reason")}
             rows={3}
             placeholder="Enter reason for cancellation..."
@@ -295,11 +351,14 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<AssignOrderFormData>({
     resolver: zodResolver(assignOrderSchema) as any,
     defaultValues: { targetScheduleId: 0, roleId: 3, note: "" },
   });
+
+  const noteValue = watch("note") || "";
 
   useEffect(() => {
     if (isOpen) {
@@ -371,9 +430,8 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
           <select
             id="targetScheduleId"
             {...register("targetScheduleId")}
-            className={`mt-2 h-11 w-full rounded-lg border ${
-              errors.targetScheduleId ? "border-error-500" : "border-gray-300 dark:border-gray-700"
-            } bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`}
+            className={`mt-2 h-11 w-full rounded-lg border ${errors.targetScheduleId ? "border-error-500" : "border-gray-300 dark:border-gray-700"
+              } bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`}
           >
             {schedules.length === 0 ? (
               <option value="0" disabled>-- No on-duty schedules --</option>
@@ -394,13 +452,21 @@ export const OrderAssignModal: React.FC<AssignModalProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="assign-note">Note (Optional)</Label>
+          <div className="flex justify-between items-center">
+            <Label htmlFor="assign-note">Note (Optional)</Label>
+            <span className={`text-xs font-medium ${noteValue.length > 400 ? "text-error-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+              {noteValue.length}/400
+            </span>
+          </div>
           <TextArea
             id="assign-note"
             className="mt-2"
+            maxLength={400}
             {...register("note")}
             rows={3}
             placeholder="Example: High priority..."
+            error={!!errors.note}
+            hint={errors.note?.message}
           />
         </div>
 

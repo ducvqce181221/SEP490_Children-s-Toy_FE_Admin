@@ -7,6 +7,7 @@ import type { NotificationListItem, NotificationType } from "@/features/notifica
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { resolveAdminNotificationTarget } from "@/features/notifications/utils/resolve-admin-notification-target";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -47,9 +48,7 @@ export default function CustomerNotificationsPage() {
   const isMerch = account?.roleId === ROLE_ID.MERCHANDISE;
 
   const [tab, setTab] = useState<Tab>("unread");
-  const [type, setType] = useState<string>(() =>
-    account?.roleId === ROLE_ID.MERCHANDISE ? "STOCK" : ""
-  );
+  const [type, setType] = useState<string>("");
   const [items, setItems] = useState<NotificationListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -102,30 +101,17 @@ export default function CustomerNotificationsPage() {
       } catch {
         /* ignore */
       }
-      if (item.actionTarget.startsWith("http")) {
-        window.open(item.actionTarget, "_blank", "noopener,noreferrer");
-      } else {
-        router.push(item.actionTarget);
+      const target = resolveAdminNotificationTarget(item.actionTarget, item.notificationType);
+      if (target) {
+        if (target.startsWith("http")) {
+          window.open(target, "_blank", "noopener,noreferrer");
+        } else {
+          router.push(target);
+        }
       }
     }
   }
 
-  async function markAllRead() {
-    try {
-      await notificationApi.markAllRead();
-      await refreshUnread();
-      const res = await notificationApi.getNotifications({
-        status: tab === "unread" ? "Unread" : undefined,
-        type: type || undefined,
-        page,
-        pageSize,
-      });
-      setItems(res.items);
-      setTotal(res.total);
-    } catch {
-      /* ignore */
-    }
-  }
 
   return (
     <div>
@@ -200,13 +186,6 @@ export default function CustomerNotificationsPage() {
             })}
           </select>
 
-          <button
-            type="button"
-            onClick={() => void markAllRead()}
-            className="text-sm font-medium text-amber-800 underline-offset-2 hover:underline dark:text-amber-300"
-          >
-            Mark all as read
-          </button>
           <Link
             href="/admin"
             className="ml-auto text-sm text-gray-500 hover:text-amber-800 dark:text-gray-400 dark:hover:text-amber-200"

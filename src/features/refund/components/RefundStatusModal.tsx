@@ -153,11 +153,17 @@ function ReturnShippingFeeSection({
       )}
       {isOverriding && (
         <div>
-          <Label htmlFor="returnShippingFeeNote">Override Reason <span className="text-red-500">*</span></Label>
+          <div className="flex justify-between items-center mb-1">
+            <Label htmlFor="returnShippingFeeNote" className="mb-0">Override Reason <span className="text-red-500">*</span></Label>
+            <span className={`text-xs font-medium ${(overrideNote || "").length > 350 ? "text-red-500 font-bold" : "text-gray-500 dark:text-gray-400"}`}>
+              {(overrideNote || "").length}/400
+            </span>
+          </div>
           <textarea
             id="returnShippingFeeNote"
             value={overrideNote}
-            onChange={(e) => onOverrideNoteChange(e.target.value)}
+            onChange={(e) => onOverrideNoteChange(e.target.value.slice(0, 400))}
+            maxLength={400}
             rows={2}
             placeholder="Explain why you are overriding the suggested responsible party..."
             className={`mt-1.5 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 dark:bg-gray-900 dark:text-white/90 ${overrideNoteError
@@ -619,8 +625,13 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
                 damageProposal=""
               />
               <div>
-                <Label htmlFor="inspectionNote">Inspection Note (Optional)</Label>
-                <TextArea id="inspectionNote" className="mt-2" {...register("inspectionNote")} rows={2} placeholder="Enter item condition notes..." />
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="inspectionNote">Inspection Note (Optional)</Label>
+                  <span className={`text-xs font-medium ${(watch("inspectionNote")?.length || 0) > 350 ? "text-red-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+                    {watch("inspectionNote")?.length || 0}/400
+                  </span>
+                </div>
+                <TextArea id="inspectionNote" className="mt-2" maxLength={400} {...register("inspectionNote")} rows={2} placeholder="Enter item condition notes..." error={!!errors.inspectionNote} hint={errors.inspectionNote?.message} />
               </div>
             </>
           ) : /* ── ReturnOnly Complete: simple info ── */
@@ -631,33 +642,43 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
                   This is an unpaid COD order return. Confirming will complete the return flow, restore the stock of items verified in the quality check, and close the request.
                 </p>
                 <div className="mt-2">
-                  <Label htmlFor="adminNote">Note (Optional)</Label>
-                  <TextArea id="adminNote" className="mt-2" {...register("adminNote")} rows={2} placeholder="Enter any extra notes..." />
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="adminNote">Note (Optional)</Label>
+                    <span className={`text-xs font-medium ${(watch("adminNote")?.length || 0) > 350 ? "text-red-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+                      {watch("adminNote")?.length || 0}/400
+                    </span>
+                  </div>
+                  <TextArea id="adminNote" className="mt-2" maxLength={400} {...register("adminNote")} rows={2} placeholder="Enter any extra notes..." error={!!errors.adminNote} hint={errors.adminNote?.message} />
                 </div>
               </div>
             ) : /* ── System Return Complete: shipping toggle ── */
-            isSystemReturn && nextStatus === "RefundCompleted" ? (
-              <SystemReturnCompleteSection
-                totalAmount={totalAmount ?? approvedAmount ?? 0}
-                customerShippingPaid={customerShippingPaid}
-                includeShipping={includeShipping}
-                onIncludeShippingChange={setIncludeShipping}
-                damageResponsibility={currentDamageResponsibility}
-                refundDetails={refundDetails}
-              />
-            ) : (
-              <>
-                {/* Generic admin note for other steps */}
-                {nextStatus !== "RefundApproved" && nextStatus !== "RefundReceived" && (
-                  <div>
-                    <Label htmlFor="adminNote">Note (Optional)</Label>
-                    <TextArea id="adminNote" className="mt-2" {...register("adminNote")} rows={3}
-                      placeholder={nextStatus === "RefundCompleted" ? "Enter quality check or shop inspection notes..." : "Enter details or comments about this transition..."}
-                      error={!!errors.adminNote} hint={errors.adminNote?.message} />
-                  </div>
-                )}
-              </>
-            )}
+              isSystemReturn && nextStatus === "RefundCompleted" ? (
+                <SystemReturnCompleteSection
+                  totalAmount={totalAmount ?? approvedAmount ?? 0}
+                  customerShippingPaid={customerShippingPaid}
+                  includeShipping={includeShipping}
+                  onIncludeShippingChange={setIncludeShipping}
+                  damageResponsibility={currentDamageResponsibility}
+                  refundDetails={refundDetails}
+                />
+              ) : (
+                <>
+                  {/* Generic admin note for other steps */}
+                  {nextStatus !== "RefundApproved" && nextStatus !== "RefundReceived" && (
+                    <div>
+                      <div className="flex justify-between items-center">
+                        <Label htmlFor="adminNote">Note (Optional)</Label>
+                        <span className={`text-xs font-medium ${(watch("adminNote")?.length || 0) > 350 ? "text-red-500 font-bold" : "text-gray-400 dark:text-gray-500"}`}>
+                          {watch("adminNote")?.length || 0}/400
+                        </span>
+                      </div>
+                      <TextArea id="adminNote" className="mt-2" maxLength={400} {...register("adminNote")} rows={3}
+                        placeholder={nextStatus === "RefundCompleted" ? "Enter quality check or shop inspection notes..." : "Enter details or comments about this transition..."}
+                        error={!!errors.adminNote} hint={errors.adminNote?.message} />
+                    </div>
+                  )}
+                </>
+              )}
 
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="outline" onClick={onClose} type="button" disabled={isSubmitting}>Cancel</Button>

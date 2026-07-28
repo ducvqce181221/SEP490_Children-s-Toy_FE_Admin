@@ -20,13 +20,21 @@ import { useAuthContext } from "@/context/AuthContext";
 
 type Tab = "schedule" | "overview";
 
+function getTodayYmd(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export default function SchedulesPage() {
   const { account } = useAuthContext();
   const isAdmin = account?.roleName === "Admin";
 
   const [viewMode, setViewMode] = useState<"list" | "create" | "edit">("list");
   const [activeTab, setActiveTab] = useState<Tab>("schedule");
-  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]);
+  const [dateFilter, setDateFilter] = useState(() => getTodayYmd());
 
   const { schedules, isLoading, refetch, updateQuery } = useWorkSchedules({
     workDate: dateFilter,
@@ -56,7 +64,7 @@ export default function SchedulesPage() {
   );
 
   const handleTodayClick = () => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayYmd();
     setDateFilter(today);
     updateQuery({ workDate: today });
     refetch();
@@ -192,6 +200,7 @@ export default function SchedulesPage() {
               onCloneWeekClick={() => setShowCloneWeekConfirm(true)}
               isCloningWeek={isCloningWeek}
               isAdmin={isAdmin}
+              onMaxLoadUpdated={refetch}
             />
           )}
 

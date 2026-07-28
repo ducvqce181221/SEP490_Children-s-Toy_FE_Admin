@@ -17,13 +17,13 @@ export const UpdateRefundStatusSchema = z.object({
     "RefundReturnedToCustomer",
     "RefundReturnToCustomerFailed",
   ]),
-  rejectReason: z.string().optional(),
-  adminNote: z.string().optional(),
+  rejectReason: z.string().max(400, "Reject reason must not exceed 400 characters").optional(),
+  adminNote: z.string().max(400, "Admin note must not exceed 400 characters").optional(),
   inspectionPassed: z.boolean().optional(),
-  inspectionNote: z.string().optional(),
+  inspectionNote: z.string().max(400, "Inspection note must not exceed 400 characters").optional(),
   // Approve step: bên chịu phí ship hoàn trả
   returnShippingFeeBy: z.enum(["Store", "Customer"]).optional(),
-  returnShippingFeeNote: z.string().optional(),
+  returnShippingFeeNote: z.string().max(400, "Override note must not exceed 400 characters").optional(),
   // InspectionPending (Merchandise đề xuất) / Complete (Staff xác nhận)
   damageResponsibility: z.enum(["Customer", "Carrier"]).optional(),
   // [System/Customer Return] Merchandise nhập số lượng phân rã theo từng sản phẩm

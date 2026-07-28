@@ -14,7 +14,7 @@ import Pagination from "@/components/common/Pagination";
 import { useTemplates } from "../hooks/useTemplates";
 import { useTemplateMutations } from "../hooks/useTemplateMutations";
 import { TemplateRow } from "./TemplateRow";
-import { TemplateFormData, Template } from "../types/template";
+import { TemplateFormData, Template, UpdateTemplateData } from "../types/template";
 import { useAuthContext } from "@/context/AuthContext";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 
@@ -73,7 +73,9 @@ export const TemplateTable = () => {
 
   const handleSave = async (formData: TemplateFormData) => {
     if (editTemplate) {
-      await saveTemplate(editTemplate.templateId, formData);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { templateCode: _code, ...updateData }: { templateCode: string } & UpdateTemplateData = formData;
+      await saveTemplate(editTemplate.templateId, updateData);
     } else {
       await createTemplate(formData);
     }

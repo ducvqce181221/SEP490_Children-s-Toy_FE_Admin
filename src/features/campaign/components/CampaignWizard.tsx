@@ -345,7 +345,7 @@ const Step1: React.FC<{
         <Label>
           Campaign name <span className="text-red-500">*</span>
           <span className="block text-xs font-normal text-gray-400 dark:text-gray-500 mt-0.5">
-            Up to 255 characters ({state.campaignName.length}/255)
+            Up to 255 characters ({(state.campaignName || "").length}/255)
           </span>
         </Label>
         <Input
@@ -547,7 +547,7 @@ const Step2: React.FC<{
             <div>
               <div className="flex items-center justify-between mb-1">
                 <Label>Notification title</Label>
-                <span className="text-xs text-gray-400">{state.titleOverride.length}/255</span>
+                <span className="text-xs text-gray-400">{(state.titleOverride || "").length}/255</span>
               </div>
               <Input
                 type="text"
@@ -562,12 +562,12 @@ const Step2: React.FC<{
             <div>
               <div className="flex items-center justify-between mb-1">
                 <Label>Notification message</Label>
-                <span className="text-xs text-gray-400">{state.messageOverride.length}/500</span>
+                <span className="text-xs text-gray-400">{(state.messageOverride || "").length}/2000</span>
               </div>
               <TextArea
                 placeholder="e.g. Happy birthday! Use code BDAY25 for 25% off..."
                 rows={4}
-                maxLength={500}
+                maxLength={2000}
                 value={state.messageOverride}
                 onChange={(e) => update({ messageOverride: e.target.value })}
                 error={!!errors.messageOverride}
@@ -892,9 +892,9 @@ const SummaryRow: React.FC<{ label: string; value: string; empty?: boolean }> = 
   value,
   empty,
 }) => (
-  <li className="flex flex-col gap-0.5">
+  <li className="flex flex-col gap-0.5 min-w-0">
     <span className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">{label}</span>
-    <span className={`text-sm font-medium ${empty ? "text-gray-300 dark:text-gray-600 italic" : "text-gray-800 dark:text-white/90"}`}>
+    <span className={`text-sm font-medium break-all whitespace-pre-wrap ${empty ? "text-gray-300 dark:text-gray-600 italic" : "text-gray-800 dark:text-white/90"}`}>
       {value}
     </span>
   </li>

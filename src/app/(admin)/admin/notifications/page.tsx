@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   BellIcon,
-  CheckCircleIcon,
   EnvelopeIcon,
   BoxCubeIcon,
   DollarLineIcon,
@@ -17,6 +16,7 @@ import {
 } from "@/icons";
 import EmptyState from "@/components/common/EmptyState";
 import Pagination from "@/components/common/Pagination";
+import { resolveAdminNotificationTarget } from "@/features/notifications/utils/resolve-admin-notification-target";
 
 // ─── Role → allowed notification types ───────────────────────────────────────
 const ROLE_ID = { ADMIN: 2, STAFF: 3, MERCHANDISE: 4 } as const;
@@ -74,10 +74,7 @@ export default function AdminNotificationsPage() {
   const isMerch = account?.roleId === ROLE_ID.MERCHANDISE;
 
   const [tab, setTab] = useState<Tab>("unread");
-  // Merchandise defaults to STOCK filter; others default to "all types"
-  const [type, setType] = useState<string>(() =>
-    account?.roleId === ROLE_ID.MERCHANDISE ? "STOCK" : ""
-  );
+  const [type, setType] = useState<string>("");
   const [items, setItems] = useState<NotificationListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -130,29 +127,17 @@ export default function AdminNotificationsPage() {
       } catch {
         /* ignore */
       }
-      if (item.actionTarget.startsWith("http")) {
-        window.open(item.actionTarget, "_blank", "noopener,noreferrer");
-      } else {
-        router.push(item.actionTarget);
+      const target = resolveAdminNotificationTarget(item.actionTarget, item.notificationType);
+      if (target) {
+        if (target.startsWith("http")) {
+          window.open(target, "_blank", "noopener,noreferrer");
+        } else {
+          router.push(target);
+        }
       }
     }
   }
 
-  async function markAllRead() {
-    try {
-      await notificationApi.markAllRead();
-      await refreshUnread();
-      const res = await notificationApi.getNotifications({
-        status: tab === "unread" ? "Unread" : undefined,
-        page,
-        pageSize,
-      });
-      setItems(res?.items || []);
-      setTotal(res?.total || 0);
-    } catch {
-      /* ignore */
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -187,15 +172,7 @@ export default function AdminNotificationsPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => void markAllRead()}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700 transition-all shadow-sm"
-              >
-                <CheckCircleIcon className="w-6 h-6 fill-current" />
-                Mark all as read
-              </button>
-            </div>
+
           </div>
 
           {/* Tabs & Filters */}

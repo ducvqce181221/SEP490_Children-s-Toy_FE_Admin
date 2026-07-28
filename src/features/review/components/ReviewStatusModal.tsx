@@ -27,14 +27,19 @@ export const ReviewStatusModal: React.FC<ReviewStatusModalProps> = ({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<UpdateReviewStatusData>({
     resolver: zodResolver(UpdateReviewStatusSchema),
+    mode: "onChange",
     defaultValues: {
       moderationStatus: currentStatus as UpdateReviewStatusData["moderationStatus"],
       reason: "",
     },
   });
+
+  const watchedReason = watch("reason");
+  const watchedStatus = watch("moderationStatus");
 
   useEffect(() => {
     if (isOpen) {
@@ -75,7 +80,14 @@ export const ReviewStatusModal: React.FC<ReviewStatusModalProps> = ({
         </div>
 
         <div>
-          <Label>Reason (Optional)</Label>
+          <div className="flex justify-between items-center mb-1">
+            <Label className="mb-0">
+              Reason {watchedStatus === "Rejected" && <span className="text-error-500">*</span>}
+            </Label>
+            <span className="text-[10px] text-gray-400 font-normal">
+              {(watchedReason || "").length}/500
+            </span>
+          </div>
           <TextArea
             placeholder="Enter reason for status change..."
             rows={3}
@@ -90,7 +102,7 @@ export const ReviewStatusModal: React.FC<ReviewStatusModalProps> = ({
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button variant="primary" type="submit" disabled={isSubmitting}>
+          <Button variant="primary" type="submit" disabled={isSubmitting || watchedStatus === currentStatus}>
             {isSubmitting ? "Saving..." : "Update Status"}
           </Button>
         </div>

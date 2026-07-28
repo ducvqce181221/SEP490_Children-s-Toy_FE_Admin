@@ -34,6 +34,7 @@ function buildEditFormState(edit: WorkSchedule) {
     date: edit.workDate.split("T")[0],
     staffId: edit.roleId === 3 ? edit.accountId : 0,
     merchId: edit.roleId === 4 ? edit.accountId : 0,
+    maxLoadOverride: edit.maxLoad,
   };
 }
 
@@ -43,7 +44,7 @@ interface WorkScheduleFormProps {
   shifts: ShiftTemplate[];
   initialDate: string;
   editData?: WorkSchedule | null;
-  /** Schedules for the current list date — used to skip already-assigned staff. */
+  /** Schedules for the current list date ?" used to skip already-assigned staff. */
   existingSchedules?: WorkSchedule[];
 }
 
@@ -70,6 +71,9 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
   const [selectedMerchId, setSelectedMerchId] = useState(editInitial?.merchId ?? 0);
   const [selectedShiftId, setSelectedShiftId] = useState(editInitial?.shiftId ?? 0);
   const [selectedDate, setSelectedDate] = useState(editInitial?.date ?? initialDate);
+  const [maxLoadOverride, setMaxLoadOverride] = useState<number | string>(
+    editInitial?.maxLoadOverride ?? ""
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transferResult, setTransferResult] = useState<UpdateWorkScheduleResult | null>(null);
   const [showTransferredList, setShowTransferredList] = useState(false);
@@ -84,6 +88,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
     setSelectedDate(next.date);
     setSelectedStaffId(next.staffId);
     setSelectedMerchId(next.merchId);
+    setMaxLoadOverride(next.maxLoadOverride ?? "");
     setTransferResult(null);
     setShowTransferredList(false);
   }
@@ -171,7 +176,28 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
       }
     }
 
-    if (!selectedShiftId) newErrors.shiftId = "Please select a shift";
+    if (!selectedShiftId) {
+      newErrors.shiftId = "Please select a shift";
+    } else if (selectedShiftId && selectedDate) {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      const d = String(now.getDate()).padStart(2, "0");
+      const todayStr = `${y}-${m}-${d}`;
+
+      if (selectedDate === todayStr) {
+        const shift = shifts.find((s) => s.shiftTemplateId === selectedShiftId);
+        if (shift) {
+          const [eh, em] = shift.endTime.split(":").map(Number);
+          const nowMins = now.getHours() * 60 + now.getMinutes();
+          const shiftEndMins = eh * 60 + em;
+          if (shiftEndMins <= nowMins) {
+            newErrors.shiftId = "This shift has already ended today.";
+          }
+        }
+      }
+    }
+
     if (!selectedDate) newErrors.date = "Please select a work date";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -194,6 +220,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
           accountId,
           shiftTemplateId: selectedShiftId,
           workDate: selectedDate,
+          maxLoadOverride: maxLoadOverride ? Number(maxLoadOverride) : undefined,
         });
 
         const oldName =
@@ -220,6 +247,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
         const payload = {
           shiftTemplateId: selectedShiftId,
           workDate: selectedDate,
+          maxLoadOverride: maxLoadOverride ? Number(maxLoadOverride) : undefined,
         };
 
         const creates: { label: "Staff" | "Merchandiser"; accountId: number }[] = [];
@@ -366,8 +394,14 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
                   </label>
                   <DatePicker
                     id="assignment-date"
-                    defaultDate={selectedDate}
-                    minDate={new Date().toISOString().split("T")[0]}
+                    defaultDate={selectedDate ? new Date(`${selectedDate}T12:00:00`) : undefined}
+                    minDate={(() => {
+                      const now = new Date();
+                      const y = now.getFullYear();
+                      const m = String(now.getMonth() + 1).padStart(2, "0");
+                      const d = String(now.getDate()).padStart(2, "0");
+                      return `${y}-${m}-${d}`;
+                    })()}
                     dateFormat="d/m/Y"
                     placeholder="Select Date"
                     onChange={([date]) => {
@@ -380,6 +414,27 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
                     }}
                   />
                   {errors.date && <p className="mt-2 text-xs text-error-500 font-bold">{errors.date}</p>}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black text-gray-400 uppercase tracking-widest">
+                    Max Orders Limit (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="200"
+                    placeholder="e.g. 10 (Leave blank for default)"
+                    value={maxLoadOverride}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setMaxLoadOverride(val === "" ? "" : parseInt(val) || 0);
+                    }}
+                    className={inputClassName}
+                  />
+                  <p className="mt-1.5 text-[10px] text-gray-400 font-medium">
+                    Overrides the default orders limit from the shift template.
+                  </p>
                 </div>
               </div>
 
@@ -406,7 +461,7 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
               {!isEdit && assignedOnShift.length > 0 && selectedShiftId > 0 && (
                 <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] space-y-3">
                   <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                    <UserCircleIcon className="w-4 h-4" />
+                    <UserCircleIcon className="w-6 h-6" />
                     Currently On This Shift
                   </h4>
                   <ul className="space-y-2">

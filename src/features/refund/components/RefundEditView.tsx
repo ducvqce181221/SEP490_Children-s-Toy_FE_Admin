@@ -102,7 +102,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-col border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <span className="text-sm text-gray-500 dark:text-gray-400 sm:shrink-0">{label}</span>
-      <span className="text-sm font-medium text-gray-800 dark:text-white/90 sm:text-right">{value}</span>
+      <span className="text-sm font-medium text-gray-800 dark:text-white/90 sm:text-right break-words break-all max-w-full overflow-hidden">{value}</span>
     </div>
   );
 }
@@ -110,7 +110,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 type TabKey = "overview" | "history" | "shipping-history";
 
 const rejectRefundSchema = z.object({
-  rejectReason: z.string().min(1, "Please enter rejection reason").max(500, "Reason must not exceed 500 characters"),
+  rejectReason: z.string().min(1, "Please enter rejection reason").max(400, "Reason must not exceed 400 characters"),
 });
 
 type RejectRefundFormData = z.infer<typeof rejectRefundSchema>;
@@ -133,10 +133,14 @@ export const RefundRejectModal: React.FC<RejectModalProps> = ({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<RejectRefundFormData>({
     resolver: zodResolver(rejectRefundSchema),
+    mode: "onChange",
   });
+
+  const rejectReasonWatch = watch("rejectReason");
 
   useEffect(() => {
     if (isOpen) {
@@ -155,12 +159,20 @@ export const RefundRejectModal: React.FC<RejectModalProps> = ({
 
       <form onSubmit={handleSubmit((data) => onReject(data.rejectReason))}>
         <div className="mb-6">
-          <Label htmlFor="reject-reason">Reason for Rejection (Required)</Label>
+          <div className="flex justify-between items-center mb-1">
+            <Label htmlFor="reject-reason" className="mb-0">
+              Reason for Rejection <span className="text-error-500">*</span>
+            </Label>
+            <span className={`text-xs font-medium ${(rejectReasonWatch || "").length > 350 ? "text-error-500 font-bold" : "text-gray-500 dark:text-gray-400"}`}>
+              {(rejectReasonWatch || "").length}/400
+            </span>
+          </div>
           <TextArea
             id="reject-reason"
-            className="mt-2"
+            className="mt-1.5"
             {...register("rejectReason")}
             rows={3}
+            maxLength={400}
             placeholder="Enter reason for rejection..."
             error={!!errors.rejectReason}
             hint={errors.rejectReason?.message}
@@ -748,12 +760,34 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                 </Section>
 
                 <Section title="Refund Details">
-                  <InfoRow label="Reason Category" value={refund.refundReasonContent || "Not specified"} />
-                  <InfoRow label="Customer Note" value={
-                    <span className="italic text-gray-500 bg-white/50 p-2 rounded block text-sm border border-slate-100 max-w-[240px] whitespace-pre-wrap">
+                  <div className="border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Reason Category</span>
+                      {refund.refundReasonResponsibleParty?.toLowerCase() === "customer" ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700">
+                          Customer Fault
+                        </span>
+                      ) : refund.refundReasonResponsibleParty?.toLowerCase() === "store" ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700">
+                          Store Fault
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="font-medium text-red-600 dark:text-red-400 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg text-sm border border-slate-100 dark:border-gray-700 w-full break-words break-all leading-relaxed">
+                      {refund.refundReasonContent || "Not specified"}
+                    </div>
+                    {refund.refundReasonResponsibleParty?.toLowerCase() === "customer" && (
+                      <p className="text-xs text-amber-700 dark:text-amber-400 italic bg-amber-50/70 dark:bg-amber-950/30 p-2.5 rounded-lg border border-amber-200/60 dark:border-amber-800/60 leading-relaxed mt-0.5">
+                        Reason is the customer's fault (e.g. changed mind, wrong order). The initial shipping fee is non-refundable, and any return shipping fee will be deducted from the refund.
+                      </p>
+                    )}
+                  </div>
+                  <div className="border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 flex flex-col gap-1.5">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Customer Note</span>
+                    <div className="italic text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg text-sm border border-slate-100 dark:border-gray-700 w-full whitespace-pre-wrap break-words break-all leading-relaxed">
                       {refund.reasonDetails || "No additional comments"}
-                    </span>
-                  } />
+                    </div>
+                  </div>
                   <InfoRow label="Requested On" value={fmtDt(refund.createdAt)} />
                   <InfoRow label="Requested By" value={refund.requestedByName || "System"} />
                 </Section>
@@ -782,24 +816,26 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                       <Badge size="sm" color="warning">Pending</Badge>
                     )
                   } />
-                  <InfoRow label="Inspection Note" value={
-                    refund.inspectionNote ? (
-                      <span className="italic text-slate-600 bg-white/60 p-2.5 rounded border border-slate-100 block text-xs whitespace-pre-wrap">
+                  <div className="border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 flex flex-col gap-1.5">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Inspection Note</span>
+                    {refund.inspectionNote ? (
+                      <div className="italic text-slate-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg text-xs border border-slate-100 dark:border-gray-700 w-full whitespace-pre-wrap break-words break-all leading-relaxed">
                         {refund.inspectionNote}
-                      </span>
+                      </div>
                     ) : (
                       <span className="text-gray-400 italic text-xs">—</span>
-                    )
-                  } />
-                  <InfoRow label="Admin General Note" value={
-                    refund.adminNote ? (
-                      <span className="italic text-slate-600 bg-white/60 p-2.5 rounded border border-slate-100 block text-xs whitespace-pre-wrap">
+                    )}
+                  </div>
+                  <div className="border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 flex flex-col gap-1.5">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Admin General Note</span>
+                    {refund.adminNote ? (
+                      <div className="italic text-slate-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg text-xs border border-slate-100 dark:border-gray-700 w-full whitespace-pre-wrap break-words break-all leading-relaxed">
                         {refund.adminNote}
-                      </span>
+                      </div>
                     ) : (
                       <span className="text-gray-400 italic text-xs">No shop admin notes</span>
-                    )
-                  } />
+                    )}
+                  </div>
                   {/* Damage Responsibility badge */}
                   {refund.damageResponsibility && (
                     <InfoRow
@@ -852,7 +888,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                           By: {isSystem ? "⚙ System (auto)" : h.changedByName}
                         </p>
                         {h.note && (
-                          <p className="mt-3 border-l-2 border-gray-200 pl-3 text-sm italic text-gray-600 dark:border-gray-700 dark:text-gray-300">
+                          <p className="mt-3 border-l-2 border-gray-200 pl-3 text-sm italic text-gray-600 dark:border-gray-700 dark:text-gray-300 break-words break-all whitespace-pre-wrap">
                             &ldquo;{h.note}&rdquo;
                           </p>
                         )}
