@@ -105,6 +105,7 @@ export interface ProductPromotionInfoDto {
   discountPercent: number | null;
   saleQuantity?: number | null;
   soldQuantity?: number | null;
+  priority: number;
 }
 
 // ─── Create/Update DTOs (gửi lên API) ─────────────────────────────────────────
@@ -154,3 +155,11 @@ export interface ApiErrorResponse {
 export interface ValidationErrorResponse extends ApiErrorResponse {
   errors?: Record<string, string[]>;
 }
+
+export const PROMOTION_PRIORITY_OPTIONS = [
+  { value: "0", label: "Low (Default)" },
+  { value: "20", label: "Medium" },
+  { value: "50", label: "High" },
+  { value: "100", label: "Urgent" },
+] as const;
+
