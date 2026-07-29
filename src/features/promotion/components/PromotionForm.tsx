@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef, useCallback } from "react";
+import { useEffect, useId, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import type Quill from "quill";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { promotionFormSchema, type PromotionFormData } from "../types/promotion.schema";
-import { PROMOTION_TYPE_OPTIONS, PROMOTION_TYPE_CONFIG } from "../types/promotion";
+import { PROMOTION_TYPE_OPTIONS, PROMOTION_TYPE_CONFIG, PROMOTION_PRIORITY_OPTIONS } from "../types/promotion";
 import type { Promotion } from "../types/promotion";
 import { formatUTCtoLocal, formatLocalToUTC, formatDisplayDate } from "@/utils/date-utils";
 import { usePromotionMutations } from "../hooks/usePromotionMutations";
@@ -64,6 +64,19 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
     formState: { errors },
     control,
   } = form;
+
+  const priorityOptions = useMemo(() => {
+    const currentPriority = watch("priority");
+    const options = [...PROMOTION_PRIORITY_OPTIONS] as Array<{ value: string; label: string }>;
+    const exists = options.some((opt) => Number(opt.value) === currentPriority);
+    if (!exists && currentPriority !== undefined && currentPriority !== null) {
+      options.push({
+        value: String(currentPriority),
+        label: `Custom Priority (${currentPriority})`,
+      });
+    }
+    return options;
+  }, [watch("priority")]);
 
   const fieldArray = useFieldArray({
     control,
@@ -320,13 +333,14 @@ export function PromotionForm({ initialData, readonly = false }: PromotionFormPr
             {/* Priority */}
             <div>
               <Label htmlFor="priority">Priority</Label>
-              <Input
+              <Select
                 id="priority"
-                type="number"
+                options={priorityOptions}
+                value={String(watch("priority") || 0)}
+                onChange={(e) => setValue("priority", Number(e.target.value))}
                 error={!!errors.priority}
                 hint={errors.priority?.message}
                 disabled={readonly}
-                {...register("priority")}
               />
             </div>
 

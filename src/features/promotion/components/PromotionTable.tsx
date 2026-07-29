@@ -89,6 +89,12 @@ export const PromotionTable = () => {
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
+                  Priority
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                >
                   Duration
                 </TableCell>
                 <TableCell
@@ -105,17 +111,17 @@ export const PromotionTable = () => {
                 </TableCell>
               </TableRow>
             </TableHeader>
-
+ 
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-5 py-10 text-center text-gray-500">
+                  <TableCell colSpan={7} className="px-5 py-10 text-center text-gray-500">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-5 py-10 text-center text-error-500">
+                  <TableCell colSpan={7} className="px-5 py-10 text-center text-error-500">
                     {error}
                   </TableCell>
                 </TableRow>
@@ -134,7 +140,7 @@ export const PromotionTable = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-5 py-10 text-center text-gray-500">
+                  <TableCell colSpan={7} className="px-5 py-10 text-center text-gray-500">
                     No promotion found.
                   </TableCell>
                 </TableRow>

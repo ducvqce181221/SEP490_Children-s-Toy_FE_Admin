@@ -2,6 +2,7 @@ import { useState } from "react";
 import { VoucherFormData } from "../types/voucher";
 import { voucherApi } from "../services/voucher-api";
 import toast from "react-hot-toast";
+import { getVoucherMutationErrorMessage } from "../utils/voucher-errors";
 
 export const useVoucherMutations = (onSuccess?: () => void) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,7 +15,7 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create voucher");
+      toast.error(getVoucherMutationErrorMessage(error, "Failed to create voucher"));
       if (process.env.NODE_ENV === "development") {
         console.error("[useVoucherMutations.createVoucher]", error);
       }
@@ -32,7 +33,7 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Update failed");
+      toast.error(getVoucherMutationErrorMessage(error, "Update failed"));
       if (process.env.NODE_ENV === "development") {
         console.error("[useVoucherMutations.updateVoucher]", error);
       }
@@ -50,7 +51,7 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Approval failed");
+      toast.error(getVoucherMutationErrorMessage(error, "Approval failed"));
       if (process.env.NODE_ENV === "development") {
         console.error("[useVoucherMutations.approveVoucher]", error);
       }
@@ -68,7 +69,7 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Rejection failed");
+      toast.error(getVoucherMutationErrorMessage(error, "Rejection failed"));
       if (process.env.NODE_ENV === "development") {
         console.error("[useVoucherMutations.rejectVoucher]", error);
       }
@@ -86,7 +87,7 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
       onSuccess?.();
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Deletion failed");
+      toast.error(getVoucherMutationErrorMessage(error, "Deletion failed"));
       if (process.env.NODE_ENV === "development") {
         console.error("[useVoucherMutations.deleteVoucher]", error);
       }
@@ -94,7 +95,8 @@ export const useVoucherMutations = (onSuccess?: () => void) => {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
 
   return { createVoucher, updateVoucher, deleteVoucher, approveVoucher, rejectVoucher, isSubmitting };
 };
+

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useId, useRef, useCallback } from "react";
+import React, { useState, useEffect, useId, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, useWatch, type FieldErrors } from "react-hook-form";
 import type Quill from "quill";
@@ -10,7 +10,7 @@ import toast from "react-hot-toast";
 
 import { promotionFormSchema, type PromotionFormData } from "../types/promotion.schema";
 import type { Promotion } from "../types/promotion";
-import { PROMOTION_TYPE_OPTIONS, PROMOTION_TYPE_CONFIG, PROMOTION_TYPES } from "../types/promotion";
+import { PROMOTION_TYPE_OPTIONS, PROMOTION_TYPE_CONFIG, PROMOTION_TYPES, PROMOTION_PRIORITY_OPTIONS } from "../types/promotion";
 import { formatUTCtoLocal, formatLocalToUTC, getIdealFutureTime } from "@/utils/date-utils";
 import type { ProductListItem } from "@/features/product/types/product";
 import { usePromotionMutations } from "../hooks/usePromotionMutations";
@@ -79,6 +79,19 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
   });
 
   const { fields, append, remove: removeField } = fieldArray;
+
+  const priorityOptions = useMemo(() => {
+    const currentPriority = watch("priority");
+    const options = [...PROMOTION_PRIORITY_OPTIONS] as Array<{ value: string; label: string }>;
+    const exists = options.some((opt) => Number(opt.value) === currentPriority);
+    if (!exists && currentPriority !== undefined && currentPriority !== null) {
+      options.push({
+        value: String(currentPriority),
+        label: `Custom Priority (${currentPriority})`,
+      });
+    }
+    return options;
+  }, [watch("priority")]);
 
   const isNew = !initialData;
   const isGlobalReadOnly = initialData?.status === "Expired";
@@ -458,12 +471,13 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
 
                 <div>
                   <Label htmlFor="priority">Priority</Label>
-                  <Input
+                  <Select
                     id="priority"
-                    type="number"
+                    options={priorityOptions}
+                    value={String(watch("priority") || 0)}
+                    onChange={(e) => setValue("priority", Number(e.target.value))}
                     error={!!errors.priority}
                     hint={errors.priority?.message}
-                    {...register("priority")}
                     disabled={isCosmeticLocked}
                   />
                 </div>
