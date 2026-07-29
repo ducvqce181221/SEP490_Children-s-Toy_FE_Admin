@@ -69,6 +69,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
     watch,
     setValue,
     trigger,
+    getValues,
     formState: { errors },
     control,
   } = form;
@@ -109,8 +110,18 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
     return hasDiscountSales || hasFlashSaleSales;
   }, [initialData]);
 
+  // Check if the promotion has already applied content (products in slots, or direct products)
+  const hasAppliedContent = React.useMemo(() => {
+    if (!initialData) return false;
+    if (initialData.promotionType === "FLASH_SALE") {
+      return initialData.promotionTimeSlots?.some(ts => ts.promotionProductSlots && ts.promotionProductSlots.length > 0) ?? false;
+    } else {
+      return (initialData.productPromotions && initialData.productPromotions.length > 0) ?? false;
+    }
+  }, [initialData]);
+
   // Safeguard Locks:
-  const isPricingProductsLocked = isExpired || isActive || hasTransactions;
+  const isPricingProductsLocked = isExpired || (isActive && hasAppliedContent) || hasTransactions;
   const isTypeLocked = isExpired || isActive || hasTransactions;
   const isStartDateLocked = isExpired || isActive || hasTransactions;
   const isCosmeticLocked = isExpired;
@@ -142,11 +153,9 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
     }
   }, [initialData]);
 
-  const editorRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
   const pendingDescriptionRef = useRef("");
   const isApplyingDescriptionRef = useRef(false);
-  const toolbarId = `promotion-description-toolbar-${useId().replace(/:/g, "")}`;
   const descriptionValue = useWatch({ control, name: "description" });
   const descriptionTextLength = descriptionValue ? descriptionValue.replace(/<[^>]*>?/gm, "").length : 0;
 
@@ -178,12 +187,7 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
         return;
       }
       isApplyingDescriptionRef.current = true;
-      if (normalizedContent.length === 0) {
-        quillRef.current.setText("", "api");
-      } else {
-        const delta = quillRef.current.clipboard.convert({ html: normalizedContent });
-        quillRef.current.setContents(delta, "api");
-      }
+      quillRef.current.root.innerHTML = normalizedContent;
       setValue("description", toDescriptionFormValue(quillRef.current.root.innerHTML), {
         shouldValidate: true,
       });
@@ -194,35 +198,59 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
     [normalizeDescriptionHtml, setValue, toDescriptionFormValue],
   );
 
-  useEffect(() => {
-    let cancelled = false;
-    const initializeDescriptionEditor = async () => {
-      if (quillRef.current || !editorRef.current) return;
+  const editorRefCallback = useCallback((node: HTMLDivElement | null) => {
+    if (!node) {
+      quillRef.current = null;
+      return;
+    }
+
+    if (quillRef.current) {
+      return;
+    }
+
+    const initQuill = async () => {
       const QuillModule = await import("quill");
-      if (cancelled || !editorRef.current || quillRef.current) return;
+      if (!node || quillRef.current) return;
+
       const Quill = QuillModule.default;
-      const quill = new Quill(editorRef.current, {
+      const existingQuill = Quill.find(node);
+      if (existingQuill) {
+        quillRef.current = existingQuill as any;
+        return;
+      }
+
+      const quill = new Quill(node, {
         theme: "snow",
         modules: {
-          toolbar: `#${toolbarId}`,
+          toolbar: isCosmeticLocked ? false : [
+            ["bold", "italic", "underline", "strike"],
+            [{ color: [] }, { background: [] }],
+            [{ list: "ordered" }, { list: "bullet" }],
+            ["clean"]
+          ],
         },
         placeholder: "Enter promotion description...",
+        readOnly: isCosmeticLocked,
       });
+
       quill.on("text-change", (_delta, _oldDelta, source) => {
         if (source !== "user" || isApplyingDescriptionRef.current) return;
         setValue("description", toDescriptionFormValue(quill.root.innerHTML), {
           shouldValidate: true,
         });
       });
+
       quillRef.current = quill;
-      setDescriptionEditorContent(pendingDescriptionRef.current);
-      quill.enable(!isCosmeticLocked);
+
+      const currentFormDesc = normalizeDescriptionHtml(getValues("description") || "");
+      quill.root.innerHTML = currentFormDesc;
+      pendingDescriptionRef.current = currentFormDesc;
+
+      quill.enable(!isCosmeticLocked && !isSubmitting);
     };
-    void initializeDescriptionEditor();
-    return () => {
-      cancelled = true;
-    };
-  }, [toolbarId, isCosmeticLocked, setDescriptionEditorContent, setValue, toDescriptionFormValue]);
+
+    void initQuill();
+  }, [isCosmeticLocked, isSubmitting, normalizeDescriptionHtml, setValue, toDescriptionFormValue, getValues]);
 
   useEffect(() => {
     if (quillRef.current) {
@@ -388,6 +416,26 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
 
   return (
     <div className="space-y-6">
+      <style>{`
+        .ql-toolbar.ql-snow {
+          border-top: none !important;
+          border-left: none !important;
+          border-right: none !important;
+          border-bottom: 1px solid #e5e7eb !important;
+          background-color: #f9fafb;
+        }
+        .dark .ql-toolbar.ql-snow {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+          background-color: rgba(255, 255, 255, 0.02);
+        }
+        .ql-container.ql-snow {
+          border: none !important;
+        }
+        .ql-editor {
+          font-family: Outfit, sans-serif !important;
+          font-size: 14px !important;
+        }
+      `}</style>
       <WizardProgress steps={WIZARD_STEPS} currentStep={currentStep} />
 
       <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6">
@@ -484,29 +532,10 @@ export function PromotionWizard({ initialData }: PromotionWizardProps) {
 
                 <div className="md:col-span-2">
                   <Label>Description</Label>
-                  <div className="overflow-hidden rounded-lg border border-gray-300 dark:border-gray-700">
-                    <div id={toolbarId} className="border-b border-gray-300 p-2 dark:border-gray-700">
-                      <span className="ql-formats">
-                        <button className="ql-bold" type="button" />
-                        <button className="ql-italic" type="button" />
-                        <button className="ql-underline" type="button" />
-                        <button className="ql-strike" type="button" />
-                      </span>
-                      <span className="ql-formats">
-                        <select className="ql-color" />
-                        <select className="ql-background" />
-                      </span>
-                      <span className="ql-formats">
-                        <button className="ql-list" value="ordered" type="button" />
-                        <button className="ql-list" value="bullet" type="button" />
-                      </span>
-                      <span className="ql-formats">
-                        <button className="ql-clean" type="button" />
-                      </span>
-                    </div>
+                  <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900">
                     <div
-                      ref={editorRef}
-                      className="min-h-[140px] bg-white text-sm text-gray-800 dark:bg-gray-900 dark:text-white/90"
+                      ref={editorRefCallback}
+                      className="min-h-[140px] text-sm text-gray-800 dark:text-white/90"
                     />
                     <div className="border-t border-gray-200 px-3 py-2 text-right text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
                       {descriptionTextLength}/1000
