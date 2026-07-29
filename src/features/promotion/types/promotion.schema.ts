@@ -121,9 +121,10 @@ export const promotionFormSchema = z
     // Thời điểm bắt buộc (áp dụng +9 phút thay vì +10 để bù trừ cho phần giây bị cắt của input form)
     const minimumFutureTime = getMinimumFutureTime();
 
-    // 1. StartDate past validation
+    // 1. StartDate past validation (only if the start date was modified)
     const currentStatus = data.status || "Scheduled";
-    if (new Date(data.startDate).getTime() < minimumFutureTime && currentStatus === "Scheduled") {
+    const isStartDateChanged = data.startDate !== data.originalStartDate;
+    if (isStartDateChanged && new Date(data.startDate).getTime() < minimumFutureTime && currentStatus === "Scheduled") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Start date must be at least 10 minutes from now",
@@ -164,8 +165,9 @@ export const promotionFormSchema = z
         });
       }
 
-      // 3. TimeSlot past validation
-      if (slotStart < minimumFutureTime && slot.status === "Scheduled") {
+      // 3. TimeSlot past validation (only if the slot is new or the startAt was modified)
+      const isStartAtChanged = slot.isNewSlot || slot.startAt !== slot.originalStartAt;
+      if (isStartAtChanged && slotStart < minimumFutureTime && slot.status === "Scheduled") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Start time must be at least 10 minutes from now",
