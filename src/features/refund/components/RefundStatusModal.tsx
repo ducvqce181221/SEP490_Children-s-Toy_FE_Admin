@@ -101,8 +101,8 @@ function ReturnShippingFeeSection({
 }) {
   const isOverriding = feeBy !== suggestedFeeBy;
   const estimatedFinalAmount =
-    feeBy === "Customer" && approvedAmount != null
-      ? `~${formatCurrency(Math.max(0, approvedAmount - 30000))} (after ~30,000 fee)`
+    feeBy === "Customer"
+      ? "Approved amount minus actual return shipping fee"
       : approvedAmount != null
         ? formatCurrency(approvedAmount)
         : null;
