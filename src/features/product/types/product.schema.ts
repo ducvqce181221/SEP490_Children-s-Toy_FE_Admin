@@ -268,18 +268,51 @@ export const ProductFormSchema = z
   )
   .refine(
     (data) => {
-      // If status is ComingSoon and launchDate is provided, it must be today or later
+      // If status is ComingSoon and launchDate is provided, it must be STRICTLY in the future.
+      // "Coming Soon" implies not yet launched — today's date means it's launching now.
+      // Append "T00:00:00" so JS parses as LOCAL midnight, not UTC midnight.
       if (data.productStatus === "ComingSoon" && data.launchDate) {
-        const launchDate = new Date(data.launchDate);
+        const datePart = data.launchDate.slice(0, 10);
+        const launchDate = new Date(datePart + "T00:00:00");
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        return launchDate >= today;
+        return launchDate > today;
       }
       return true;
     },
     {
-      message: "Launch date must be today or later for coming soon products",
+      message: "Launch date must be a future date for 'Coming Soon' products. Today's date is not allowed.",
       path: ["launchDate"],
+    }
+  )
+  .refine(
+    (data) => {
+      // If launchDate is in the future, status must be ComingSoon.
+      // NOTE: append "T00:00:00" so JS parses as LOCAL midnight, not UTC midnight.
+      // Without this, "2026-08-01" is parsed as UTC midnight which is "in the future"
+      // for users in UTC+7 zones (they see it as past midnight on Aug 1 already).
+      if (data.launchDate && data.productStatus !== "ComingSoon") {
+        const datePart = data.launchDate.slice(0, 10);
+        const launchDate = new Date(datePart + "T00:00:00");
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return launchDate <= today;
+      }
+      return true;
+    },
+    {
+      message: "Cannot set status to Active before the launch date. The product has not launched yet.",
+      path: ["productStatus"],
+    }
+  )
+  .refine(
+    (data) => {
+      // Cannot set OutOfStock when Quantity > 0
+      return !(data.productStatus === "OutOfStock" && data.quantity > 0);
+    },
+    {
+      message: "Cannot set status to 'Out of Stock' when the product still has available quantity.",
+      path: ["productStatus"],
     }
   );
 
