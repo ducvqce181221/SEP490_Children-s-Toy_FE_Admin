@@ -2,7 +2,6 @@ import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { ProductListItem } from "../types/product";
 import { PencilIcon, EyeIcon } from "@/icons";
-import { format } from "date-fns";
 import Badge from "@/components/ui/badge/Badge";
 import Image from "next/image";
 
@@ -15,7 +14,13 @@ interface ProductRowProps {
 
 export const ProductRow = React.memo(
   ({ product, rowNumber, onEdit, onViewDetails }: ProductRowProps) => {
-    const formattedDate = format(new Date(product.createdAt), "dd/MM/yyyy HH:mm");
+    const d = new Date(product.createdAt);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
     const isInactive =
       product.status === "Inactive" ||
       product.productStatus.toLowerCase() === "inactive";
