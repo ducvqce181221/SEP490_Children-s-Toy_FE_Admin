@@ -45,6 +45,19 @@ export const PromotionRow = React.memo(function PromotionRow({
     }
   };
 
+  const getPriorityBadge = (priority: number) => {
+    if (priority >= 100) {
+      return <Badge size="sm" color="error">Urgent ({priority})</Badge>;
+    }
+    if (priority >= 50) {
+      return <Badge size="sm" color="warning">High ({priority})</Badge>;
+    }
+    if (priority >= 20) {
+      return <Badge size="sm" color="info">Medium ({priority})</Badge>;
+    }
+    return <Badge size="sm" color="light">Low ({priority})</Badge>;
+  };
+
   const formattedStartDate = formatDisplayDate(promotion.startDate);
   const formattedEndDate = formatDisplayDate(promotion.endDate);
 
@@ -63,6 +76,10 @@ export const PromotionRow = React.memo(function PromotionRow({
       
       <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
         {promotion.promotionType}
+      </TableCell>
+
+      <TableCell className="px-4 py-3 text-start">
+        {getPriorityBadge(promotion.priority)}
       </TableCell>
 
       <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
