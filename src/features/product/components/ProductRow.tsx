@@ -27,6 +27,7 @@ export const ProductRow = React.memo(
     const formattedPrice = new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
+      maximumFractionDigits: 6,
     }).format(product.price);
 
     const getStatusBadge = (status: string) => {
