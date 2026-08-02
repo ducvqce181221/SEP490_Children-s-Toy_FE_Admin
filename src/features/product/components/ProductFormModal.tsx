@@ -646,7 +646,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </Label>
               <Input
                 type="number"
-                step="0.01"
+                step="any"
                 {...register("price", { valueAsNumber: true })}
                 placeholder="0.00"
                 disabled={isFormDisabled}
