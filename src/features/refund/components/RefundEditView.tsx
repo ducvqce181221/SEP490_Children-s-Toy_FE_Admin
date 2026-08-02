@@ -1007,6 +1007,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
         approvedAmount={refund.approvedAmount}
         currentDamageResponsibility={refund.damageResponsibility}
         currentInspectionPassed={refund.inspectionPassed}
+        returnToCustomerFeePaid={refund.returnToCustomerFeePaid}
         refundDetails={refund.details?.map((d) => ({
           productId: d.productId,
           productName: d.productName,
