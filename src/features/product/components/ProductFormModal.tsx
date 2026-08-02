@@ -118,6 +118,8 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const selectedPriceRangeId = useWatch({ control, name: "priceRangeId" });
   const descriptionValue = useWatch({ control, name: "description" });
   const launchDateValue = useWatch({ control, name: "launchDate" });
+  const productStatusValue = useWatch({ control, name: "productStatus" });
+  const quantityValue = useWatch({ control, name: "quantity" });
   const materialIdValue = useWatch({ control, name: "materialId" });
   const ageIdValue = useWatch({ control, name: "ageId" });
   const sexIdValue = useWatch({ control, name: "sexId" });
@@ -128,6 +130,14 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const heightCmValue = useWatch({ control, name: "heightCm" });
   const descriptionTextLength = getDescriptionTextLength(descriptionValue);
   const isFormDisabled = isSubmitting || isLoadingOptions || isLoadingDetail || isUploading;
+
+  // Live status-rule hints shown below the Status dropdown before submit
+  const hintToday = new Date();
+  hintToday.setHours(0, 0, 0, 0);
+  // Append "T00:00:00" so JS treats the date-only string as LOCAL midnight, not UTC.
+  const parsedLaunchDateForHint = launchDateValue ? new Date(launchDateValue.slice(0, 10) + "T00:00:00") : null;
+  const isLaunchDateFuture = parsedLaunchDateForHint !== null && parsedLaunchDateForHint > hintToday;
+  const isOutOfStockWithQuantity = productStatusValue === "OutOfStock" && (quantityValue ?? 0) > 0;
 
   const getMatchedPriceRangeId = useCallback(
     (priceValue: number | null | undefined) => {
@@ -672,6 +682,19 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 ]}
                 disabled={isFormDisabled}
               />
+              {isLaunchDateFuture && productStatusValue !== "ComingSoon" && !errors.productStatus && (
+                <p className="mt-1 text-xs text-warning-500">
+                  ⚠ Launch date is in the future. Only &quot;Coming Soon&quot; status is allowed.
+                </p>
+              )}
+              {isOutOfStockWithQuantity && !errors.productStatus && (
+                <p className="mt-1 text-xs text-warning-500">
+                  ⚠ Cannot set &quot;Out of Stock&quot; when quantity is greater than 0.
+                </p>
+              )}
+              {errors.productStatus && (
+                <p className="mt-1.5 text-sm text-error-500">{errors.productStatus.message}</p>
+              )}
             </div>
 
             <div>
