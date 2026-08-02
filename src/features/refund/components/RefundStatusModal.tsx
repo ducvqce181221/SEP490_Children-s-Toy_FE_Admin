@@ -40,6 +40,7 @@ interface RefundStatusModalProps {
   customerShippingPaid?: number;
   /** TotalAmount đơn gốc */
   totalAmount?: number;
+  returnToCustomerFeePaid?: boolean;
 }
 
 // Helper to determine the single next valid status transition
@@ -424,6 +425,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
   customerShippingPaid = 0,
   totalAmount,
   currentInspectionPassed = true,
+  returnToCustomerFeePaid = false,
 }) => {
   const nextStatus = getNextStatus(currentStatus, isSystemReturn);
 
@@ -529,7 +531,12 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
     } else if (nextStatus === "RefundPickupCreated") {
       description = "The return shipment will be created. If the shipping API fails, the action will be rolled back.";
     } else if (nextStatus === "RefundCompleted") {
-      description = "The final refund amount will be credited to the customer's wallet and product quantity updated.";
+      const hasCustomerFaultItems = refundDetails?.some(d => (d.failedCustomerQty ?? 0) > 0);
+      if (hasCustomerFaultItems && returnToCustomerFeePaid) {
+        description = "Confirming this action will credit the final refund to the customer's wallet and automatically create a GHN return shipping order for customer-fault items.";
+      } else {
+        description = "The final refund amount will be credited to the customer's wallet and product quantity updated.";
+      }
     }
   }
 

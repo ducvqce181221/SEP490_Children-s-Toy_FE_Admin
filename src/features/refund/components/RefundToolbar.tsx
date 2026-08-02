@@ -36,15 +36,15 @@ const REFUND_STATUS_OPTIONS = [
   { value: "RefundPickupCreated", label: "Pickup Created" },
   { value: "RefundShipping", label: "Shipping" },
   { value: "RefundReceived", label: "Received" },
-  { value: "RefundInspectionPending", label: "Inspection Pending" },
+  { value: "RefundInspectionPending", label: "Inspecting / Fee Paid" },
   { value: "RefundCompleted", label: "Completed" },
   { value: "RefundCancelled", label: "Cancelled" },
   { value: "RefundRejected", label: "Rejected" },
   { value: "RefundDamage", label: "Damaged" },
-  { value: "RefundReturnShipmentCreated", label: "Return Shipment Created" },
-  { value: "RefundReturningToCustomer", label: "Returning to Customer" },
-  { value: "RefundReturnedToCustomer", label: "Returned to Customer" },
-  { value: "RefundReturnToCustomerFailed", label: "Return to Customer Failed" },
+  { value: "RefundReturnShipmentCreated", label: "Return Created" },
+  { value: "RefundReturningToCustomer", label: "Returning" },
+  { value: "RefundReturnedToCustomer", label: "Returned (Rejected)" },
+  { value: "RefundReturnToCustomerFailed", label: "Return Failed" },
 ];
 
 function getRoleBadge(roleName: string) {
