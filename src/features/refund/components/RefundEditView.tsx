@@ -264,8 +264,8 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
   const isShippingStage = refund.refundStatus === "RefundShipping";
   const isReceivedStage = refund.refundStatus === "RefundReceived";
   const isInspectionStage = refund.refundStatus === "RefundInspectionPending";
-  // Customer return: Merchandise handles Shipping → Received → InspectionPending
-  const isMerchandiseStage = isShippingStage || isReceivedStage || (!refund.isSystemReturn && isInspectionStage);
+  // Customer return: Merchandise handles Shipping → Received
+  const isMerchandiseStage = isShippingStage || isReceivedStage;
 
   // System Return — per-stage role gates
   const isSystemApprovedStage = !!refund.isSystemReturn && refund.refundStatus === "RefundApproved";
@@ -286,9 +286,9 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
     (canReopenSystemRejected ||
       (refund.refundStatus !== "RefundRejected" &&
         (isAdmin ||
-          // Customer return: Merch handles shipping → received → inspection stages
+          // Customer return: Merch handles shipping → received
           (!refund.isSystemReturn && (isShippingStage || isReceivedStage) && isMerchandise) ||
-          (!refund.isSystemReturn && isInspectionStage && isMerchandise) ||
+          (!refund.isSystemReturn && isInspectionStage && isStaff) ||
           (!refund.isSystemReturn && !isShippingStage && !isReceivedStage && !isInspectionStage && isStaff) ||
           // System return: Merch inspects at Received (or legacy Requested/Approved)
           ((isSystemReceivedStage || isSystemApprovedStage || isSystemRequestedStage) && isMerchandise) ||
