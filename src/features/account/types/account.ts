@@ -50,6 +50,7 @@ export interface AccountQueryParams {
   sortDesc?: boolean;
   searchTerm?: string;
   roleId?: number;
+  isActive?: boolean;
 }
 
 export interface CreateAccountRequest {

@@ -106,8 +106,8 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
       setIsLoadingAccounts(true);
       try {
         const [staffRes, merchRes] = await Promise.all([
-          accountApi.getAccounts({ pageNumber: 1, pageSize: 100, roleId: 3 }),
-          accountApi.getAccounts({ pageNumber: 1, pageSize: 100, roleId: 4 }),
+          accountApi.getAccounts({ pageNumber: 1, pageSize: 100, roleId: 3, isActive: true }),
+          accountApi.getAccounts({ pageNumber: 1, pageSize: 100, roleId: 4, isActive: true }),
         ]);
         setStaffList(staffRes.items);
         setMerchList(merchRes.items);
@@ -263,21 +263,8 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
           return;
         }
 
-        for (const { label, accountId } of creates) {
-          try {
-            await scheduleApi.createWorkSchedule({ accountId, ...payload });
-          } catch (roleErr: unknown) {
-            const status =
-              roleErr instanceof AxiosError ? roleErr.response?.status : undefined;
-            if (status === 409) {
-              toast.error(
-                `${label} is already assigned to this shift on the selected date.`
-              );
-            } else {
-              toast.error(`${label}: ${getApiErrorMessage(roleErr)}`);
-            }
-            throw roleErr;
-          }
+        for (const { accountId } of creates) {
+          await scheduleApi.createWorkSchedule({ accountId, ...payload });
         }
 
         const roleSummary =
@@ -288,7 +275,12 @@ const WorkScheduleForm: React.FC<WorkScheduleFormProps> = ({
         onSubmitted();
       }
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err));
+      const status = err instanceof AxiosError ? err.response?.status : undefined;
+      if (status === 409) {
+        toast.error("Staff or Merchandiser is already assigned to this shift on the selected date.");
+      } else {
+        toast.error(getApiErrorMessage(err));
+      }
     } finally {
       setIsSubmitting(false);
     }
