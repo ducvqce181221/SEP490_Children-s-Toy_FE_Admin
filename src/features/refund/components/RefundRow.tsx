@@ -74,6 +74,9 @@ export const RefundRow = React.memo(function RefundRow({
         return <Badge size="sm" color="info">Received</Badge>;
       case "RefundInspectionPending":
       case "InspectionPending":
+        if (refund.returnToCustomerFeePaid && (refund.returnToCustomerFee ?? 0) > 0) {
+          return <Badge size="sm" color="success">Fee Paid</Badge>;
+        }
         return <Badge size="sm" color="warning">Inspecting</Badge>;
       case "RefundCompleted":
       case "Completed":

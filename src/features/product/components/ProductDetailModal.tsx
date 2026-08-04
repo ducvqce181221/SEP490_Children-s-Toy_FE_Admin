@@ -83,6 +83,19 @@ const ProductDetailModal = ({
     }
   };
 
+  const getPriorityBadge = (priority: number) => {
+    if (priority >= 100) {
+      return <Badge size="sm" color="error">Urgent ({priority})</Badge>;
+    }
+    if (priority >= 50) {
+      return <Badge size="sm" color="warning">High ({priority})</Badge>;
+    }
+    if (priority >= 20) {
+      return <Badge size="sm" color="info">Medium ({priority})</Badge>;
+    }
+    return <Badge size="sm" color="light">Low ({priority})</Badge>;
+  };
+
   if (!isOpen) return null;
 
   const getStatusBadge = (status: string) => {
@@ -104,6 +117,7 @@ const ProductDetailModal = ({
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
+      maximumFractionDigits: 6,
     }).format(price);
   };
 
@@ -386,22 +400,16 @@ const ProductDetailModal = ({
                             Promotion Name
                           </th>
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                            Type
+                            Priority
                           </th>
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
                             Duration
                           </th>
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                            Sale Price (VND)
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                            Discount
+                            Price / Discount
                           </th>
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
                             Sold
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                            Status
                           </th>
                         </tr>
                       </thead>
@@ -409,16 +417,24 @@ const ProductDetailModal = ({
                         {promotions.map((promo, index) => (
                           <tr key={`${promo.promotionId}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                             <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                              <Link
-                                href={`/admin/promotions/${promo.promotionId}`}
-                                onClick={onClose}
-                                className="text-brand-500 hover:underline hover:text-brand-600 transition-colors"
-                              >
-                                {promo.promotionName}
-                              </Link>
+                              <div className="flex flex-col gap-1 items-start">
+                                <Link
+                                  href={`/admin/promotions/${promo.promotionId}`}
+                                  onClick={onClose}
+                                  className="text-brand-500 hover:underline hover:text-brand-600 transition-colors font-semibold"
+                                >
+                                  {promo.promotionName}
+                                </Link>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                  {getPromotionStatusBadge(promo.status)}
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 dark:bg-white/5 dark:text-white/80">
+                                    {promo.promotionType === "FLASH_SALE" ? "Flash Sale" : "Discount"}
+                                  </span>
+                                </div>
+                              </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                              {promo.promotionType === "FLASH_SALE" ? "Flash Sale" : "Discount"}
+                            <td className="px-4 py-3 text-sm whitespace-nowrap text-start">
+                              {getPriorityBadge(promo.priority)}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                               <div className="flex flex-col gap-0.5">
@@ -427,20 +443,19 @@ const ProductDetailModal = ({
                               </div>
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
-                              {promo.salePrice.toLocaleString("vi-VN")}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
-                              {promo.discountPercent !== null && promo.discountPercent !== undefined
-                                ? `${promo.discountPercent}%`
-                                : "-"}
+                              <div className="flex flex-col gap-0.5 items-start">
+                                <span className="font-semibold">{promo.salePrice.toLocaleString("vi-VN")} VND</span>
+                                {promo.discountPercent !== null && promo.discountPercent !== undefined && (
+                                  <span className="text-xs text-error-500 font-medium bg-error-50 dark:bg-error-500/10 px-1.5 py-0.5 rounded">
+                                    -{promo.discountPercent}%
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                               {promo.promotionType === "FLASH_SALE"
                                 ? `${promo.soldQuantity ?? 0} / ${promo.saleQuantity ?? 0}`
                                 : "Unlimited"}
-                            </td>
-                            <td className="px-4 py-3 text-sm whitespace-nowrap">
-                              {getPromotionStatusBadge(promo.status)}
                             </td>
                           </tr>
                         ))}

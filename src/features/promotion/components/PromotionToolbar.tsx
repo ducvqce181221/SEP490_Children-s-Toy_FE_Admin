@@ -29,12 +29,19 @@ export const PromotionToolbar: React.FC<PromotionToolbarProps> = ({
 }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [localSearchTerm, setLocalSearchTerm] = useState(searchQuery);
+  const [localStatus, setLocalStatus] = useState(filters.status);
 
   // Sync local state when parent searchQuery changes
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalSearchTerm(searchQuery);
   }, [searchQuery]);
+
+  // Sync local status state when parent status filter changes
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLocalStatus(filters.status);
+  }, [filters.status]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -43,11 +50,17 @@ export const PromotionToolbar: React.FC<PromotionToolbarProps> = ({
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onFilterChange({ ...filters, status: e.target.value });
+    setLocalStatus(e.target.value);
   };
 
   const clearFilters = () => {
+    setLocalStatus("");
     onFilterChange({ status: "" });
+    setIsFilterOpen(false);
+  };
+
+  const applyFilters = () => {
+    onFilterChange({ ...filters, status: localStatus });
     setIsFilterOpen(false);
   };
 
@@ -111,7 +124,7 @@ export const PromotionToolbar: React.FC<PromotionToolbarProps> = ({
                     { value: "Expired", label: "Expired" },
                   ]}
                   onChange={handleStatusChange}
-                  value={filters.status}
+                  value={localStatus}
                 />
               </div>
 
@@ -119,7 +132,7 @@ export const PromotionToolbar: React.FC<PromotionToolbarProps> = ({
                 <Button variant="outline" size="sm" onClick={clearFilters}>
                   Clear
                 </Button>
-                <Button variant="primary" size="sm" onClick={() => setIsFilterOpen(false)}>
+                <Button variant="primary" size="sm" onClick={applyFilters}>
                   Apply
                 </Button>
               </div>

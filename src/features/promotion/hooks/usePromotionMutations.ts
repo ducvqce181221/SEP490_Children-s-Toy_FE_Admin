@@ -4,6 +4,18 @@ import { promotionApi } from "../services/promotion-api";
 import { PromotionFormData, ApiErrorResponse, ValidationErrorResponse } from "../types/promotion";
 import { AxiosError } from "axios";
 
+const getErrorMessage = (err: unknown, defaultMsg: string): string => {
+  const axiosError = err as AxiosError<ValidationErrorResponse>;
+  const data = axiosError.response?.data;
+  if (data?.errors) {
+    const errorList = Object.entries(data.errors)
+      .flatMap(([_, msgs]) => msgs)
+      .join("\n");
+    if (errorList) return errorList;
+  }
+  return data?.message || axiosError.message || defaultMsg;
+};
+
 export const usePromotionMutations = (onSuccess?: () => void) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -14,9 +26,7 @@ export const usePromotionMutations = (onSuccess?: () => void) => {
       toast.success("Promotion created successfully");
       onSuccess?.();
     } catch (err: unknown) {
-      const axiosError = err as AxiosError<ValidationErrorResponse>;
-      const message = axiosError.response?.data?.message || axiosError.message || "Creation failed";
-      toast.error(message);
+      toast.error(getErrorMessage(err, "Creation failed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -29,9 +39,7 @@ export const usePromotionMutations = (onSuccess?: () => void) => {
       toast.success("Promotion updated successfully");
       onSuccess?.();
     } catch (err: unknown) {
-      const axiosError = err as AxiosError<ValidationErrorResponse>;
-      const message = axiosError.response?.data?.message || axiosError.message || "Update failed";
-      toast.error(message);
+      toast.error(getErrorMessage(err, "Update failed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -44,9 +52,7 @@ export const usePromotionMutations = (onSuccess?: () => void) => {
       toast.success("Promotion deleted successfully");
       onSuccess?.();
     } catch (err: unknown) {
-      const axiosError = err as AxiosError<ApiErrorResponse>;
-      const message = axiosError.response?.data?.message || axiosError.message || "Deletion failed";
-      toast.error(message);
+      toast.error(getErrorMessage(err, "Deletion failed"));
       throw err; // throw so caller can catch
     } finally {
       setIsSubmitting(false);
