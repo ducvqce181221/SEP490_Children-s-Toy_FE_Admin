@@ -310,7 +310,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
     refund.refundStatus !== "RefundCancelled" &&
     refund.refundStatus !== "RefundRejected";
 
-  const nextStatus = getNextStatus(refund.refundStatus, refund.isSystemReturn);
+  const nextStatus = getNextStatus(refund.refundStatus, refund.isSystemReturn, refund.refundType);
 
   const getChangeStatusButtonLabel = (status: string | null) => {
     if (!status) return "Change Status";
@@ -788,6 +788,20 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                       {refund.reasonDetails || "No additional comments"}
                     </div>
                   </div>
+                  <InfoRow
+                    label="Refund Type"
+                    value={
+                      refund.refundType === "RefundOnly" ? (
+                        <Badge color="info">Refund Only</Badge>
+                      ) : refund.refundType === "ReturnAndRefund" ? (
+                        <Badge color="primary">Return & Refund</Badge>
+                      ) : refund.refundType === "ReturnOnly" ? (
+                        <Badge color="warning">Return Only (COD Failed)</Badge>
+                      ) : (
+                        <Badge color="light">{refund.refundType || "—"}</Badge>
+                      )
+                    }
+                  />
                   <InfoRow label="Requested On" value={fmtDt(refund.createdAt)} />
                   <InfoRow label="Requested By" value={refund.requestedByName || "System"} />
                 </Section>

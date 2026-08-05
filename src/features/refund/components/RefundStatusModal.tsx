@@ -44,7 +44,24 @@ interface RefundStatusModalProps {
 }
 
 // Helper to determine the single next valid status transition
-export const getNextStatus = (currentStatus: string, isSystemReturn: boolean = false): UpdateRefundStatusData["status"] | null => {
+export const getNextStatus = (
+  currentStatus: string,
+  isSystemReturn: boolean = false,
+  refundType?: string,
+): UpdateRefundStatusData["status"] | null => {
+  if (refundType === "RefundOnly") {
+    switch (currentStatus) {
+      case "RefundRequested":
+        return "RefundApproved";
+      case "RefundApproved":
+        return "RefundCompleted";
+      case "RefundRejected":
+        return null;
+      default:
+        return null;
+    }
+  }
+
   switch (currentStatus) {
     case "RefundRequested":
       return isSystemReturn ? "RefundInspectionPending" : "RefundApproved";
@@ -427,7 +444,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
   currentInspectionPassed = true,
   returnToCustomerFeePaid = false,
 }) => {
-  const nextStatus = getNextStatus(currentStatus, isSystemReturn);
+  const nextStatus = getNextStatus(currentStatus, isSystemReturn, refundType);
 
   const {
     control,
@@ -550,7 +567,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
     }
 
     // Customer return Approve: fee fields
-    if (nextStatus === "RefundApproved" && !isSystemReturn) {
+    if (nextStatus === "RefundApproved" && !isSystemReturn && refundType !== "RefundOnly") {
       payload.returnShippingFeeBy = feeBy;
       if (feeBy !== suggestedFeeBy && !overrideNote.trim()) {
         setOverrideNoteError("Override reason is required when changing the suggested party.");
@@ -602,7 +619,7 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
           )}
 
           {/* ── Customer return Approve: Return Shipping Fee Section ── */}
-          {nextStatus === "RefundApproved" && !isSystemReturn && (
+          {nextStatus === "RefundApproved" && !isSystemReturn && refundType !== "RefundOnly" && (
             <ReturnShippingFeeSection
               suggestedFeeBy={suggestedFeeBy}
               approvedAmount={approvedAmount}
