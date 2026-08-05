@@ -31,7 +31,7 @@ export const getDescriptionTextLength = (value: unknown): number => {
   return normalized.replace(/<[^>]*>/g, "").replace(/\u00a0/g, " ").trim().length;
 };
 
-const getDescriptionStorageLength = (value: unknown): number => {
+export const getDescriptionStorageLength = (value: unknown): number => {
   return normalizeDescriptionHtml(value).length;
 };
 
