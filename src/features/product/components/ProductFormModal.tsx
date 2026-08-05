@@ -8,7 +8,7 @@ import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
 import {
-  getDescriptionTextLength,
+  getDescriptionStorageLength,
   MAX_DESCRIPTION_LENGTH,
   ProductFormData,
   ProductFormSchema,
@@ -128,7 +128,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const lengthCmValue = useWatch({ control, name: "lengthCm" });
   const widthCmValue = useWatch({ control, name: "widthCm" });
   const heightCmValue = useWatch({ control, name: "heightCm" });
-  const descriptionTextLength = getDescriptionTextLength(descriptionValue);
+  const descriptionStorageLength = getDescriptionStorageLength(descriptionValue);
   const isFormDisabled = isSubmitting || isLoadingOptions || isLoadingDetail || isUploading;
 
   // Live status-rule hints shown below the Status dropdown before submit
@@ -917,7 +917,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   className="min-h-[140px] bg-white text-sm text-gray-800 dark:bg-gray-900 dark:text-white/90"
                 />
                 <div className="border-t border-gray-200 px-3 py-2 text-right text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                  {descriptionTextLength}/{MAX_DESCRIPTION_LENGTH}
+                  {descriptionStorageLength}/{MAX_DESCRIPTION_LENGTH}
                 </div>
               </div>
               <input type="hidden" {...register("description")} />
