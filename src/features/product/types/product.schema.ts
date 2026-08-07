@@ -74,8 +74,8 @@ export const ProductFormSchema = z
       .refine((val) => val > 0, {
         message: "Price must be greater than 0",
       })
-      .refine((val) => val <= 100_000_000, {
-        message: "Price must not exceed 100,000,000 VND",
+      .refine((val) => val <= 999_999_999, {
+        message: "Price must not exceed 999,999,999 VND",
       }),
     quantity: z
       .number()
@@ -189,18 +189,12 @@ export const ProductFormSchema = z
       .lte(150, "Height (cm) must not exceed 150 cm"),
     mainImageUrl: z
       .string()
+      .min(1, "Main image is required")
+      .refine((val) => normalizeUrl(val).length <= MAX_IMAGE_URL_LENGTH, {
+        message: "Main image URL must not exceed 500 characters",
+      })
       .refine(
         (val) => {
-          if (!val || val.trim() === "") return true; // Allow empty for edit mode
-          return normalizeUrl(val).length <= MAX_IMAGE_URL_LENGTH;
-        },
-        {
-          message: "Main image URL must not exceed 500 characters",
-        }
-      )
-      .refine(
-        (val) => {
-          if (!val || val.trim() === "") return true; // Allow empty for edit mode
           try {
             new URL(normalizeUrl(val));
             return true;
@@ -211,18 +205,7 @@ export const ProductFormSchema = z
         {
           message: "Main image URL is not valid",
         }
-      )
-      .nullable()
-      .optional()
-      .or(z.literal(""))
-      .transform((val) => {
-        if (typeof val !== "string") {
-          return null;
-        }
-
-        const normalized = normalizeUrl(val);
-        return normalized === "" ? null : normalized;
-      }),
+      ),
     additionalImageUrls: z
       .array(
         z
@@ -244,7 +227,8 @@ export const ProductFormSchema = z
             }
           )
       )
-      .default([])
+      .min(4, "At least 4 additional images are required")
+      .max(6, "Maximum 6 additional images allowed")
       .transform((urls) => urls.map(normalizeUrl))
       .refine(
         (urls) => new Set(urls.map(normalizeUrl)).size === urls.length,
