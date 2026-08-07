@@ -74,8 +74,8 @@ export const ProductFormSchema = z
       .refine((val) => val > 0, {
         message: "Price must be greater than 0",
       })
-      .refine((val) => val <= 100_000_000, {
-        message: "Price must not exceed 100,000,000 VND",
+      .refine((val) => val <= 999_999_999, {
+        message: "Price must not exceed 999,999,999 VND",
       }),
     quantity: z
       .number()
