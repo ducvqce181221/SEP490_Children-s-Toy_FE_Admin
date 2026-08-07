@@ -326,21 +326,17 @@ function SystemReturnCompleteSection({
   totalAmount,
   customerShippingPaid,
   voucherDiscount,
-  includeShipping,
-  onIncludeShippingChange,
   damageResponsibility,
   refundDetails,
 }: {
   totalAmount: number;
   customerShippingPaid: number;
   voucherDiscount?: number;
-  includeShipping: boolean;
-  onIncludeShippingChange: (v: boolean) => void;
   damageResponsibility?: string | null;
   refundDetails?: RefundDetailItem[];
 }) {
   const productRefundAmount = totalAmount - customerShippingPaid;
-  const finalRefund = includeShipping ? totalAmount : productRefundAmount;
+  const finalRefund = totalAmount;
   const hasShipFee = customerShippingPaid > 0;
 
   const totalRestockable = (refundDetails ?? []).reduce((sum, d) => sum + (d.restorableQuantity ?? d.quantity), 0);
@@ -374,42 +370,15 @@ function SystemReturnCompleteSection({
         )}
       </div>
 
-      {/* Shipping toggle */}
+      {/* Shipping fee policy note */}
       {hasShipFee ? (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Shipping fee refund option</p>
-          {[
-            {
-              val: true,
-              label: "Refund shipping fee",
-              sub: `Customer receives ${formatCurrency(totalAmount)}`,
-            },
-            {
-              val: false,
-              label: "Do not refund shipping fee",
-              sub: `Customer receives ${formatCurrency(productRefundAmount)}`,
-            },
-          ].map((opt) => (
-            <label
-              key={String(opt.val)}
-              className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${includeShipping === opt.val
-                ? "border-[#ff6a00] bg-orange-50 dark:bg-orange-900/20"
-                : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
-                }`}
-            >
-              <input
-                type="radio"
-                name="includeShipping"
-                checked={includeShipping === opt.val}
-                onChange={() => onIncludeShippingChange(opt.val)}
-                className="accent-[#ff6a00]"
-              />
-              <div>
-                <div className="text-sm font-semibold text-gray-800 dark:text-white/90">{opt.label}</div>
-                <div className="text-[11px] text-gray-400">{opt.sub}</div>
-              </div>
-            </label>
-          ))}
+        <div className="rounded-lg bg-orange-50/80 border border-orange-200 px-3.5 py-3 text-xs text-orange-800 dark:bg-orange-900/20 dark:border-orange-800/40 dark:text-orange-300 space-y-1">
+          <div className="font-semibold flex items-center gap-1.5">
+            <span>Full Refund Applied (Product Amount + Shipping Fee)</span>
+          </div>
+          <p className="text-orange-700/80 dark:text-orange-300/80">
+            Order issue occurred during GHN shipping transit (damaged/broken/delivery failure). Customer receives 100% of the total amount paid ({formatCurrency(totalAmount)}).
+          </p>
         </div>
       ) : (
         <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300">
@@ -589,9 +558,9 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
       });
     }
 
-    // System return Complete: bắt buộc includeShippingInRefund
+    // System return Complete: luôn luôn hoàn 100% (bao gồm phí ship) do lỗi vận chuyển GHN
     if (isSystemReturn && nextStatus === "RefundCompleted") {
-      payload.includeShippingInRefund = customerShippingPaid > 0 ? includeShipping : true;
+      payload.includeShippingInRefund = true;
     }
 
     onSave(payload);
@@ -680,8 +649,6 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
                 <SystemReturnCompleteSection
                   totalAmount={totalAmount ?? approvedAmount ?? 0}
                   customerShippingPaid={customerShippingPaid}
-                  includeShipping={includeShipping}
-                  onIncludeShippingChange={setIncludeShipping}
                   damageResponsibility={currentDamageResponsibility}
                   refundDetails={refundDetails}
                 />
