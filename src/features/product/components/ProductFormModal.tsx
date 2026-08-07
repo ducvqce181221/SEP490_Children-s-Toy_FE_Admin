@@ -647,6 +647,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               <Input
                 type="number"
                 step="any"
+                min={0}
+                max={999999999}
+                maxLength={9}
                 {...register("price", { valueAsNumber: true })}
                 placeholder="0.00"
                 disabled={isFormDisabled}
@@ -661,6 +664,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </Label>
               <Input
                 type="number"
+                min={0}
+                max={99999}
+                maxLength={5}
                 {...register("quantity", { valueAsNumber: true })}
                 placeholder="0"
                 disabled={isFormDisabled}
@@ -820,6 +826,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </Label>
               <Input
                 type="number"
+                min={0}
+                max={999999}
+                maxLength={6}
                 value={weightGramValue ?? ""}
                 onChange={(e) =>
                   setValue("weightGram", Number(e.target.value), {
@@ -839,6 +848,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </Label>
               <Input
                 type="number"
+                min={0}
+                max={9999}
+                maxLength={4}
                 value={lengthCmValue ?? ""}
                 onChange={(e) =>
                   setValue("lengthCm", Number(e.target.value), {
@@ -858,6 +870,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </Label>
               <Input
                 type="number"
+                min={0}
+                max={9999}
+                maxLength={4}
                 value={widthCmValue ?? ""}
                 onChange={(e) =>
                   setValue("widthCm", Number(e.target.value), {
@@ -877,6 +892,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </Label>
               <Input
                 type="number"
+                min={0}
+                max={9999}
+                maxLength={4}
                 value={heightCmValue ?? ""}
                 onChange={(e) =>
                   setValue("heightCm", Number(e.target.value), {

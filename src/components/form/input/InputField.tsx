@@ -48,6 +48,26 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           type={type}
           disabled={disabled}
           className={inputClasses}
+          onKeyDown={(e) => {
+            if (type === "number") {
+              if (["e", "E"].includes(e.key)) {
+                e.preventDefault();
+              }
+              if (props.min !== undefined && Number(props.min) >= 0 && e.key === "-") {
+                e.preventDefault();
+              }
+            }
+            props.onKeyDown?.(e);
+          }}
+          onInput={(e) => {
+            if (type === "number") {
+              const target = e.target as HTMLInputElement;
+              if (props.maxLength && target.value.length > props.maxLength) {
+                target.value = target.value.slice(0, props.maxLength);
+              }
+            }
+            props.onInput?.(e);
+          }}
           {...props}
         />
 
