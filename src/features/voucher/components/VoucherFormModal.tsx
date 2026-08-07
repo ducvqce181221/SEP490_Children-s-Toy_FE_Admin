@@ -353,6 +353,9 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               </Label>
               <Input 
                 type="number" 
+                min={0}
+                max={999999999}
+                maxLength={9}
                 placeholder="Value" 
                 error={!!errors.discountValue}
                 hint={errors.discountValue?.message}
@@ -369,6 +372,9 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               </Label>
               <Input 
                 type="number" 
+                min={0}
+                max={999999999}
+                maxLength={9}
                 placeholder={(discountType === "FIXED" && discountTarget !== "FINAL_PRICE") ? "Not applicable" : "Limit discount up to..."} 
                 error={!!errors.maxDiscountCap}
                 hint={errors.maxDiscountCap?.message}
@@ -382,6 +388,9 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               <Label>Min Order Amount (VND) {discountTarget === "FINAL_PRICE" && <span className="text-error-500">*</span>}</Label>
               <Input 
                 type="number" 
+                min={0}
+                max={999999999}
+                maxLength={9}
                 placeholder="Minimum cart value" 
                 error={!!errors.minOrderAmount}
                 hint={errors.minOrderAmount?.message}
@@ -428,6 +437,9 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               <Label>Total Quantity limit {discountTarget === "FINAL_PRICE" && <span className="text-error-500">*</span>}</Label>
               <Input 
                 type="number" 
+                min={0}
+                max={999999}
+                maxLength={6}
                 placeholder={discountTarget === "FINAL_PRICE" ? "e.g. 100" : "Leave blank for unlimited"} 
                 error={!!errors.totalQuantity}
                 hint={errors.totalQuantity?.message}
@@ -441,6 +453,9 @@ export const VoucherFormModal: React.FC<VoucherFormModalProps> = ({
               <Label>Max Usage Per User {discountTarget === "FINAL_PRICE" && <span className="text-error-500">*</span>}</Label>
               <Input 
                 type="number" 
+                min={0}
+                max={9999}
+                maxLength={4}
                 placeholder="e.g. 1" 
                 error={!!errors.maxUsagePerUser}
                 hint={errors.maxUsagePerUser?.message}

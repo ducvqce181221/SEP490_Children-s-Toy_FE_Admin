@@ -37,7 +37,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   };
 
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newPhoneNumber = e.target.value;
+    const newPhoneNumber = e.target.value.replace(/\D/g, "").slice(0, 10);
     setPhoneNumber(newPhoneNumber);
     if (onChange) {
       onChange(newPhoneNumber);
@@ -88,6 +88,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
       {/* Input field */}
       <input
         type="tel"
+        maxLength={10}
         value={phoneNumber}
         onChange={handlePhoneNumberChange}
         placeholder={placeholder}

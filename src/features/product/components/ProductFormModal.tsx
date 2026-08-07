@@ -372,35 +372,32 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     const formData = data as ProductFormData;
     formData.productStatus = normalizeProductStatus(formData.productStatus);
     
-    // Additional validation for create mode
-    if (mode === "create") {
-      let hasError = false;
-      
-      if (!formData.mainImageUrl || formData.mainImageUrl.trim() === "") {
-        setError("mainImageUrl", {
-          type: "manual",
-          message: "Main image is required",
-        });
-        hasError = true;
-      }
-
-      const additionalCount = formData.additionalImageUrls?.length ?? 0;
-      if (additionalCount < 4) {
-        setError("additionalImageUrls", {
-          type: "manual",
-          message: "At least 4 additional images are required",
-        });
-        hasError = true;
-      } else if (additionalCount > 6) {
-        setError("additionalImageUrls", {
-          type: "manual",
-          message: "Maximum 6 additional images allowed",
-        });
-        hasError = true;
-      }
-      
-      if (hasError) return;
+    let hasError = false;
+    
+    if (!formData.mainImageUrl || formData.mainImageUrl.trim() === "") {
+      setError("mainImageUrl", {
+        type: "manual",
+        message: "Main image is required",
+      });
+      hasError = true;
     }
+
+    const additionalCount = formData.additionalImageUrls?.length ?? 0;
+    if (additionalCount < 4) {
+      setError("additionalImageUrls", {
+        type: "manual",
+        message: "At least 4 additional images are required",
+      });
+      hasError = true;
+    } else if (additionalCount > 6) {
+      setError("additionalImageUrls", {
+        type: "manual",
+        message: "Maximum 6 additional images allowed",
+      });
+      hasError = true;
+    }
+    
+    if (hasError) return;
 
     const id = mode === "edit" ? product?.productId ?? null : null;
     const result = await onSubmit(formData, id);
@@ -419,30 +416,26 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const handleFormSubmitWrapper = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Pre-validate image fields for create mode before triggering form validation
-    if (mode === "create") {
-      if (!mainImageUrl || mainImageUrl.trim() === "") {
-        setError("mainImageUrl", {
-          type: "manual",
-          message: "Main image is required",
-        });
-      }
+    if (!mainImageUrl || mainImageUrl.trim() === "") {
+      setError("mainImageUrl", {
+        type: "manual",
+        message: "Main image is required",
+      });
+    }
 
-      const additionalCount = additionalImageUrls.length;
-      if (additionalCount < 4) {
-        setError("additionalImageUrls", {
-          type: "manual",
-          message: "At least 4 additional images are required",
-        });
-      } else if (additionalCount > 6) {
-        setError("additionalImageUrls", {
-          type: "manual",
-          message: "Maximum 6 additional images allowed",
-        });
-      }
+    const additionalCount = additionalImageUrls.length;
+    if (additionalCount < 4) {
+      setError("additionalImageUrls", {
+        type: "manual",
+        message: "At least 4 additional images are required",
+      });
+    } else if (additionalCount > 6) {
+      setError("additionalImageUrls", {
+        type: "manual",
+        message: "Maximum 6 additional images allowed",
+      });
     }
     
-    // Trigger form validation and submission
     await handleSubmit(handleFormSubmit)(e);
   };
 
@@ -647,6 +640,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               <Input
                 type="number"
                 step="any"
+                min={0}
+                max={999999999}
+                maxLength={9}
                 {...register("price", { valueAsNumber: true })}
                 placeholder="0.00"
                 disabled={isFormDisabled}
@@ -661,6 +657,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </Label>
               <Input
                 type="number"
+                min={0}
+                max={99999}
+                maxLength={5}
                 {...register("quantity", { valueAsNumber: true })}
                 placeholder="0"
                 disabled={isFormDisabled}
@@ -820,6 +819,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </Label>
               <Input
                 type="number"
+                min={0}
+                max={999999}
+                maxLength={6}
                 value={weightGramValue ?? ""}
                 onChange={(e) =>
                   setValue("weightGram", Number(e.target.value), {
@@ -839,6 +841,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </Label>
               <Input
                 type="number"
+                min={0}
+                max={9999}
+                maxLength={4}
                 value={lengthCmValue ?? ""}
                 onChange={(e) =>
                   setValue("lengthCm", Number(e.target.value), {
@@ -858,6 +863,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </Label>
               <Input
                 type="number"
+                min={0}
+                max={9999}
+                maxLength={4}
                 value={widthCmValue ?? ""}
                 onChange={(e) =>
                   setValue("widthCm", Number(e.target.value), {
@@ -877,6 +885,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </Label>
               <Input
                 type="number"
+                min={0}
+                max={9999}
+                maxLength={4}
                 value={heightCmValue ?? ""}
                 onChange={(e) =>
                   setValue("heightCm", Number(e.target.value), {
@@ -930,7 +941,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
             <div className="sm:col-span-2">
               <Label>
-                Main Image {mode === "create" && <span className="text-error-500">*</span>}
+                Main Image <span className="text-error-500">*</span>
               </Label>
               <div className="mt-2 flex items-center gap-4">
                 {mainImageUrl ? (
@@ -968,7 +979,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
             <div className="sm:col-span-2">
               <Label>
-                Additional Images {mode === "create" && <span className="text-error-500">*</span>}
+                Additional Images <span className="text-error-500">*</span>
               </Label>
               <p className="mt-1 text-xs text-gray-500">
                 Upload 4-6 additional images (total with main image: 5-7).

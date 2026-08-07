@@ -34,7 +34,9 @@ export const useProductMutations = (onSuccess?: () => void) => {
       }
 
       const errorMessage =
-        axiosError.response?.data?.message || "Failed to create product";
+        axiosError.response?.data?.errorMessage ||
+        axiosError.response?.data?.message ||
+        "Failed to create product";
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally {
@@ -66,7 +68,9 @@ export const useProductMutations = (onSuccess?: () => void) => {
       }
 
       const errorMessage =
-        axiosError.response?.data?.message || "Failed to update product";
+        axiosError.response?.data?.errorMessage ||
+        axiosError.response?.data?.message ||
+        "Failed to update product";
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally {
