@@ -13,12 +13,18 @@ const BASE_URL =
 
 const LOGIN_PATHS = ["/login", "/admin/login"] as const;
 
-const SILENT_STATUSES = new Set([400, 401, 403, 422]);
+const SILENT_STATUSES = new Set([400, 401, 403, 409, 422]);
 
 const HTTP_ERROR_MESSAGES: Record<number, string> = {
   403: "You do not have permission to perform this action.",
   404: "Data not found.",
+  405: "Method not allowed.",
+  408: "Request timed out. Please try again.",
+  429: "Too many requests. Please slow down and try again later.",
   500: "Server error. Please try again later.",
+  502: "Bad gateway. Service temporarily unavailable.",
+  503: "Service unavailable. Please try again later.",
+  504: "Gateway timeout. Please try again later.",
 };
 
 function clearAuthStorage(): void {
@@ -139,7 +145,16 @@ axiosClient.interceptors.response.use(
     const status = error.response.status;
 
     if (!SILENT_STATUSES.has(status)) {
-      toast.error(HTTP_ERROR_MESSAGES[status] ?? `An error occurred (${status}).`);
+      const data = error.response.data as { message?: string; errorMessage?: string } | undefined;
+      const customMsg =
+        typeof data?.message === "string" && data.message.trim()
+          ? data.message.trim()
+          : typeof data?.errorMessage === "string" && data.errorMessage.trim()
+            ? data.errorMessage.trim()
+            : null;
+
+      const fallbackMsg = HTTP_ERROR_MESSAGES[status] ?? `An error occurred (${status}). Please try again.`;
+      toast.error(customMsg ?? fallbackMsg);
     }
 
     if (status === 401 && !error.config?.url?.includes("/auth/login")) {

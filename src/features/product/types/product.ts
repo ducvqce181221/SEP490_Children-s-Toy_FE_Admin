@@ -77,8 +77,9 @@ export interface ProductQueryParams {
 }
 
 export interface ApiErrorResponse {
-  code: string;
-  message: string;
+  code?: string;
+  message?: string;
+  errorMessage?: string;
 }
 
 export interface ValidationErrorResponse extends ApiErrorResponse {

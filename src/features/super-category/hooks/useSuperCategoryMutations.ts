@@ -34,7 +34,9 @@ export const useSuperCategoryMutations = (onSuccess?: () => void) => {
       }
 
       const errorMessage =
-        axiosError.response?.data?.message || "Failed to create super category";
+        axiosError.response?.data?.errorMessage ||
+        axiosError.response?.data?.message ||
+        "Failed to create super category";
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally {
@@ -66,7 +68,9 @@ export const useSuperCategoryMutations = (onSuccess?: () => void) => {
       }
 
       const errorMessage =
-        axiosError.response?.data?.message || "Failed to update super category";
+        axiosError.response?.data?.errorMessage ||
+        axiosError.response?.data?.message ||
+        "Failed to update super category";
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally {

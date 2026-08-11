@@ -28,8 +28,22 @@ export const useOrderMutations = (onSuccess?: () => void) => {
     err: unknown,
     fallback: string,
   ): string => {
-    const axiosError = err as AxiosError<ApiErrorResponse>;
-    return axiosError.response?.data?.message ?? fallback;
+    if (err instanceof AxiosError) {
+      const data = err.response?.data as {
+        message?: string;
+        errorMessage?: string;
+        code?: string;
+        errorCode?: string;
+        errors?: Record<string, string[]>;
+      } | undefined;
+
+      if (data?.errors) {
+        const first = Object.values(data.errors).flat().find(Boolean);
+        if (first) return first;
+      }
+      return data?.errorMessage ?? data?.message ?? fallback;
+    }
+    return fallback;
   };
 
   // ── Confirm ───────────────────────────────────────────────────────────────
