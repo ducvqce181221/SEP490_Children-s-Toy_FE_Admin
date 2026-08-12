@@ -612,9 +612,13 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
           {nextStatus === "RefundPickupCreated" && !isSystemReturn && (
             <div>
               <Label htmlFor="provider">Carrier</Label>
-              <select id="provider" disabled className="mt-2 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                <option value="GHN">Giao Hang Nhanh (GHN)</option>
-              </select>
+              <input
+                type="text"
+                id="provider"
+                disabled
+                value="Giao Hang Nhanh (GHN)"
+                className="mt-2 h-11 w-full rounded-lg border border-gray-300 bg-gray-50/50 dark:bg-gray-800/30 px-4 py-2.5 text-sm text-gray-500 shadow-theme-xs dark:border-gray-700 dark:text-gray-400 cursor-not-allowed"
+              />
             </div>
           )}
 

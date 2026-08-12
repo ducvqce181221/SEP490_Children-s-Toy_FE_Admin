@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import Button from "@/components/ui/button/Button";
 import Badge from "@/components/ui/badge/Badge";
@@ -200,6 +201,24 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedDeliveryImage, setSelectedDeliveryImage] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (selectedDeliveryImage) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [selectedDeliveryImage]);
 
   const { isSubmitting, updateStatus, reassign, isReassigning } = useRefundMutations(() => {
     setIsStatusModalOpen(false);
@@ -808,18 +827,40 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
 
                 <Section title="Shipping & Quality Check">
                   <InfoRow label="Tracking Code" value={
-                    refund.shippingOrderCode ? (
-                      <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.shippingOrderCode}</span>
-                    ) : (
-                      <span className="text-gray-400 italic text-xs">Pickup order not created</span>
-                    )
+                    <div className="flex flex-col items-end gap-1 w-full">
+                      {refund.shippingOrderCode ? (
+                        <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.shippingOrderCode}</span>
+                      ) : (
+                        <span className="text-gray-400 italic text-xs">Pickup order not created</span>
+                      )}
+                      {refund.returnDeliveryImageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDeliveryImage(refund.returnDeliveryImageUrl!)}
+                          className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 underline underline-offset-2 transition-colors cursor-pointer"
+                        >
+                          View return image
+                        </button>
+                      )}
+                    </div>
                   } />
                   <InfoRow label="Return Tracking Code" value={
-                    refund.returnShippingOrderCode ? (
-                      <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.returnShippingOrderCode}</span>
-                    ) : (
-                      <span className="text-gray-400 italic text-xs">—</span>
-                    )
+                    <div className="flex flex-col items-end gap-1 w-full">
+                      {refund.returnShippingOrderCode ? (
+                        <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.returnShippingOrderCode}</span>
+                      ) : (
+                        <span className="text-gray-400 italic text-xs">—</span>
+                      )}
+                      {refund.returnToCustomerImageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDeliveryImage(refund.returnToCustomerImageUrl!)}
+                          className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 underline underline-offset-2 transition-colors cursor-pointer"
+                        >
+                          View delivery image
+                        </button>
+                      )}
+                    </div>
                   } />
                   <InfoRow label="Quality Inspection Status" value={
                     refund.inspectionPassed === true ? (
@@ -1052,6 +1093,43 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
         title="Reassign Refund"
         description={`Admin reassigns the ${isMerchandiseStage ? "Merchandise" : "Staff"} slot for this refund request using an on-duty schedule.`}
       />
+
+      {mounted && selectedDeliveryImage && createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 sm:p-6">
+          <div
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            onClick={() => setSelectedDeliveryImage(null)}
+          />
+          <div
+            className="relative w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-900 p-5 text-left align-middle shadow-2xl transition-all animate-in fade-in zoom-in duration-200 border border-gray-200/80 dark:border-gray-800 flex flex-col gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold text-base">
+                <span>Delivery Confirmation Image</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDeliveryImage(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-slate-600 dark:text-gray-300 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-auto flex items-center justify-center max-h-[75vh] py-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={selectedDeliveryImage}
+                alt="Refund delivery confirmation"
+                className="max-h-[70vh] w-auto object-contain rounded-xl shadow-xs"
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
