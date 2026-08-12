@@ -3,6 +3,7 @@
 import { AxiosError } from "axios";
 import Image from "next/image";
 import React, { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Button from "@/components/ui/button/Button";
@@ -121,8 +122,28 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   const [isShipModalOpen, setIsShipModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedDeliveryImage, setSelectedDeliveryImage] = useState<string | null>(null);
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (selectedDeliveryImage) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [selectedDeliveryImage]);
 
   const handleBack = () => {
+
+
     if (window.history.length > 2) {
       router.back();
     } else {
@@ -359,7 +380,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
               Cancelled by: {order.cancelledByName ?? "System"} at {fmtDt(order.cancelledAt)}
             </p>
             {order.cancelReason && (
-              <p 
+              <p
                 className="mt-1 text-sm text-red-600 dark:text-red-400 break-all line-clamp-3"
                 title={order.cancelReason}
               >
@@ -438,6 +459,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                     <InfoRow label="Carrier" value={order.shipping?.provider ?? "GHN"} />
                     <InfoRow label="Tracking No." value={order.shipping?.providerOrderCode ?? "—"} />
                     <InfoRow label="Tracking" value={order.shipping?.trackingNumber ?? "—"} />
+                    <InfoRow label="Est. Delivery" value={fmtDt(order.shipping?.estimatedDelivery) || "—"} />
                   </div>
                   <div>
                     <InfoRow
@@ -470,7 +492,24 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                         ) : "—"
                       }
                     />
-                    <InfoRow label="Est. Delivery" value={fmtDt(order.shipping?.estimatedDelivery)} />
+                    <InfoRow
+                      label="Delivered At"
+                      value={
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          {order.deliveredAt && <span>{fmtDt(order.deliveredAt)}</span>}
+                          {order.deliveryImageUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDeliveryImage(order.deliveryImageUrl!)}
+                              className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 underline underline-offset-2 transition-colors cursor-pointer"
+                            >
+                              View delivery image
+                            </button>
+                          )}
+                          {!order.deliveredAt && !order.deliveryImageUrl && "—"}
+                        </div>
+                      }
+                    />
                   </div>
                 </div>
                 {order.shipping?.lastErrorMessage && (
@@ -481,7 +520,9 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
               </Section>
             )}
 
+
             <Section title="Order Items">
+
               <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
                 <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
                   <thead className="bg-gray-50 dark:bg-gray-900">
@@ -584,7 +625,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                           By: {isSystem ? "⚙ System (auto)" : h.changedByName}
                         </p>
                         {h.note && (
-                          <p 
+                          <p
                             className="mt-3 border-l-2 border-gray-200 pl-3 text-sm italic text-gray-600 dark:border-gray-700 dark:text-gray-300 break-all line-clamp-3"
                             title={h.note}
                           >
@@ -725,6 +766,41 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
         onAssign={handleAssign}
         currentStatusName={order.statusName}
       />
+
+      {mounted && selectedDeliveryImage && createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 sm:p-6">
+          <div
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            onClick={() => setSelectedDeliveryImage(null)}
+          />
+          <div
+            className="relative w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-900 p-5 text-left align-middle shadow-2xl transition-all animate-in fade-in zoom-in duration-200 border border-gray-200/80 dark:border-gray-800 flex flex-col gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold text-base">
+                <span>Delivery Image</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDeliveryImage(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="overflow-auto flex items-center justify-center max-h-[75vh] py-2">
+              <img
+                src={selectedDeliveryImage}
+                alt="Delivery Proof Full"
+                className="max-h-[70vh] w-auto object-contain rounded-xl shadow-xs"
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
+

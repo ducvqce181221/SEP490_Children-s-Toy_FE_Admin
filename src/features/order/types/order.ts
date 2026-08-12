@@ -244,6 +244,8 @@ export interface OrderDetail {
   cancelledAt: string | null;
   cancelReason: string | null;
   cancelledByName: string | null;
+  deliveryImageUrl?: string | null;
+
   // Địa chỉ giao hàng
   shippingName: string;
   shippingPhone: string;
