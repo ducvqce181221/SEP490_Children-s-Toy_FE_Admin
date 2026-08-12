@@ -99,6 +99,8 @@ export interface Refund {
   includeShippingInRefund?: boolean | null;
   /** Voucher discount từ đơn gốc (display only). */
   voucherDiscountAmount?: number;
+  returnDeliveryImageUrl?: string | null;
+  returnToCustomerImageUrl?: string | null;
 }
 
 export interface RefundFilter {
