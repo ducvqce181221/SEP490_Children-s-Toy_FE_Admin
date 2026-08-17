@@ -298,10 +298,20 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
     !!refund.isSystemReturn &&
     isAdmin;
 
+  const isTerminalStatus = [
+    "RefundCompleted",
+    "RefundCancelled",
+    "RefundRejected",
+    "RefundReturnedToCustomer",
+    "RefundReturnToCustomerFailed",
+  ].includes(refund.refundStatus);
+
   const canChangeStatus =
     !isViewOnly &&
     refund.refundStatus !== "RefundCompleted" &&
     refund.refundStatus !== "RefundCancelled" &&
+    refund.refundStatus !== "RefundReturnedToCustomer" &&
+    refund.refundStatus !== "RefundReturnToCustomerFailed" &&
     (canReopenSystemRejected ||
       (refund.refundStatus !== "RefundRejected" &&
         (isAdmin ||
@@ -317,17 +327,13 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
 
   const canReject =
     !isViewOnly &&
-    refund.refundStatus !== "RefundCompleted" &&
-    refund.refundStatus !== "RefundCancelled" &&
-    refund.refundStatus !== "RefundRejected" &&
+    !isTerminalStatus &&
     !refund.isSystemReturn &&
     (isAdmin || isStaff);
 
   const canAssign =
     isAdmin &&
-    refund.refundStatus !== "RefundCompleted" &&
-    refund.refundStatus !== "RefundCancelled" &&
-    refund.refundStatus !== "RefundRejected";
+    !isTerminalStatus;
 
   const nextStatus = getNextStatus(refund.refundStatus, refund.isSystemReturn, refund.refundType);
 
