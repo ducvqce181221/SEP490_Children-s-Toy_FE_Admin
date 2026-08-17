@@ -274,14 +274,23 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     isAssignedToMe &&
     (role === ROLE_NAME.MERCHANDISE || isAdmin);
 
+  const ghnStatus = order?.ghnShippingStatus ?? order?.shipping?.status ?? null;
+
   const isTerminalStatus =
     order?.statusName === ORDER_STATUS.CANCELLED ||
     order?.statusName === ORDER_STATUS.REFUNDED ||
-    order?.statusName === ORDER_STATUS.COMPLETED;
+    order?.statusName === ORDER_STATUS.COMPLETED ||
+    order?.statusName === ORDER_STATUS.DELIVERED; // Đã giao tới tay khách — không thể hủy
+
+  // GHN đang trên đường giao (đã rời kho) — không cho phép hủy
+  const isGhnOutForDelivery =
+    ghnStatus === "delivering" ||
+    ghnStatus === "money_collect_delivering" ||
+    ghnStatus === "delivered";
 
   const canCancel =
     isAdmin
-      ? !isTerminalStatus && !!order
+      ? !isTerminalStatus && !isGhnOutForDelivery && !!order
       : isAssignedToMe &&
       (order?.statusName === ORDER_STATUS.PENDING ||
         order?.statusName === ORDER_STATUS.CONFIRMED) &&
@@ -293,7 +302,6 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     order.statusName !== ORDER_STATUS.COMPLETED &&
     order.statusName !== ORDER_STATUS.CANCELLED;
 
-  const ghnStatus = order?.ghnShippingStatus ?? order?.shipping?.status ?? null;
   const isReturnFlow =
     order?.statusId === ORDER_STATUS_ID.RETURNING ||
     order?.statusId === ORDER_STATUS_ID.RETURN_COMPLETED ||
