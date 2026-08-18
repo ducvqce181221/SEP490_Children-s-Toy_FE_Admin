@@ -87,7 +87,14 @@ export const getNextStatus = (
   }
 };
 
-const getRefundStatusLabel = (status: string, isSystemReturn = false) => {
+const getRefundStatusLabel = (status: string, isSystemReturn = false, refundType?: string) => {
+  if (refundType === "RefundOnly") {
+    switch (status) {
+      case "RefundApproved": return "Approve Refund Request";
+      case "RefundCompleted": return "Confirm Wallet Refund & Complete";
+      default: return status;
+    }
+  }
   switch (status) {
     case "RefundApproved": return isSystemReturn ? "Approve Refund Request" : "Approve Refund Request";
     case "RefundPickupCreated": return "Create Return Shipping Order";
@@ -538,11 +545,17 @@ export const RefundStatusModal: React.FC<RefundStatusModalProps & { currentInspe
     );
   }
 
-  const title = getRefundStatusLabel(nextStatus, isSystemReturn);
+  const title = getRefundStatusLabel(nextStatus, isSystemReturn, refundType);
 
   // Description per step
   let description = `Are you sure you want to change the status to ${title}?`;
-  if (!isSystemReturn) {
+  if (refundType === "RefundOnly") {
+    if (nextStatus === "RefundApproved") {
+      description = "Confirming this action will approve the refund request. Staff can proceed to disburse the refund to the customer's wallet.";
+    } else if (nextStatus === "RefundCompleted") {
+      description = "Confirming this action will disburse the full refund amount to the customer's wallet.";
+    }
+  } else if (!isSystemReturn) {
     if (nextStatus === "RefundApproved") {
       description = "Confirming this action will approve the customer's refund request. Set return shipping fee responsibility below.";
     } else if (nextStatus === "RefundPickupCreated") {

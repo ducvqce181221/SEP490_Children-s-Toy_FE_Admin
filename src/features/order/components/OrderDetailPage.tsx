@@ -49,6 +49,20 @@ const fmtDt = (v: string | null | undefined) => formatDisplayDate(v, "—");
 const fmtCurrency = (n: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
 
+function cleanHistoryNote(note?: string | null): string {
+  if (!note) return "";
+  let result = note;
+  result = result.replace(/^Tự động cập nhật từ (?:GHN )?webhook vận chuyển:?\s*/i, "Automatically updated from shipping webhook: ");
+  result = result.replace(/^Tự động cập nhật từ GHN webhook:?\s*/i, "Automatically updated from GHN webhook: ");
+  result = result.replace(/GHN lấy hàng thất bại \(([^)]+)\): (.*)\. Đơn hàng được reset về Processing để chuẩn bị giao lại\./i, "GHN pickup failed ($1): $2. Order reset to Processing for redelivery.");
+  result = result.replace(/Vận đơn giao lại cho khách bị hủy: shop không bàn giao hàng cho đơn vị vận chuyển\./i, "Return delivery to customer cancelled: shop did not hand over items to courier.");
+  result = result.replace(/Đơn thu hồi hàng hoàn bị hủy: khách không bàn giao hàng cho đơn vị vận chuyển hoặc đơn bị hủy\. Yêu cầu hoàn tiền đã bị hủy\./i, "Return pickup shipment cancelled: customer did not hand over package or shipment was cancelled. Refund request cancelled.");
+  result = result.replace(/Hàng hóa giao trả lại cho khách bị hư hỏng\/thất lạc trong quá trình vận chuyển \(lỗi do ĐVVC GHN\)\./i, "Returned items to customer were damaged/lost in transit by courier.");
+  result = result.replace(/Giao hàng trả lại cho khách thất bại \(khách không nhận hàng \/ phát hàng không thành công\)\. Phí vận chuyển không được hoàn do lỗi từ phía khách hàng\./i, "Delivery of rejected items back to customer failed (customer was unreachable or refused package). Return shipping fee is non-refundable.");
+  result = result.replace(/Phí vận chuyển ([0-9,.]+)₫ đã được hoàn trả vào ví của khách hàng\./i, "Return shipping fee of $1 VND was refunded to customer wallet.");
+  return result;
+}
+
 // ─── Inline badge components ───────────────────────────────────────────────────
 function OrderStatusBadge({ statusId, statusName }: { statusId: number; statusName: string }) {
   const styles: Record<number, string> = {
@@ -274,14 +288,23 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     isAssignedToMe &&
     (role === ROLE_NAME.MERCHANDISE || isAdmin);
 
+  const ghnStatus = order?.ghnShippingStatus ?? order?.shipping?.status ?? null;
+
   const isTerminalStatus =
     order?.statusName === ORDER_STATUS.CANCELLED ||
     order?.statusName === ORDER_STATUS.REFUNDED ||
-    order?.statusName === ORDER_STATUS.COMPLETED;
+    order?.statusName === ORDER_STATUS.COMPLETED ||
+    order?.statusName === ORDER_STATUS.DELIVERED; // Đã giao tới tay khách — không thể hủy
+
+  // GHN đang trên đường giao (đã rời kho) — không cho phép hủy
+  const isGhnOutForDelivery =
+    ghnStatus === "delivering" ||
+    ghnStatus === "money_collect_delivering" ||
+    ghnStatus === "delivered";
 
   const canCancel =
     isAdmin
-      ? !isTerminalStatus && !!order
+      ? !isTerminalStatus && !isGhnOutForDelivery && !!order
       : isAssignedToMe &&
       (order?.statusName === ORDER_STATUS.PENDING ||
         order?.statusName === ORDER_STATUS.CONFIRMED) &&
@@ -293,7 +316,6 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     order.statusName !== ORDER_STATUS.COMPLETED &&
     order.statusName !== ORDER_STATUS.CANCELLED;
 
-  const ghnStatus = order?.ghnShippingStatus ?? order?.shipping?.status ?? null;
   const isReturnFlow =
     order?.statusId === ORDER_STATUS_ID.RETURNING ||
     order?.statusId === ORDER_STATUS_ID.RETURN_COMPLETED ||
@@ -330,11 +352,6 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-8">
-      {isViewOnlyDetail && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-          View-only — this order was already handled or is no longer assigned to you this shift. You cannot perform actions on it.
-        </div>
-      )}
       {/* Header */}
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -627,9 +644,9 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
                         {h.note && (
                           <p
                             className="mt-3 border-l-2 border-gray-200 pl-3 text-sm italic text-gray-600 dark:border-gray-700 dark:text-gray-300 break-all line-clamp-3"
-                            title={h.note}
+                            title={cleanHistoryNote(h.note)}
                           >
-                            &ldquo;{h.note}&rdquo;
+                            &ldquo;{cleanHistoryNote(h.note)}&rdquo;
                           </p>
                         )}
                       </div>
