@@ -120,11 +120,11 @@ export const RefundRow = React.memo(function RefundRow({
               Ref: {refund.refundCode}
             </p>
           )}
-          {refund.isSystemReturn && (
+          {refund.isSystemReturn ? (
             <span className="mt-1 inline-flex w-max items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
               ⚙ System Return
             </span>
-          )}
+          ) : null}
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <span
