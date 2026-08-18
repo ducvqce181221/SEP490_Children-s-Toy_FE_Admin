@@ -51,6 +51,20 @@ function cleanStatusName(status: string) {
   }
 }
 
+function cleanHistoryNote(note?: string | null): string {
+  if (!note) return "";
+  let result = note;
+  result = result.replace(/^Tự động cập nhật từ (?:GHN )?webhook vận chuyển:?\s*/i, "Automatically updated from shipping webhook: ");
+  result = result.replace(/^Tự động cập nhật từ GHN webhook:?\s*/i, "Automatically updated from GHN webhook: ");
+  result = result.replace(/GHN lấy hàng thất bại \(([^)]+)\): (.*)\. Đơn hàng được reset về Processing để chuẩn bị giao lại\./i, "GHN pickup failed ($1): $2. Order reset to Processing for redelivery.");
+  result = result.replace(/Vận đơn giao lại cho khách bị hủy: shop không bàn giao hàng cho đơn vị vận chuyển\./i, "Return delivery to customer cancelled: shop did not hand over items to courier.");
+  result = result.replace(/Đơn thu hồi hàng hoàn bị hủy: khách không bàn giao hàng cho đơn vị vận chuyển hoặc đơn bị hủy\. Yêu cầu hoàn tiền đã bị hủy\./i, "Return pickup shipment cancelled: customer did not hand over package or shipment was cancelled. Refund request cancelled.");
+  result = result.replace(/Hàng hóa giao trả lại cho khách bị hư hỏng\/thất lạc trong quá trình vận chuyển \(lỗi do ĐVVC GHN\)\./i, "Returned items to customer were damaged/lost in transit by courier.");
+  result = result.replace(/Giao hàng trả lại cho khách thất bại \(khách không nhận hàng \/ phát hàng không thành công\)\. Phí vận chuyển không được hoàn do lỗi từ phía khách hàng\./i, "Delivery of rejected items back to customer failed (customer was unreachable or refused package). Return shipping fee is non-refundable.");
+  result = result.replace(/Phí vận chuyển ([0-9,.]+)₫ đã được hoàn trả vào ví của khách hàng\./i, "Return shipping fee of $1 VND was refunded to customer wallet.");
+  return result;
+}
+
 // ─── Inline badge components ───────────────────────────────────────────────────
 function getStatusBadge(status: string) {
   switch (status) {
@@ -325,10 +339,14 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
           (isSystemInspectionStage && isStaff) ||
           (refund.refundStatus === "RefundDamage" && isStaff))));
 
+  const hasShippingOrder = !!refund.shippingOrderCode || !!refund.returnShippingOrderCode;
+
   const canReject =
     !isViewOnly &&
     !isTerminalStatus &&
     !refund.isSystemReturn &&
+    !hasShippingOrder &&
+    (refund.refundStatus === "RefundRequested" || refund.refundStatus === "RefundApproved") &&
     (isAdmin || isStaff);
 
   const canAssign =
@@ -464,7 +482,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               {/* Left Column: Returned Products (lg:col-span-2) */}
               <div className="lg:col-span-2 space-y-6">
-                <Section title="Returned Items">
+                <Section title={refund.refundType === "RefundOnly" ? "Refund Items" : "Returned Items"}>
                   {refund.details && refund.details.length > 0 ? (
                     <>
                       <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
@@ -474,7 +492,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                               <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Product</th>
                               <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Unit Price</th>
                               <th className="px-5 py-3.5 text-center text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Qty</th>
-                              {(refund.isSystemReturn || refund.details?.some(d => d.restorableQuantity != null || d.failedCustomerQty != null || d.failedCarrierQty != null)) && (
+                              {refund.refundType !== "RefundOnly" && (refund.isSystemReturn || refund.details?.some(d => d.restorableQuantity != null || d.failedCustomerQty != null || d.failedCarrierQty != null)) && (
                                 <th className="px-5 py-3.5 text-center text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Inspection Result</th>
                               )}
                               <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Refund Amount</th>
@@ -501,7 +519,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                                 </td>
                                 <td className="px-5 py-4 text-right text-sm text-gray-600 dark:text-gray-300">{formatCurrency(item.unitPrice)}</td>
                                 <td className="px-5 py-4 text-center text-sm font-medium text-gray-600 dark:text-gray-300">{item.quantity}</td>
-                                {(refund.isSystemReturn || refund.details?.some(d => d.restorableQuantity != null || d.failedCustomerQty != null || d.failedCarrierQty != null)) && (
+                                {refund.refundType !== "RefundOnly" && (refund.isSystemReturn || refund.details?.some(d => d.restorableQuantity != null || d.failedCustomerQty != null || d.failedCarrierQty != null)) && (
                                   <td className="px-5 py-4 text-center">
                                     {!isInspectionDone || (item.restorableQuantity == null && item.failedCustomerQty == null && item.failedCarrierQty == null) ? (
                                       <span className="text-xs text-gray-400 italic">Pending inspection</span>
@@ -535,15 +553,57 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
 
                       <div className="mt-6 space-y-2 text-sm">
                         {/* -----------------------------------------------------------
-                         * STATUS-AWARE FINANCIAL SUMMARY
-                         * - Pre-Approve (RefundRequested / Rejected / Cancelled):
-                         *   FinalRefundAmount = 0 (DB default, NOT yet computed).
-                         *   → Always show ApprovedAmount as the expected refund.
-                         * - Post-Approve:
-                         *   FinalRefundAmount has been explicitly set by the service.
-                         *   → Show breakdown + actual final amount.
+                         * STATUS-AWARE & TYPE-AWARE FINANCIAL SUMMARY
                          * ----------------------------------------------------------- */}
                         {(() => {
+                          // 1. RefundOnly (Prepaid Cancelled Order - No Return)
+                          if (refund.refundType === "RefundOnly") {
+                            const itemsSubtotal = (refund.details && refund.details.length > 0)
+                              ? refund.details.reduce((sum, d) => sum + d.refundAmount, 0)
+                              : (refund.subTotal ?? 0);
+                            const originalShipping = refund.shippingFee ?? 0;
+                            const voucherDiscount = refund.voucherDiscountAmount ?? 0;
+                            const finalAmount = (refund.finalRefundAmount && refund.finalRefundAmount > 0)
+                              ? refund.finalRefundAmount
+                              : refund.approvedAmount;
+
+                            return (
+                              <div className="rounded-xl border border-slate-200 bg-slate-50/50 dark:border-gray-700 dark:bg-gray-800/40 overflow-hidden">
+                                <div className="px-4 py-2 border-b border-slate-100 dark:border-gray-700 flex justify-between items-center">
+                                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Order Cancellation Refund Summary</span>
+                                </div>
+                                <div className="px-4 py-3 space-y-2 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">Order Items Subtotal</span>
+                                    <span className="font-semibold text-gray-800 dark:text-white/80">{formatCurrency(itemsSubtotal)}</span>
+                                  </div>
+                                  {originalShipping > 0 && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500">Shipping Fee (Refunded)</span>
+                                      <span className="font-semibold text-gray-800 dark:text-white/80">{formatCurrency(originalShipping)}</span>
+                                    </div>
+                                  )}
+                                  {voucherDiscount > 0 && (
+                                    <div className="flex justify-between text-gray-400">
+                                      <span>Voucher Discount</span>
+                                      <span>-{formatCurrency(voucherDiscount)}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between border-t border-dashed border-slate-200 pt-2 dark:border-gray-700">
+                                    <span className="font-bold text-[#ff6a00]">Total Refund to Wallet</span>
+                                    <span className="text-lg font-black text-[#ff6a00]">
+                                      {formatCurrency(finalAmount)}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-gray-400 italic">
+                                    100% of the customer's paid amount (including initial shipping) is refunded because the order was cancelled prior to dispatch.
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // 2. ReturnOnly (COD Delivery Failure / Return - No Refund)
                           if (refund.refundType === "ReturnOnly") {
                             return (
                               <div className="rounded-xl border border-slate-200 bg-slate-50/50 dark:border-gray-700 dark:bg-gray-800/40 overflow-hidden">
@@ -565,32 +625,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                             );
                           }
 
-                          const PRE_APPROVE_STATUSES = ["RefundRequested", "RefundRejected", "RefundCancelled"];
-                          const isPreApproval = PRE_APPROVE_STATUSES.includes(refund.refundStatus);
-
-                          // Pre-approval: FinalRefundAmount = 0 is just DB default, show ApprovedAmount
-                          if (isPreApproval) {
-                            return (
-                              <div className="rounded-xl border border-slate-200 bg-slate-50/50 dark:border-gray-700 dark:bg-gray-800/40 overflow-hidden">
-                                <div className="px-4 py-2 border-b border-slate-100 dark:border-gray-700">
-                                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Financial Summary</span>
-                                </div>
-                                <div className="px-4 py-3 space-y-2">
-                                  <div className="flex justify-between border-t border-dashed border-slate-200 pt-2 dark:border-gray-700">
-                                    <span className="font-bold text-[#ff6a00]">Approved Amount</span>
-                                    <span className="text-lg font-black text-[#ff6a00]">
-                                      {formatCurrency(refund.approvedAmount)}
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] text-gray-400 italic">
-                                    Return shipping fee will be determined upon approval.
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          // System Return: show breakdown with shipping choice
+                          // 3. System Return: GHN delivery failure
                           if (refund.isSystemReturn) {
                             const productAmount = (refund.totalAmount ?? refund.approvedAmount) - (refund.customerShippingPaid ?? 0);
                             const isCompleted = refund.refundStatus === "RefundCompleted";
@@ -637,33 +672,56 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                             );
                           }
 
-                          // Customer return: existing breakdown
+                          // 4. Standard Customer Return (ReturnAndRefund)
                           const hasCustomerFault = (refund.details ?? []).some(d => (d.failedCustomerQty ?? 0) > 0);
-                          const effectiveFinal = refund.finalRefundAmount ?? 0;
+                          const isCustomerFee = refund.returnShippingFeeBy?.toLowerCase() === "customer";
+                          const returnShipFee = refund.returnShippingFee ?? 0;
+                          const effectiveFinal = (refund.finalRefundAmount && refund.finalRefundAmount > 0)
+                            ? refund.finalRefundAmount
+                            : refund.approvedAmount;
 
                           if (!isInspectionDone) {
+                            const itemsAmount = refund.approvedAmount - (refund.shippingFee ?? 0);
+                            const expectedFinal = isCustomerFee
+                              ? Math.max(0, refund.approvedAmount - returnShipFee)
+                              : refund.approvedAmount;
+
                             return (
                               <div className="rounded-xl border border-slate-200 bg-slate-50/50 dark:border-gray-700 dark:bg-gray-800/40 overflow-hidden">
-                                <div className="px-4 py-2 border-b border-slate-100 dark:border-gray-700">
+                                <div className="px-4 py-2 border-b border-slate-100 dark:border-gray-700 flex justify-between items-center">
                                   <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Expected Refund Summary</span>
+                                  <span className={`text-[10px] font-semibold rounded-full px-2 py-0.5 border ${isCustomerFee
+                                    ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
+                                    : "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
+                                    }`}>
+                                    {isCustomerFee ? "Customer bears shipping" : "Store bears shipping"}
+                                  </span>
                                 </div>
-                                <div className="px-4 py-3 space-y-2">
+                                <div className="px-4 py-3 space-y-2 text-sm">
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">Expected Approved Items Subtotal</span>
-                                    <span className="font-semibold text-gray-800 dark:text-white/80">{formatCurrency(refund.approvedAmount - (refund.shippingFee ?? 0))}</span>
+                                    <span className="font-semibold text-gray-800 dark:text-white/80">{formatCurrency(itemsAmount)}</span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">Expected Shipping Fee Refund</span>
-                                    <span className="font-semibold text-gray-800 dark:text-white/80">{formatCurrency(refund.shippingFee ?? 0)}</span>
+                                    <span className="font-semibold text-gray-800 dark:text-white/80">
+                                      {isCustomerFee ? formatCurrency(0) : formatCurrency(refund.shippingFee ?? 0)}
+                                    </span>
                                   </div>
+                                  {isCustomerFee && returnShipFee > 0 && (
+                                    <div className="flex justify-between text-amber-600">
+                                      <span>Return Pickup Fee</span>
+                                      <span className="font-semibold">-{formatCurrency(returnShipFee)}</span>
+                                    </div>
+                                  )}
                                   <div className="flex justify-between border-t border-dashed border-slate-200 pt-2 dark:border-gray-700">
                                     <span className="font-bold text-[#ff6a00]">Total Expected Refund</span>
                                     <span className="text-lg font-black text-[#ff6a00]">
-                                      {formatCurrency(refund.approvedAmount)}
+                                      {formatCurrency(expectedFinal)}
                                     </span>
                                   </div>
                                   <p className="text-[11px] text-gray-400 italic">
-                                    Quality inspection results will determine the final refund and return shipping fee.
+                                    Quality inspection results will determine the final refund.
                                   </p>
                                 </div>
                               </div>
@@ -675,37 +733,52 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                               <div className="rounded-xl border border-slate-200 bg-slate-50/50 dark:border-gray-700 dark:bg-gray-800/40 overflow-hidden">
                                 <div className="px-4 py-2 border-b border-slate-100 dark:border-gray-700 flex justify-between items-center">
                                   <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Financial Summary</span>
-                                  {hasCustomerFault && (
-                                    <span className={`text-[10px] font-bold uppercase rounded-full px-2 py-0.5 ${refund.returnToCustomerFeePaid ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700 animate-pulse"
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`text-[10px] font-semibold rounded-full px-2 py-0.5 border ${isCustomerFee
+                                      ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
+                                      : "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
                                       }`}>
-                                      {refund.returnToCustomerFeePaid ? "Fee Settled" : "Fee Unpaid"}
+                                      {isCustomerFee ? "Customer bears shipping" : "Store bears shipping"}
                                     </span>
-                                  )}
+                                    {hasCustomerFault && (
+                                      <span className={`text-[10px] font-bold uppercase rounded-full px-2 py-0.5 ${refund.returnToCustomerFeePaid ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700 animate-pulse"
+                                        }`}>
+                                        {refund.returnToCustomerFeePaid ? "Fee Settled" : "Fee Unpaid"}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="px-4 py-3 space-y-2.5">
-                                  <div className="flex justify-between text-sm">
+                                <div className="px-4 py-3 space-y-2.5 text-sm">
+                                  <div className="flex justify-between">
                                     <span className="text-gray-500">Approved Items Subtotal</span>
                                     <span className="font-semibold text-gray-800 dark:text-white/80">{formatCurrency(refund.itemApprovedSubTotal ?? 0)}</span>
                                   </div>
 
                                   {(refund.itemRejectedSubTotal ?? 0) > 0 && (
-                                    <div className="flex justify-between text-sm text-red-600">
+                                    <div className="flex justify-between text-red-600">
                                       <span>Rejected Items Subtotal (Cust fault)</span>
                                       <span className="font-semibold">-{formatCurrency(refund.itemRejectedSubTotal ?? 0)}</span>
                                     </div>
                                   )}
 
-                                  <div className="flex justify-between text-sm">
+                                  <div className="flex justify-between">
                                     <span className="text-gray-500">Original Shipping Fee Refund</span>
                                     <span className="font-semibold text-gray-800 dark:text-white/80">
-                                      {(refund.itemRejectedSubTotal ?? 0) > 0 ? "0 (customer fault)" : formatCurrency(refund.shippingFee ?? 0)}
+                                      {(isCustomerFee || (refund.itemRejectedSubTotal ?? 0) > 0) ? formatCurrency(0) : formatCurrency(refund.shippingFee ?? 0)}
                                     </span>
                                   </div>
 
+                                  {isCustomerFee && returnShipFee > 0 && (
+                                    <div className="flex justify-between text-amber-600">
+                                      <span>Return Pickup Fee</span>
+                                      <span className="font-semibold">-{formatCurrency(returnShipFee)}</span>
+                                    </div>
+                                  )}
+
                                   {(refund.returnToCustomerFee ?? 0) > 0 && (
-                                    <div className="flex justify-between text-sm border-t border-slate-150 pt-2 dark:border-gray-700">
+                                    <div className="flex justify-between border-t border-slate-150 pt-2 dark:border-gray-700">
                                       <span className="text-gray-500 flex items-center gap-1.5">
-                                        Return Shipping Fee (Store → Cust)
+                                        Rejected Items Redelivery Fee
                                       </span>
                                       <span className="font-semibold text-amber-600">
                                         {formatCurrency(refund.returnToCustomerFee ?? 0)}
@@ -745,7 +818,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                       </div>
                     </>
                   ) : (
-                    <p className="text-sm text-gray-400 italic">No returned items details found.</p>
+                    <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">No products included in this refund request.</p>
                   )}
                 </Section>
 
@@ -770,7 +843,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
 
               {/* Right Column: Customer Info & Refund Meta (lg:col-span-1) */}
               <div className="lg:col-span-1 space-y-6">
-                <Section title="Customer Info">
+                <Section title="Customer Information">
                   <div className="flex items-center gap-4 dark:bg-gray-700/30 rounded-xl p-3 bg-gray-50 mb-3">
                     <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-[#ff6a00] font-bold text-lg shrink-0">
                       {refund.customerName.charAt(0).toUpperCase()}
@@ -788,20 +861,54 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                   <div className="border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 flex flex-col gap-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-500 dark:text-gray-400">Reason Category</span>
-                      {refund.refundReasonResponsibleParty?.toLowerCase() === "customer" ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700">
-                          Customer Fault
+                      {refund.refundType === "RefundOnly" ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+                          Order Cancellation
                         </span>
-                      ) : refund.refundReasonResponsibleParty?.toLowerCase() === "store" ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700">
-                          Store Fault
-                        </span>
-                      ) : null}
+                      ) : (() => {
+                        const effectiveParty = refund.returnShippingFeeBy || refund.refundReasonResponsibleParty;
+                        const isOverridden = refund.returnShippingFeeBy && 
+                          refund.refundReasonResponsibleParty && 
+                          refund.returnShippingFeeBy.toLowerCase() !== refund.refundReasonResponsibleParty.toLowerCase();
+
+                        if (isOverridden) {
+                          return (
+                            <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                              effectiveParty?.toLowerCase() === "customer"
+                                ? "bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700"
+                                : "bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700"
+                            }`}>
+                              Overridden: {effectiveParty?.toLowerCase() === "customer" ? "Cust Fault" : "Store Fault"}
+                            </span>
+                          );
+                        }
+
+                        if (effectiveParty?.toLowerCase() === "customer") {
+                          return (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700">
+                              Customer Fault
+                            </span>
+                          );
+                        }
+
+                        if (effectiveParty?.toLowerCase() === "store") {
+                          return (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700">
+                              Store Fault
+                            </span>
+                          );
+                        }
+
+                        return null;
+                      })()}
                     </div>
-                    <div className="font-medium text-red-600 dark:text-red-400 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg text-sm border border-slate-100 dark:border-gray-700 w-full break-words break-all leading-relaxed">
-                      {refund.refundReasonContent || "Not specified"}
+                    <div className="font-medium text-slate-800 dark:text-slate-200 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg text-sm border border-slate-100 dark:border-gray-700 w-full break-words break-all leading-relaxed">
+                      {refund.refundType === "RefundOnly"
+                        ? "Order cancelled before dispatch"
+                        : (refund.refundReasonContent || "Not specified")}
                     </div>
-                    {refund.refundReasonResponsibleParty?.toLowerCase() === "customer" && (
+                    {/* Cảnh báo trừ phí ship CHỈ hiển thị khi quyết định thực tế là Khách chịu phí */}
+                    {refund.refundType === "ReturnAndRefund" && (refund.returnShippingFeeBy || refund.refundReasonResponsibleParty)?.toLowerCase() === "customer" && (
                       <p className="text-xs text-amber-700 dark:text-amber-400 italic bg-amber-50/70 dark:bg-amber-950/30 p-2.5 rounded-lg border border-amber-200/60 dark:border-amber-800/60 leading-relaxed mt-0.5">
                         Reason is the customer's fault (e.g. changed mind, wrong order). The initial shipping fee is non-refundable, and any return shipping fee will be deducted from the refund.
                       </p>
@@ -829,89 +936,119 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                   />
                   <InfoRow label="Requested On" value={fmtDt(refund.createdAt)} />
                   <InfoRow label="Requested By" value={refund.requestedByName || "System"} />
-                </Section>
-
-                <Section title="Shipping & Quality Check">
-                  <InfoRow label="Tracking Code" value={
-                    <div className="flex flex-col items-end gap-1 w-full">
-                      {refund.shippingOrderCode ? (
-                        <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.shippingOrderCode}</span>
-                      ) : (
-                        <span className="text-gray-400 italic text-xs">Pickup order not created</span>
-                      )}
-                      {refund.returnDeliveryImageUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedDeliveryImage(refund.returnDeliveryImageUrl!)}
-                          className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 underline underline-offset-2 transition-colors cursor-pointer"
-                        >
-                          View return image
-                        </button>
-                      )}
-                    </div>
-                  } />
-                  <InfoRow label="Return Tracking Code" value={
-                    <div className="flex flex-col items-end gap-1 w-full">
-                      {refund.returnShippingOrderCode ? (
-                        <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.returnShippingOrderCode}</span>
-                      ) : (
-                        <span className="text-gray-400 italic text-xs">—</span>
-                      )}
-                      {refund.returnToCustomerImageUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedDeliveryImage(refund.returnToCustomerImageUrl!)}
-                          className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 underline underline-offset-2 transition-colors cursor-pointer"
-                        >
-                          View delivery image
-                        </button>
-                      )}
-                    </div>
-                  } />
-                  <InfoRow label="Quality Inspection Status" value={
-                    refund.inspectionPassed === true ? (
-                      <Badge size="sm" color="success">Passed</Badge>
-                    ) : refund.inspectionPassed === false ? (
-                      <Badge size="sm" color="error">Failed</Badge>
-                    ) : (
-                      <Badge size="sm" color="warning">Pending</Badge>
-                    )
-                  } />
-                  <div className="border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 flex flex-col gap-1.5">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Inspection Note</span>
-                    {refund.inspectionNote ? (
-                      <div className="italic text-slate-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg text-xs border border-slate-100 dark:border-gray-700 w-full whitespace-pre-wrap break-words break-all leading-relaxed">
-                        {refund.inspectionNote}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 italic text-xs">—</span>
-                    )}
-                  </div>
-                  <div className="border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 flex flex-col gap-1.5">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Admin General Note</span>
-                    {refund.adminNote ? (
-                      <div className="italic text-slate-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg text-xs border border-slate-100 dark:border-gray-700 w-full whitespace-pre-wrap break-words break-all leading-relaxed">
-                        {refund.adminNote}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 italic text-xs">No shop admin notes</span>
-                    )}
-                  </div>
-                  {/* Damage Responsibility badge */}
-                  {refund.damageResponsibility && (
+                  {refund.refundType === "ReturnAndRefund" && refund.returnShippingFeeBy && (
                     <InfoRow
-                      label="Damage Responsibility"
+                      label="Return Shipping Paid By"
                       value={
-                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${refund.damageResponsibility === "Carrier"
-                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                          }`}>
-                          {refund.damageResponsibility === "Carrier" ? "🚚 Carrier fault" : "👤 Customer fault"}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${refund.returnShippingFeeBy === "Customer"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                            : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                            }`}>
+                            {refund.returnShippingFeeBy === "Customer" ? "Customer bears shipping" : "Store bears shipping"}
+                          </span>
+                          {refund.returnShippingFeeNote && (
+                            <span className="text-[11px] text-gray-500 italic max-w-[200px] text-right truncate" title={refund.returnShippingFeeNote}>
+                              Note: {refund.returnShippingFeeNote}
+                            </span>
+                          )}
+                        </div>
                       }
                     />
                   )}
+                  {refund.refundType === "RefundOnly" && refund.adminNote && (
+                    <div className="border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 flex flex-col gap-1.5">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Admin Note</span>
+                      <div className="italic text-slate-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg text-xs border border-slate-100 dark:border-gray-700 w-full whitespace-pre-wrap break-words break-all leading-relaxed">
+                        {refund.adminNote}
+                      </div>
+                    </div>
+                  )}
                 </Section>
+
+                {refund.refundType !== "RefundOnly" && (
+                  <Section title="Shipping & Quality Check">
+                    <InfoRow label="Tracking Code" value={
+                      <div className="flex flex-col items-end gap-1 w-full">
+                        {refund.shippingOrderCode ? (
+                          <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.shippingOrderCode}</span>
+                        ) : (
+                          <span className="text-gray-400 italic text-xs">Pickup order not created</span>
+                        )}
+                        {refund.returnDeliveryImageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedDeliveryImage(refund.returnDeliveryImageUrl!)}
+                            className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 underline underline-offset-2 transition-colors cursor-pointer"
+                          >
+                            View return image
+                          </button>
+                        )}
+                      </div>
+                    } />
+                    <InfoRow label="Return Tracking Code" value={
+                      <div className="flex flex-col items-end gap-1 w-full">
+                        {refund.returnShippingOrderCode ? (
+                          <span className="font-mono font-bold text-[#ff6a00] tracking-wider">{refund.returnShippingOrderCode}</span>
+                        ) : (
+                          <span className="text-gray-400 italic text-xs">—</span>
+                        )}
+                        {refund.returnToCustomerImageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedDeliveryImage(refund.returnToCustomerImageUrl!)}
+                            className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 underline underline-offset-2 transition-colors cursor-pointer"
+                          >
+                            View delivery image
+                          </button>
+                        )}
+                      </div>
+                    } />
+                    <InfoRow label="Quality Inspection Status" value={
+                      refund.inspectionPassed === true ? (
+                        <Badge size="sm" color="success">Passed</Badge>
+                      ) : refund.inspectionPassed === false ? (
+                        <Badge size="sm" color="error">Failed</Badge>
+                      ) : (
+                        <Badge size="sm" color="warning">Pending</Badge>
+                      )
+                    } />
+                    <div className="border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 flex flex-col gap-1.5">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Inspection Note</span>
+                      {refund.inspectionNote ? (
+                        <div className="italic text-slate-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg text-xs border border-slate-100 dark:border-gray-700 w-full whitespace-pre-wrap break-words break-all leading-relaxed">
+                          {refund.inspectionNote}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 italic text-xs">—</span>
+                      )}
+                    </div>
+                    <div className="border-b border-gray-100 py-2.5 last:border-0 dark:border-gray-800 flex flex-col gap-1.5">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Admin General Note</span>
+                      {refund.adminNote ? (
+                        <div className="italic text-slate-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg text-xs border border-slate-100 dark:border-gray-700 w-full whitespace-pre-wrap break-words break-all leading-relaxed">
+                          {refund.adminNote}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 italic text-xs">No shop admin notes</span>
+                      )}
+                    </div>
+                    {/* Damage Responsibility badge */}
+                    {refund.damageResponsibility && (
+                      <InfoRow
+                        label="Damage Responsibility"
+                        value={
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${refund.damageResponsibility === "Carrier"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                            }`}>
+                            {refund.damageResponsibility === "Carrier" ? "🚚 Carrier fault" : "👤 Customer fault"}
+                          </span>
+                        }
+                      />
+                    )}
+                  </Section>
+                )}
               </div>
             </div>
           </div>
@@ -950,7 +1087,7 @@ export const RefundEditView: React.FC<RefundEditViewProps> = ({ refundId, isView
                         </p>
                         {h.note && (
                           <p className="mt-3 border-l-2 border-gray-200 pl-3 text-sm italic text-gray-600 dark:border-gray-700 dark:text-gray-300 break-words break-all whitespace-pre-wrap">
-                            &ldquo;{h.note}&rdquo;
+                            &ldquo;{cleanHistoryNote(h.note)}&rdquo;
                           </p>
                         )}
                       </div>

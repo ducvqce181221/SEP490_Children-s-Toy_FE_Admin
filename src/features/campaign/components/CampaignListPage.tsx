@@ -559,7 +559,7 @@ export const CampaignListPage: React.FC = () => {
                             !isAdmin &&
                             isOwnerOrAdmin && (
                               <button
-                                title={campaign.status === "Rejected" ? "Nộp lại để duyệt" : "Nộp để duyệt"}
+                                title={campaign.status === "Rejected" ? "Resubmit for approval" : "Submit for approval"}
                                 onClick={() => setSubmitId(campaign.campaignId)}
                                 className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:border-green-400 hover:text-green-500 dark:border-gray-700 dark:text-gray-300"
                               >
